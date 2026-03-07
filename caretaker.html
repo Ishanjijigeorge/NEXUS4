@@ -2,574 +2,1041 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareTaker · Dashboard</title>
-    <!-- Leaflet (stable) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CareTaker · full patient actions + alarm</title>
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- DM Sans font -->
+    <!-- DM Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <!-- jspdf for PDF downloads -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- flatpickr for calendar & time -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: 'DM Sans', sans-serif;
         }
-
         :root {
-            --bg: #f2f6ff;
+            --bg: #f4f7fd;
             --card: #ffffff;
             --text: #0f172a;
-            --muted: #64748b;
+            --muted: #5b687c;
             --blue: #1d4ed8;
-            --blue-2: #60a5fa;
             --danger: #dc2626;
-            --radius: 16px;
-            --shadow: 0 14px 30px rgba(2, 8, 20, 0.08);
-            --outline: 1px solid rgba(29, 78, 216, 0.12);
+            --radius: 24px;
+            --shadow: 0 6px 16px rgba(0,0,0,0.05);
+            --outline: 1px solid rgba(29,78,216,0.1);
         }
-
         body {
-            margin: 0;
-            background: linear-gradient(90deg, #1d4ed8 0%, #60a5fa 100%) 0 0 / 100% 2.5cm no-repeat,
-                        #f8fafc;
-            padding: 24px;
+            background: var(--bg);
+            padding: 12px;
             color: var(--text);
-            min-height: 100vh;
+            font-size: 14px;
         }
-
         body.emergency-shutdown .shutdown-overlay { display: flex; }
-        body.emergency-shutdown .header,
-        body.emergency-shutdown .dashboard,
-        body.emergency-shutdown #graphModal { pointer-events: none; }
 
-        /* --- new header with title left, switcher center, icons right --- */
-        .app-header {
+        /* header: profile left, icons right */
+        .header-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 28px;
-            height: 2.5cm;
-            padding: 0 8px;
-            flex-wrap: wrap;
+            margin-bottom: 14px;
         }
-        .header-left {
-            flex: 1;
-            display: flex;
-            justify-content: flex-start;
-        }
-        .page-title {
-            margin: 0;
-            color: #ffffff;
-            font-weight: 800;
-            font-size: 30px;
-            letter-spacing: -0.3px;
-            white-space: nowrap;
-        }
-        .header-center {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-        }
-        .switcher-group {
-            display: flex;
-            background: rgba(255,255,255,0.12);
-            padding: 6px;
-            border-radius: 60px;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.05);
-        }
-        .switcher-btn {
-            border: none;
-            background: transparent;
-            padding: 12px 32px;
-            border-radius: 40px;
-            font-weight: 700;
-            font-size: 16px;
-            color: rgba(255,255,255,0.9);
-            cursor: pointer;
-            transition: 0.15s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .switcher-btn.active {
+        .profile-card {
             background: white;
-            color: var(--blue);
-            box-shadow: 0 6px 14px rgba(0,20,60,0.2);
-        }
-        .header-right {
-            flex: 1;
+            border-radius: 40px;
+            padding: 6px 16px 6px 6px;
             display: flex;
-            justify-content: flex-end;
-            gap: 16px;
             align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .profile-card:active { background: #f0f4ff; }
+        .profile-img {
+            width: 44px; height: 44px;
+            border-radius: 30px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #cbd5e1;
+        }
+        .profile-details { text-align: left; }
+        .profile-name { font-weight: 700; font-size: 15px; }
+        .profile-role { font-size: 11px; color: var(--muted); }
+
+        .icon-group {
+            display: flex;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            gap: 6px;
         }
         .icon-btn {
-            background: var(--card);
+            background: #f0f4fe;
             border: none;
-            border-radius: 40px;
-            padding: 10px 20px;
-            font-weight: 600;
-            font-size: 15px;
-            box-shadow: var(--shadow);
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            border: var(--outline);
-            color: var(--text);
-            white-space: nowrap;
+            justify-content: center;
         }
         .notif-wrap { position: relative; }
         .notif-dot {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            width: 10px;
-            height: 10px;
-            background: var(--danger);
-            border-radius: 50%;
-            display: none;
+            position: absolute; top: 2px; right: 2px;
+            width: 8px; height: 8px;
+            background: var(--danger); border-radius: 50%; display: none;
         }
-        .notif-panel {
-            position: absolute;
-            right: 0;
-            top: 50px;
-            width: 280px;
-            background: var(--card);
+
+        /* patient card with edit icon */
+        .patient-full-card {
+            background: white;
+            border-radius: 28px;
+            padding: 16px;
             box-shadow: var(--shadow);
-            border-radius: 12px;
-            padding: 10px;
-            display: none;
-            z-index: 200;
+            border: var(--outline);
+            margin-bottom: 14px;
+            position: relative;
         }
-        .log-popup {
-            position: fixed;
-            top: 100px;
-            right: 24px;
-            width: 360px;
-            max-height: 480px;
-            background: var(--card);
-            border-radius: 24px;
-            box-shadow: 0 30px 50px rgba(0,10,30,0.3);
-            z-index: 300;
-            display: none;
-            flex-direction: column;
-            padding: 20px 16px;
-            border: 1px solid rgba(29,78,216,0.2);
-        }
-        .log-popup.show { display: flex; }
-        .log-popup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .close-log-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 30px;
+        .edit-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
             background: #eef2ff;
             border: none;
-            font-weight: 700;
-            font-size: 18px;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .patient-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+        .patient-photo {
+            width: 70px; height: 70px;
+            border-radius: 24px;
+            object-fit: cover;
+            background: #cbd5e1;
+            border: 2px solid white;
             cursor: pointer;
         }
-        .trip-log {
-            max-height: 360px;
-            overflow-y: auto;
-            padding-right: 4px;
+        .patient-name-id {
+            flex: 1;
         }
-        .trip-item {
-            background: #f8fafc;
-            border-left: 4px solid var(--blue);
-            padding: 10px 12px;
-            margin-bottom: 10px;
-            border-radius: 0 8px 8px 0;
+        .patient-name-id h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
         }
-        .trip-time { font-size: 13px; font-weight: 600; }
-        .trip-duration { font-size: 12px; color: var(--muted); }
-
-        /* dashboard grid unchanged */
-        .dashboard {
+        .patient-name-id .light {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .details-grid {
             display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 22px;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 8px;
         }
-        .card {
-            background: var(--card);
-            border-radius: var(--radius);
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .detail-value {
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 2px;
+        }
+        .detail-value input {
+            font-weight: 600;
+            font-size: 15px;
+            border: 1px dashed var(--blue);
+            border-radius: 8px;
+            padding: 2px 6px;
+            width: 100%;
+            background: #fafcff;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* round icons row */
+        .round-row {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 12px 8px;
+            border-radius: 60px;
             box-shadow: var(--shadow);
-            padding: 20px;
+            border: var(--outline);
+            margin-bottom: 14px;
+        }
+        .round-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 60px;
+        }
+        .round-icon {
+            width: 50px; height: 50px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29,78,216,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+        }
+        .round-item span {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .emergency-btn {
+            width: 100%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(220,38,38,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .drive-mode-card {
+            background: white;
+            border-radius: 40px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .mode-label { font-weight: 600; color: var(--muted); }
+        .mode-value { font-weight: 700; color: var(--blue); background: #e5edff; padding: 6px 24px; border-radius: 40px; }
+
+        .map-card {
+            background: white;
+            border-radius: 28px;
+            padding: 14px;
+            box-shadow: var(--shadow);
             border: var(--outline);
         }
-        .patient-header { display: flex; justify-content: space-between; align-items: center; }
-        .edit-btn { background: none; border: 1px solid var(--blue-2); padding: 6px 16px; border-radius: 40px; font-weight: 600; color: var(--blue); cursor: pointer; }
-        .patient-avatar { display: flex; flex-direction: column; align-items: center; margin: 16px 0; }
-        .patient-avatar img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb; background: #f0f4ff; }
-        .patient-avatar button { display: none; margin-top: 8px; padding: 6px 14px; border: none; border-radius: 8px; background: var(--blue); color: white; cursor: pointer; font-size: 13px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .info-row span { color: var(--muted); font-weight: 500; }
-        .info-row input { width: 160px; border: none; background: transparent; text-align: right; font-weight: 500; padding: 2px 0; border-bottom: 1px dashed transparent; }
-        .info-row input:not(:disabled) { border-bottom: 1px dashed var(--blue-2); background: #fafcff; }
-        .edit-actions { display: none; gap: 12px; margin-top: 12px; justify-content: flex-end; }
-        .save-btn, .cancel-btn { padding: 8px 16px; border: none; border-radius: 30px; font-weight: 600; cursor: pointer; }
-        .save-btn { background: var(--blue); color: white; }
-        .cancel-btn { background: #eef2ff; color: var(--blue); }
+        .gps-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .gps-header h3 { font-size: 16px; }
+        .fullscreen-btn {
+            border: none; background: #eef2ff; color: #1e3a8a;
+            padding: 6px 14px; border-radius: 30px; font-weight: 600; font-size: 12px; cursor: pointer;
+        }
+        #map { height: 170px; border-radius: 20px; background: #e2e8f0; }
 
-        .emergency-card { margin-top: 20px; border: 3px solid var(--danger); background: #fff1f2; }
-        .emergency-btn { width: 100%; padding: 18px; font-size: 18px; font-weight: 800; background: var(--danger); color: white; border: none; border-radius: 12px; cursor: pointer; margin: 12px 0 6px; }
-        .emergency-status { font-size: 13px; font-weight: 600; text-align: center; }
+        /* popup panels (shared style) */
+        .popup-panel {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 36px;
+            padding: 22px;
+            width: calc(100% - 32px);
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .popup-header h3 { font-size: 20px; }
+        .close-popup { background: none; border: none; font-size: 28px; cursor: pointer; }
+        .contact-item { background: #f1f5f9; border-radius: 30px; padding: 12px 16px; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; }
+        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .health-item { background: #f8fafc; border-radius: 24px; padding: 14px; text-align: center; }
+        .health-item .value { font-size: 20px; font-weight: 700; color: var(--blue); }
+        .wheel-detail { background: #f1f5f9; border-radius: 24px; padding: 14px; margin: 8px 0; display: flex; justify-content: space-between; font-size: 14px; }
 
-        .mode-card { margin-top: 20px; }
-        .mode-status { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border-radius: 12px; padding: 10px 12px; border: 1px solid rgba(29,78,216,0.12); }
-        .mode-label { font-size: 13px; color: var(--muted); }
-        .mode-value { font-weight: 800; color: var(--blue); }
-        .mode-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-        .mode-chip { padding: 6px 10px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(29,78,216,0.18); color: var(--text); background: #f8fafc; }
-        .mode-chip.active { background: linear-gradient(145deg,#e6efff,#ffffff); border-color: rgba(29,78,216,0.4); color: #1d4ed8; font-weight: 800; }
+        /* mode option in popup */
+        .mode-option {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .mode-option:hover { background: #e5edff; }
+        .mode-option.active { background: var(--blue); color: white; }
 
-        .right-column-stack { display: flex; flex-direction: column; gap: 20px; }
-        .monitoring-row { display: flex; gap: 20px; flex-wrap: wrap; }
-        .monitoring-row .card { flex: 1 1 260px; margin: 0; padding-bottom: 56px; position: relative; }
-        .trip-gps-row { display: flex; gap: 20px; flex-wrap: wrap; }
-        .trip-gps-row .card { flex: 1 1 280px; margin: 0; position: relative; padding-bottom: 20px; }
-        .gps-card { padding-bottom: 20px; }
-        .download-btn { position: absolute; right: 12px; bottom: 12px; border: none; background: #e8f0ff; color: #1e3a8a; font-weight: 700; padding: 4px 8px; border-radius: 8px; cursor: pointer; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+        .caretaker-popup .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9eef4;
+        }
+        .caretaker-popup .detail-row:last-child { border: none; }
 
-        .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-        .monitor-item { background: linear-gradient(145deg,#eef2ff,#ffffff); border: 1px solid rgba(29,78,216,0.18); border-radius: 14px; padding: 14px; cursor: pointer; transition: 120ms; position: relative; padding-bottom: 40px; }
-        .monitor-item:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(29,78,216,0.12); }
-        .monitor-label { font-size: 13px; font-weight: 600; color: #1e3a8a; }
-        .monitor-value { font-size: 22px; font-weight: 800; margin-top: 6px; }
+        .shutdown-overlay {
+            display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        .shutdown-card { background:#0f172a; padding:24px; border-radius:40px; color:white; text-align:center; width:280px; }
 
-        .gps-header { display: flex; align-items: center; justify-content: space-between; }
-        .gps-fullscreen-btn { border: none; background: #eef2ff; color: #1e3a8a; font-weight: 700; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 13px; }
-        #map { height: 220px; border-radius: 12px; margin-top: 16px; background: #e2e8f0; }
-        .extra-card p { margin: 12px 0 4px; color: var(--muted); }
+        /* control pad (initially hidden) */
+        #controlPad {
+            margin-top: 16px;
+            background: white;
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            display: none;
+        }
+        .ctrl-btn {
+            width:60px;
+            height:60px;
+            border-radius: 30px;
+            background:#eef2ff;
+            border:none;
+            font-size:28px;
+            cursor:pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+        }
+        .ctrl-btn:active { background: #d0dbff; }
+        .ctrl-stop {
+            background:#dc2626;
+            color:white;
+            border:none;
+            font-size:24px;
+            font-weight:800;
+        }
+        .ctrl-stop:active { background: #b91c1c; }
 
-        /* patient view dimming */
-        body.patient-view .caretaker-only { opacity: 0.4; pointer-events: none; }
-        body.patient-view .emergency-btn { background: #9ca3af; cursor: not-allowed; }
+        /* safety checkboxes */
+        .safety-check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 30px;
+        }
+        .safety-check-item input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--blue);
+        }
 
-        /* modal, shutdown same */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { width: 500px; height: 380px; background: white; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; }
-        .graph-modal { width: 480px; height: 340px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .close-btn { width: 30px; height: 30px; border: none; border-radius: 50%; background: #e5e7eb; font-weight: 800; cursor: pointer; }
-        .graph-body { flex:1; min-height:0; position:relative; }
-        canvas { width:100%; height:100%; display:block; background:#fdfdfd; }
-        .battery-box { display:none; flex-direction:column; align-items:center; justify-content:center; height:100%; }
-        .battery { width:260px; height:120px; border:6px solid #1e293b; border-radius:14px; position:relative; }
-        .battery::after { content:""; position:absolute; right:-18px; top:30px; width:12px; height:50px; background:#1e293b; border-radius:3px; }
-        .battery-fill { height:100%; width:0%; background:var(--green); transition:width 0.2s; }
-        .battery-text { margin-top:16px; font-size:22px; font-weight:800; }
+        /* patient options menu & subforms */
+        .patient-option-item {
+            background: #f1f5f9;
+            border-radius: 30px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 16px;
+        }
+        .patient-option-item:hover { background: #e5edff; }
+        .patient-option-item:active { background: var(--blue); color: white; }
+        .patient-option-item span { font-size: 24px; }
 
-        .shutdown-overlay { display:none; position:fixed; inset:0; background:rgba(9,18,36,0.35); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; }
-        .shutdown-card { background:rgba(15,23,42,0.96); border:1px solid rgba(255,255,255,0.2); padding:24px 30px; border-radius:20px; max-width:420px; position:relative; color:white; text-align:center; }
-        .shutdown-close { position:absolute; top:10px; right:10px; width:28px; height:28px; border:none; border-radius:50%; background:rgba(255,255,255,0.15); color:white; font-weight:800; cursor:pointer; }
-        .shutdown-title { font-size:28px; font-weight:800; margin-bottom:12px; }
-        .shutdown-sub { font-size:16px; color:#e2e8f0; }
+        /* form styles inside popups */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 30px;
+            border: 1px solid #dbe0e8;
+            background: #f9fcff;
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .button-group button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn-primary {
+            background: var(--blue);
+            color: white;
+        }
+        .btn-secondary {
+            background: #eef2ff;
+            color: var(--text);
+        }
+        .btn-danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+        .datetime-row {
+            display: flex;
+            gap: 10px;
+        }
+        .datetime-row input {
+            flex: 1;
+        }
     </style>
 </head>
-<body class="caretaker-view">
+<body>
 
-<!-- NEW HEADER: left title, center switcher, right icons -->
-<div class="app-header">
-    <div class="header-left">
-        <div class="page-title">Monitoring Dashboard</div>
-    </div>
-    <div class="header-center">
-        <div class="switcher-group">
-            <a href="#" class="switcher-btn active" id="switcherCaretaker" onclick="setInterface('caretaker'); return false;">👤 Caretaker</a>
-            <a href="patient.html" class="switcher-btn" id="switcherPatient" onclick="setInterface('patient');">🩺 Patient</a>
+<!-- header: profile left, icons right -->
+<div class="header-row">
+    <div class="profile-card" id="caretakerProfileBtn">
+        <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver" id="caretakerImg">
+        <div class="profile-details">
+            <div class="profile-name" id="caretakerNameDisplay">John Doe</div>
+            <div class="profile-role">caretaker</div>
         </div>
     </div>
-    <div class="header-right">
-        <!-- Log icon (opens popup) -->
-        <button class="icon-btn" id="openLogBtn">📋 Log</button>
-        <!-- Notification icon with dot -->
+    <div class="icon-group">
         <div class="notif-wrap">
-            <button id="notifBtn" class="icon-btn">🔔 <span id="notifDot" class="notif-dot"></span></button>
-            <div id="notifPanel" class="notif-panel">
-                <div id="notifList"></div>
-                <div id="notifEmpty" class="notif-empty">No notifications</div>
-            </div>
+            <button class="icon-btn" id="notifBtn">🔔</button>
+            <span id="notifDot" class="notif-dot"></span>
         </div>
+        <!-- MODE SWITCH ICON -->
+        <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
+        <button class="icon-btn" id="openLogBtn">📋</button>
     </div>
 </div>
 
-<!-- LOG POPUP (trip history) -->
-<div id="logPopup" class="log-popup">
-    <div class="log-popup-header">
-        <h3>Trip History</h3>
-        <button class="close-log-btn" onclick="closeLogPopup()">×</button>
-    </div>
-    <div class="trip-log" id="tripLog"></div>
-    <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
-        <button class="download-btn" style="position:static;" onclick="downloadLogPdf(event)">📥 Download PDF</button>
-    </div>
-</div>
-
-<div class="dashboard">
-    <!-- LEFT COLUMN (fixed) -->
-    <div>
-        <div class="card">
-            <div class="patient-header">
-                <h3>Patient Details</h3>
-                <button id="editBtn" class="edit-btn">✎ Edit</button>
-            </div>
-            <div class="patient-avatar">
-                <img id="profileImg" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="avatar">
-                <button id="photoBtn">Change Photo</button>
-                <input type="file" id="fileInput" accept="image/*" hidden>
-                <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
-            </div>
-            <div class="info-row"><span>Full Name</span><input id="fullName" value="Rebecca Rowe" disabled></div>
-            <div class="info-row"><span>Age</span><input id="age" value="67" disabled></div>
-            <div class="info-row"><span>DOB</span><input id="dob" value="1958-04-12" disabled></div>
-            <div class="info-row"><span>Gender</span><input id="gender" value="Female" disabled></div>
-            <div class="info-row"><span>Patient ID</span><input id="patientId" value="PT-10234" disabled></div>
-            <div class="info-row"><span>Caregiver</span><input id="caregiverName" value="John Doe" disabled></div>
-            <div class="info-row"><span>Contact</span><input id="caregiverContact" value="+91 9876543210" disabled></div>
-            <div class="edit-actions" id="editActions">
-                <button class="save-btn" onclick="saveEdit()">Save</button>
-                <button class="cancel-btn" onclick="cancelEdit()">Cancel</button>
-            </div>
-        </div>
-
-        <div class="card emergency-card caretaker-only">
-            <h3>Emergency Control</h3>
-            <button class="emergency-btn" onclick="endTrip(true)">⛔ EMERGENCY STOP</button>
-            <div id="emergencyStatus" class="emergency-status">Status: NORMAL</div>
-        </div>
-
-        <div class="card mode-card">
-            <h3>Drive Mode</h3>
-            <div class="mode-status">
-                <span class="mode-label">Current Mode</span>
-                <span id="modeValue" class="mode-value">Line Following</span>
-            </div>
-            <div class="mode-list">
-                <span class="mode-chip active">Line Following</span>
-                <span class="mode-chip">Blink Control</span>
-                <span class="mode-chip">Joystick Control</span>
-            </div>
+<!-- PATIENT CARD with edit icon & photo clickable -->
+<div class="patient-full-card" id="patientCard">
+    <button class="edit-icon" id="editPatientBtn" title="Edit patient details">✎</button>
+    <div class="patient-row">
+        <img class="patient-photo" id="patientPhoto" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="patient" onclick="triggerPhotoUpload()">
+        <div class="patient-name-id">
+            <h2 id="patientNameDisplay">Rebecca Rowe</h2>
+            <span class="light" id="patientIdDisplay">ID PT-10234 · 67y</span>
         </div>
     </div>
-
-    <!-- RIGHT COLUMN -->
-    <div class="right-column-stack">
-        <div class="monitoring-row">
-            <div class="card health-card">
-                <h3>Health Monitoring</h3>
-                <div class="monitor-grid">
-                    <div class="monitor-item" onclick="openGraph('Heart Rate',60,110)">
-                        <div class="monitor-label">Heart Rate</div><div class="monitor-value">84 bpm</div>
-                    </div>
-                    <div class="monitor-item" onclick="openGraph('Blood Pressure',100,150)">
-                        <div class="monitor-label">Blood Pressure</div><div class="monitor-value">130/80</div>
-                    </div>
-                    <div class="monitor-item" onclick="openGraph('Body Temperature',35.5,38)">
-                        <div class="monitor-label">Body Temperature</div><div class="monitor-value">36.8 °C</div>
-                    </div>
-                    <div class="monitor-item" onclick="openGraph('SpO₂',85,100)">
-                        <div class="monitor-label">Oxygen Level</div><div class="monitor-value">93%</div>
-                    </div>
-                </div>
-                <button class="download-btn health-download" onclick="downloadAllHealthPdf(event)">📥 Download</button>
-            </div>
-            <div class="card wheelchair-card">
-                <h3>Wheelchair Monitoring</h3>
-                <div class="monitor-grid">
-                    <div class="monitor-item" onclick="openBattery(82)">
-                        <div class="monitor-label">Battery</div><div class="monitor-value">82%</div>
-                    </div>
-                    <div class="monitor-item" onclick="startTrip()">
-                        <div class="monitor-label">Trip</div><div class="monitor-value">Start</div>
-                    </div>
-                    <div class="monitor-item" onclick="openGraph('Speed',0,2)">
-                        <div class="monitor-label">Speed</div><div class="monitor-value">1.2 m/s</div>
-                    </div>
-                    <div class="monitor-item" onclick="openGraph('Obstacle Distance',10,200)">
-                        <div class="monitor-label">Obstacle</div><div class="monitor-value">Clear</div>
-                    </div>
-                </div>
-                <button class="download-btn wheelchair-download" onclick="downloadWheelchairPdf(event)">📥 Download</button>
-            </div>
-        </div>
-
-        <div class="trip-gps-row">
-            <div class="card gps-card" style="flex: 2;">
-                <div class="gps-header">
-                    <h3>Live GPS Tracking</h3>
-                    <button class="gps-fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full Screen</button>
-                </div>
-                <div id="map"></div>
-            </div>
-        </div>
-
-        <div class="card extra-card">
-            <h3>System Info</h3>
-            <p>Firmware v2.1.4 · Last sync 2 min ago</p>
-        </div>
+    <div class="details-grid" id="patientDetailsGrid">
+        <!-- filled via js -->
     </div>
 </div>
 
-<!-- GRAPH MODAL -->
-<div id="graphModal" class="modal"><div class="modal-content graph-modal"><div class="modal-header"><h4 id="graphTitle">Graph</h4><button class="close-btn" onclick="closeGraph()">×</button></div><div class="graph-body"><canvas id="graphCanvas"></canvas><div id="batteryBox" class="battery-box"><div class="battery"><div id="batteryFill" class="battery-fill"></div></div><div id="batteryText" class="battery-text">0%</div></div></div></div></div>
-<div class="shutdown-overlay" id="shutdownOverlay"><div class="shutdown-card"><button class="shutdown-close" onclick="closeShutdown()">×</button><div class="shutdown-title">Wheelchair Shutdown</div><div class="shutdown-sub">Emergency detected. Power disabled.</div></div></div>
+<!-- hidden file input for patient photo -->
+<input type="file" id="patientPhotoInput" accept="image/*" style="display:none;">
+
+<!-- ROUND ICONS ROW -->
+<div class="round-row">
+    <button class="round-item" id="callIcon"><div class="round-icon">📞</div><span>Call</span></button>
+    <button class="round-item" id="healthIcon"><div class="round-icon">❤️</div><span>Health</span></button>
+    <button class="round-item" id="wheelIcon"><div class="round-icon">🦽</div><span>Wheel</span></button>
+    <button class="round-item" id="patientIcon"><div class="round-icon">👤</div><span>Patient</span></button>
+</div>
+
+<!-- EMERGENCY STOP -->
+<button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
+
+<!-- DRIVE MODE (display current) -->
+<div class="drive-mode-card">
+    <span class="mode-label">Drive mode</span>
+    <span class="mode-value" id="modeDisplay">Line Following</span>
+</div>
+
+<!-- MAP -->
+<div class="map-card">
+    <div class="gps-header">
+        <h3>📍 Live GPS</h3>
+        <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
+    </div>
+    <div id="map"></div>
+</div>
+
+<!-- CONTROL PAD (shown only in Control mode) -->
+<div id="controlPad">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+        <!-- top: forward -->
+        <button class="ctrl-btn" onclick="sendCommand('forward')">⬆️</button>
+        <!-- middle: left + stop + right -->
+        <div style="display: flex; gap: 20px;">
+            <button class="ctrl-btn" onclick="sendCommand('left')">⬅️</button>
+            <button class="ctrl-btn ctrl-stop" onclick="sendCommand('stop')">⏹️</button>
+            <button class="ctrl-btn" onclick="sendCommand('right')">➡️</button>
+        </div>
+        <!-- bottom: back -->
+        <button class="ctrl-btn" onclick="sendCommand('back')">⬇️</button>
+    </div>
+    <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
+</div>
+
+<!-- ========== POPUPS ========== -->
+<!-- MODE SWITCH POPUP (3 options) -->
+<div id="modePopup" class="popup-panel">
+    <div class="popup-header"><h3>⚙️ Select mode</h3><button class="close-popup" onclick="closeModePopup()">×</button></div>
+    <div class="mode-option" data-mode="Line Following" onclick="setMode('Line Following')">➖ Line Following</div>
+    <div class="mode-option" data-mode="Control" onclick="setMode('Control')">🎮 Control</div>
+    <div class="mode-option" data-mode="Self Drive" onclick="setMode('Self Drive')">🤖 Self Drive</div>
+</div>
+
+<!-- CALL popup -->
+<div id="callPopup" class="popup-panel">
+    <div class="popup-header"><h3>📞 Emergency</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
+    <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
+    <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
+    <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
+</div>
+<!-- HEALTH popup -->
+<div id="healthPopup" class="popup-panel">
+    <div class="popup-header"><h3>❤️ Health</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
+    <div class="health-grid">
+        <div class="health-item"><span>Heart</span><div class="value" id="hrValue">84</div></div>
+        <div class="health-item"><span>BP</span><div class="value">130/80</div></div>
+        <div class="health-item"><span>Temp</span><div class="value">36.8°C</div></div>
+        <div class="health-item"><span>SpO₂</span><div class="value">93%</div></div>
+    </div>
+</div>
+<!-- WHEELCHAIR popup -->
+<div id="wheelPopup" class="popup-panel">
+    <div class="popup-header"><h3>🦽 Wheelchair</h3><button class="close-popup" onclick="closePopup('wheel')">×</button></div>
+    <div class="wheel-detail"><span>Battery</span> <strong>82%</strong></div>
+    <div class="wheel-detail"><span>Speed</span> <strong>1.2 m/s</strong></div>
+    <div class="wheel-detail"><span>Obstacle</span> <strong>Clear</strong></div>
+    <div class="wheel-detail"><span>Trip</span> <strong>12 min</strong></div>
+</div>
+
+<!-- PATIENT MAIN MENU (options) -->
+<div id="patientMainMenu" class="popup-panel">
+    <div class="popup-header"><h3>👤 Patient menu</h3><button class="close-popup" onclick="closePatientMainMenu()">×</button></div>
+    <div class="patient-option-item" onclick="showPatientSubmenu('message')"><span>💬</span> Send message</div>
+    <div class="patient-option-item" onclick="showPatientSubmenu('calendar')"><span>📅</span> Mark calendar</div>
+    <div class="patient-option-item" onclick="showPatientSubmenu('appointment')"><span>📋</span> Book appointment</div>
+    <div class="patient-option-item" onclick="showPatientSubmenu('media')"><span>🎵</span> Media & music</div>
+    <div class="patient-option-item" onclick="showPatientSubmenu('alarm')"><span>⏰</span> Set alarm</div>
+</div>
+
+<!-- PATIENT SUBMENU: dynamic container for forms -->
+<div id="patientSubmenu" class="popup-panel" style="display: none;">
+    <div class="popup-header"><h3 id="submenuTitle">Title</h3><button class="close-popup" onclick="closePatientSubmenu()">×</button></div>
+    <div id="submenuContent"></div>
+</div>
+
+<!-- LOG popup -->
+<div id="logPopup" class="popup-panel">
+    <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
+    <div id="tripLog" style="max-height:200px; overflow-y:auto;"></div>
+    <button style="margin-top:12px; background:#eef2ff; border:none; padding:10px; border-radius:40px; width:100%;" onclick="downloadLog()">📥 PDF</button>
+</div>
+<!-- CARETAKER PROFILE POPUP -->
+<div id="caretakerPopup" class="popup-panel caretaker-popup">
+    <div class="popup-header"><h3>👤 Caretaker</h3><button class="close-popup" onclick="closeCaretakerPopup()">×</button></div>
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
+        <div><strong id="popupCaretakerName">John Doe</strong><br><span style="color:var(--muted);">ID: CT-2210</span></div>
+    </div>
+    <div class="detail-row"><span>📧 Email</span> <span>john.d@care.com</span></div>
+    <div class="detail-row"><span>📞 Phone</span> <span>+1 555 7700</span></div>
+    <div class="detail-row"><span>🏥 Facility</span> <span>HomeCare Plus</span></div>
+    <div class="detail-row"><span>⏱️ Since</span> <span>2021</span></div>
+</div>
+
+<!-- SHUTDOWN OVERLAY -->
+<div class="shutdown-overlay" id="shutdownOverlay">
+    <div class="shutdown-card">
+        <div style="font-size:40px;">⚠️</div>
+        <div style="font-size:22px; font-weight:700;">HALT</div>
+        <p style="margin:12px 0;">Emergency stop</p>
+        <button onclick="closeShutdown()" style="background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
+    </div>
+</div>
 
 <script>
-(function() {
-    window.tripStart = null;
-    window.graphInterval = null;
-    window.graphData = [];
-    window.backup = {};
-
-    function getPhotoStorageKey() { return 'patient_photo_' + (document.getElementById('patientId')?.value || 'PT-10234'); }
-    function loadSavedPhoto() { const saved = localStorage.getItem(getPhotoStorageKey()); if (saved) document.getElementById('profileImg').src = saved; }
-    loadSavedPhoto();
-
-    const editBtn = document.getElementById('editBtn');
-    const photoBtn = document.getElementById('photoBtn');
-    const editActions = document.getElementById('editActions');
-    const fields = ['fullName','age','dob','gender','patientId','caregiverName','caregiverContact'];
-    editBtn.onclick = () => {
-        fields.forEach(id => { backup[id] = document.getElementById(id).value; document.getElementById(id).disabled = false; });
-        photoBtn.style.display = 'inline-block';
-        editActions.style.display = 'flex';
-        editBtn.style.display = 'none';
+    // ---------- patient data (editable) ----------
+    let patient = {
+        name: 'Rebecca Rowe',
+        id: 'PT-10234',
+        age: '67',
+        blood: 'A+',
+        doctor: 'Dr. Sarah Adams',
+        contact: '+1 555 0199',
+        photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
-    window.saveEdit = function() {
-        fields.forEach(id => document.getElementById(id).disabled = true);
-        photoBtn.style.display = 'none';
-        editActions.style.display = 'none';
-        editBtn.style.display = 'inline-block';
-        addNotification('Patient details saved (mock)');
+    let caretaker = {
+        name: 'John Doe',
+        id: 'CT-2210',
+        email: 'john.d@care.com',
+        phone: '+1 555 7700',
+        facility: 'HomeCare Plus',
+        since: '2021'
     };
-    window.cancelEdit = function() {
-        fields.forEach(id => { document.getElementById(id).value = backup[id] || ''; document.getElementById(id).disabled = true; });
-        photoBtn.style.display = 'none';
-        editActions.style.display = 'none';
-        editBtn.style.display = 'inline-block';
-    };
-    const fileInput = document.getElementById('fileInput');
-    const cameraInput = document.getElementById('cameraInput');
-    photoBtn.onclick = () => { if (confirm('Use camera? Cancel = gallery')) cameraInput.click(); else fileInput.click(); };
-    [fileInput, cameraInput].forEach(i => i.addEventListener('change', function(e) {
-        const f = e.target.files[0]; if (!f) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => { const url = ev.target.result; document.getElementById('profileImg').src = url; localStorage.setItem(getPhotoStorageKey(), url); };
-        reader.readAsDataURL(f);
-    }));
 
-    // notifications
-    const notifications = [];
-    let hasUnread = false;
-    const notifList = document.getElementById('notifList');
-    const notifEmpty = document.getElementById('notifEmpty');
-    const notifDot = document.getElementById('notifDot');
-    const notifPanel = document.getElementById('notifPanel');
-    function renderNotifications() {
-        notifList.innerHTML = '';
-        if (notifications.length === 0) notifEmpty.style.display = 'block';
-        else { notifEmpty.style.display = 'none'; notifications.forEach(n => { const div = document.createElement('div'); div.className = 'notif-item'; div.textContent = n; notifList.appendChild(div); }); }
-    }
-    window.addNotification = function(text) { notifications.unshift(text); hasUnread = true; notifDot.style.display = 'block'; renderNotifications(); };
-    document.getElementById('notifBtn').onclick = () => {
-        const isOpen = notifPanel.style.display === 'block';
-        notifPanel.style.display = isOpen ? 'none' : 'block';
-        if (!isOpen) { hasUnread = false; notifDot.style.display = 'none'; }
-    };
-    document.addEventListener('click', (e) => { if (!notifPanel.contains(e.target) && e.target !== document.getElementById('notifBtn')) notifPanel.style.display = 'none'; });
-    renderNotifications();
-
-    // trip log
-    const tripLog = document.getElementById('tripLog');
-    window.startTrip = function() { if (!tripStart) tripStart = new Date(); };
-    window.endTrip = function(emergency = false) {
-        if (tripStart) {
-            const end = new Date();
-            const mins = Math.floor((end - tripStart) / 60000);
+    // render patient details into grid
+    function renderPatientDetails(editMode = false) {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Blood', key: 'blood' },
+            { label: 'Age', key: 'age' },
+            { label: 'Doctor', key: 'doctor' },
+            { label: 'Contact', key: 'contact' }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
             const div = document.createElement('div');
-            div.className = 'trip-item';
-            div.innerHTML = `<div class="trip-time">▶ ${tripStart.toLocaleTimeString()} → ■ ${end.toLocaleTimeString()}</div><div class="trip-duration">Duration: ${mins} min ${emergency ? '(Emergency)' : ''}</div>`;
-            tripLog.prepend(div);
-            tripStart = null;
-        }
-        if (emergency) triggerEmergencyShutdown();
-    };
-    // seed logs
-    (function seedLogs() {
-        if (tripLog.children.length === 0) {
-            const samples = [ { start:'09:05 AM', end:'09:42 AM', mins:37, note:'Smooth' }, { start:'11:18 AM', end:'11:40 AM', mins:22, note:'Paused' }, { start:'14:10', end:'14:26', mins:16, note:'Emergency' } ];
-            samples.forEach(s => { const div = document.createElement('div'); div.className = 'trip-item'; div.innerHTML = `<div class="trip-time">▶ ${s.start} → ■ ${s.end}</div><div class="trip-duration">${s.mins} min (${s.note})</div>`; tripLog.appendChild(div); });
-        }
-    })();
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span>
+                <div class="detail-value" id="field-${f.key}">
+                    ${editMode ? `<input type="text" value="${patient[f.key]}" data-key="${f.key}" class="edit-input">` : patient[f.key]}
+                </div>`;
+            grid.appendChild(div);
+        });
+        document.getElementById('patientNameDisplay').innerText = patient.name;
+        document.getElementById('patientIdDisplay').innerHTML = `ID ${patient.id} · ${patient.age}y`;
+        document.getElementById('patientPhoto').src = patient.photo;
+    }
 
-    // log popup
-    window.closeLogPopup = function() { document.getElementById('logPopup').classList.remove('show'); };
-    document.getElementById('openLogBtn').onclick = function() { document.getElementById('logPopup').classList.add('show'); };
+    renderPatientDetails(false);
 
-    // graph modal
-    const modal = document.getElementById('graphModal');
-    const graphTitle = document.getElementById('graphTitle');
-    const graphCanvas = document.getElementById('graphCanvas');
-    const batteryBox = document.getElementById('batteryBox');
-    const batteryFill = document.getElementById('batteryFill');
-    const batteryText = document.getElementById('batteryText');
-    window.openGraph = function(title, min, max) {
-        graphTitle.innerText = title; modal.style.display = 'flex'; graphCanvas.style.display = 'block'; batteryBox.style.display = 'none';
-        graphCanvas.width = graphCanvas.clientWidth || 400; graphCanvas.height = graphCanvas.clientHeight || 200;
-        window.graphData = []; clearInterval(window.graphInterval);
-        window.graphInterval = setInterval(() => { const v = min + Math.random() * (max - min); window.graphData.push(v); if (window.graphData.length > 30) window.graphData.shift(); drawGraph(min, max); }, 1000);
+    // edit toggle
+    let editMode = false;
+    document.getElementById('editPatientBtn').onclick = () => {
+        editMode = !editMode;
+        renderPatientDetails(editMode);
+        document.getElementById('editPatientBtn').innerHTML = editMode ? '💾' : '✎';
+        if (!editMode) {
+            const inputs = document.querySelectorAll('.edit-input');
+            inputs.forEach(inp => {
+                const key = inp.dataset.key;
+                if (key) patient[key] = inp.value;
+            });
+            renderPatientDetails(false);
+            alert('Patient details saved');
+        }
     };
-    window.openBattery = function(p) { graphTitle.innerText = 'Battery'; modal.style.display = 'flex'; graphCanvas.style.display = 'none'; batteryBox.style.display = 'flex'; batteryFill.style.width = p+'%'; batteryText.innerText = p+'% Remaining'; clearInterval(window.graphInterval); };
-    window.closeGraph = function() { modal.style.display = 'none'; clearInterval(window.graphInterval); };
-    function drawGraph(min, max) { const ctx = graphCanvas.getContext('2d'); ctx.clearRect(0,0,graphCanvas.width,graphCanvas.height); ctx.beginPath(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth=2; const data=window.graphData; if(!data.length)return; data.forEach((v,i)=>{ const x=i*(graphCanvas.width/30); const y=graphCanvas.height-((v-min)/(max-min))*graphCanvas.height; if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke(); }
+
+    // patient photo upload
+    window.triggerPhotoUpload = () => {
+        document.getElementById('patientPhotoInput').click();
+    };
+    document.getElementById('patientPhotoInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                patient.photo = ev.target.result;
+                document.getElementById('patientPhoto').src = patient.photo;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // caretaker profile popup
+    document.getElementById('caretakerProfileBtn').onclick = () => {
+        closeAllPopups();
+        document.getElementById('caretakerPopup').style.display = 'block';
+    };
+    window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
+
+    // ---------- MODE SWITCH WITH MANUAL CHECKBOXES ----------
+    const safetyChecks = {
+        'Line Following': [
+            'Ensure path is clear of obstacles',
+            'Check that line sensors are clean',
+            'Confirm maximum speed setting is safe',
+            'Verify emergency stop works'
+        ],
+        'Control': [
+            'Ensure joystick/control is responsive',
+            'Confirm user is ready to manual drive',
+            'Check area around wheelchair is clear',
+            'Verify speed limit is set to low'
+        ],
+        'Self Drive': [
+            'Ensure autonomy mode is enabled',
+            'Check map data is up-to-date',
+            'Confirm no passengers are in the way',
+            'Verify obstacle detection is active'
+        ]
+    };
+
+    let pendingMode = null;
+
+    function confirmModeSwitch(mode) {
+        const checks = safetyChecks[mode];
+        if (!checks) return;
+
+        pendingMode = mode;
+
+        const oldPopup = document.getElementById('safetyPopup');
+        if (oldPopup) oldPopup.remove();
+
+        const modal = document.createElement('div');
+        modal.className = 'popup-panel';
+        modal.id = 'safetyPopup';
+        modal.innerHTML = `
+            <div class="popup-header">
+                <h3>⚠️ Verify before ${mode}</h3>
+                <button class="close-popup" onclick="document.getElementById('safetyPopup').remove()">×</button>
+            </div>
+            <div style="margin: 16px 0;" id="safetyChecklist">
+                ${checks.map((text, index) => `
+                    <div class="safety-check-item">
+                        <input type="checkbox" id="check_${index}" class="safety-checkbox">
+                        <span>${text}</span>
+                    </div>
+                `).join('')}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="proceedModeSwitchAfterTicks()">Confirm & Switch</button>
+                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="document.getElementById('safetyPopup').remove()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+    }
+
+    window.proceedModeSwitchAfterTicks = function() {
+        const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
+        let allChecked = true;
+        checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
+
+        if (!allChecked) {
+            alert('Please tick all safety checkboxes before switching mode.');
+            return;
+        }
+
+        const mode = pendingMode;
+        document.getElementById('modeDisplay').innerText = mode;
+        const popup = document.getElementById('safetyPopup');
+        if (popup) popup.remove();
+
+        const controlPad = document.getElementById('controlPad');
+        controlPad.style.display = (mode === 'Control') ? 'block' : 'none';
+
+        document.querySelectorAll('.mode-option').forEach(opt => opt.classList.remove('active'));
+        addNotification(`Mode changed to ${mode} (all ticks verified)`);
+        pendingMode = null;
+    };
+
+    window.setMode = function(mode) {
+        closeModePopup();
+        confirmModeSwitch(mode);
+    };
+
+    window.sendCommand = function(cmd) {
+        alert(`🚦 Command sent: ${cmd} (mock)`);
+    };
+
+    // mode popup controls
+    const modePopup = document.getElementById('modePopup');
+    document.getElementById('modeSwitchIcon').onclick = () => {
+        closeAllPopups();
+        modePopup.style.display = 'block';
+    };
+    window.closeModePopup = () => modePopup.style.display = 'none';
+
+    // ---------- PATIENT MENU & SUBMENUS ----------
+    const patientMainMenu = document.getElementById('patientMainMenu');
+    const patientSubmenu = document.getElementById('patientSubmenu');
+    const submenuTitle = document.getElementById('submenuTitle');
+    const submenuContent = document.getElementById('submenuContent');
+
+    document.getElementById('patientIcon').onclick = () => {
+        closeAllPopups();
+        patientMainMenu.style.display = 'block';
+    };
+
+    window.closePatientMainMenu = () => {
+        patientMainMenu.style.display = 'none';
+    };
+
+    window.closePatientSubmenu = () => {
+        patientSubmenu.style.display = 'none';
+    };
+
+    // show selected form
+    window.showPatientSubmenu = (option) => {
+        patientMainMenu.style.display = 'none';
+        let title = '';
+        let content = '';
+
+        if (option === 'message') {
+            title = '💬 Send message';
+            content = `
+                <div class="form-group">
+                    <label>Message to patient</label>
+                    <textarea id="messageText" placeholder="Type your message..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="sendMessage()">Send</button>
+                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
+                </div>
+            `;
+        } else if (option === 'calendar') {
+            title = '📅 Mark calendar';
+            content = `
+                <div class="form-group">
+                    <label>Event / reminder</label>
+                    <input type="text" id="calendarEvent" placeholder="e.g., Doctor appointment">
+                </div>
+                <div class="form-group">
+                    <label>Date & time</label>
+                    <input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time">
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="saveCalendar()">Save</button>
+                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
+                </div>
+            `;
+        } else if (option === 'appointment') {
+            title = '📋 Book appointment';
+            content = `
+                <div class="form-group">
+                    <label>Doctor name</label>
+                    <input type="text" id="apptDoctor" value="Dr. Sarah Adams" placeholder="Doctor name">
+                </div>
+                <div class="form-group">
+                    <label>Hospital / clinic</label>
+                    <input type="text" id="apptHospital" placeholder="e.g., City Hospital">
+                </div>
+                <div class="form-group">
+                    <label>Date & time</label>
+                    <input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time">
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="bookAppointment()">Save</button>
+                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
+                </div>
+            `;
+        } else if (option === 'media') {
+            title = '🎵 Media & music';
+            content = `
+                <div style="text-align:center; padding:20px;">
+                    <p style="margin-bottom:20px;">🎧 Play relaxing playlist?</p>
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="playMedia()">Play</button>
+                        <button class="btn-secondary" onclick="closePatientSubmenu()">Close</button>
+                    </div>
+                </div>
+            `;
+        } else if (option === 'alarm') {
+            title = '⏰ Set alarm';
+            content = `
+                <div class="form-group">
+                    <label>Alarm label</label>
+                    <input type="text" id="alarmLabel" placeholder="e.g., Medication time">
+                </div>
+                <div class="form-group">
+                    <label>Date & time</label>
+                    <input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time">
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="setAlarm()">Save</button>
+                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
+                </div>
+            `;
+        }
+
+        submenuTitle.innerText = title;
+        submenuContent.innerHTML = content;
+        patientSubmenu.style.display = 'block';
+
+        // initialize datetime pickers if present
+        if (option === 'calendar' || option === 'appointment' || option === 'alarm') {
+            flatpickr(".datetime-picker", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true
+            });
+        }
+    };
+
+    // action handlers (mock)
+    window.sendMessage = () => {
+        const msg = document.getElementById('messageText')?.value;
+        alert(`📨 Message sent: "${msg || 'empty'}" (mock)`);
+        addNotification(`Message sent: ${msg}`);
+        closePatientSubmenu();
+    };
+
+    window.saveCalendar = () => {
+        const event = document.getElementById('calendarEvent')?.value;
+        const dt = document.getElementById('calendarDateTime')?.value;
+        alert(`📅 Calendar marked: "${event || 'untitled'}" at ${dt || 'now'} (mock)`);
+        addNotification(`Calendar: ${event} at ${dt}`);
+        closePatientSubmenu();
+    };
+
+    window.bookAppointment = () => {
+        const dr = document.getElementById('apptDoctor')?.value;
+        const hosp = document.getElementById('apptHospital')?.value;
+        const dt = document.getElementById('apptDateTime')?.value;
+        alert(`📋 Appointment booked with ${dr} at ${hosp || 'clinic'} on ${dt || 'TBD'} (mock)`);
+        addNotification(`Appointment: ${dr}, ${hosp}, ${dt}`);
+        closePatientSubmenu();
+    };
+
+    window.playMedia = () => {
+        alert('🎵 Playing media (mock)');
+        addNotification('Media player started');
+        closePatientSubmenu();
+    };
+
+    window.setAlarm = () => {
+        const label = document.getElementById('alarmLabel')?.value;
+        const dt = document.getElementById('alarmDateTime')?.value;
+        alert(`⏰ Alarm set: "${label || 'reminder'}" at ${dt || 'now'} (mock)`);
+        addNotification(`Alarm: ${label} at ${dt}`);
+        closePatientSubmenu();
+    };
+
+    // other popup controls (call, health, wheel)
+    const callPopup = document.getElementById('callPopup');
+    const healthPopup = document.getElementById('healthPopup');
+    const wheelPopup = document.getElementById('wheelPopup');
+    const logPopup = document.getElementById('logPopup');
+
+    document.getElementById('callIcon').onclick = () => showPopup('call');
+    document.getElementById('healthIcon').onclick = () => showPopup('health');
+    document.getElementById('wheelIcon').onclick = () => showPopup('wheel');
+
+    window.showPopup = (type) => {
+        closeAllPopups();
+        if (type === 'call') callPopup.style.display = 'block';
+        if (type === 'health') healthPopup.style.display = 'block';
+        if (type === 'wheel') wheelPopup.style.display = 'block';
+    };
+    window.closePopup = (type) => {
+        if (type === 'call') callPopup.style.display = 'none';
+        if (type === 'health') healthPopup.style.display = 'none';
+        if (type === 'wheel') wheelPopup.style.display = 'none';
+    };
+
+    function closeAllPopups() {
+        callPopup.style.display = 'none';
+        healthPopup.style.display = 'none';
+        wheelPopup.style.display = 'none';
+        patientMainMenu.style.display = 'none';
+        patientSubmenu.style.display = 'none';
+        logPopup.style.display = 'none';
+        document.getElementById('caretakerPopup').style.display = 'none';
+        modePopup.style.display = 'none';
+        const safety = document.getElementById('safetyPopup');
+        if (safety) safety.remove();
+    }
+
+    document.getElementById('openLogBtn').onclick = () => {
+        closeAllPopups();
+        logPopup.style.display = 'block';
+    };
+    window.closeLogPopup = () => logPopup.style.display = 'none';
+
+    // notifications mock
+    const notifDot = document.getElementById('notifDot');
+    notifDot.style.display = 'block';
+    document.getElementById('notifBtn').onclick = () => { alert('No new alerts'); notifDot.style.display = 'none'; };
+    window.addNotification = (msg) => { console.log('notif:', msg); };
+
+    // trip log mock
+    const tripLog = document.getElementById('tripLog');
+    function addTrip(text) { let d = document.createElement('div'); d.style.background='#f1f5f9'; d.style.borderRadius='16px'; d.style.padding='10px'; d.style.marginBottom='6px'; d.style.fontSize='13px'; d.innerText = text; tripLog.appendChild(d); }
+    if (tripLog.children.length === 0) {
+        addTrip('09:05 → 09:42 · 37 min');
+        addTrip('11:18 → 11:40 · 22 min');
+        addTrip('14:10 → 14:26 · 16 min ⚠️');
+    }
+    window.downloadLog = () => alert('PDF mock');
 
     // emergency
-    const emergencyStatus = document.getElementById('emergencyStatus');
-    const shutdownOverlay = document.getElementById('shutdownOverlay');
-    window.triggerEmergencyShutdown = function() { emergencyStatus.innerText = 'Status: EMERGENCY ACTIVE'; document.body.classList.add('emergency-shutdown'); shutdownOverlay.style.display = 'flex'; };
-    window.closeShutdown = function() { shutdownOverlay.style.display = 'none'; document.body.classList.remove('emergency-shutdown'); emergencyStatus.innerText = 'Status: NORMAL'; };
-
-    // PDFs
-    window.downloadAllHealthPdf = function(e) { e?.stopPropagation(); const { jsPDF } = window.jspdf; if (!jsPDF) return alert('PDF library'); const doc = new jsPDF(); doc.setFontSize(18); doc.text('Health Monitoring', 14, 20); const readings = [...document.querySelectorAll('.health-card .monitor-item')].map(el => ({ label: el.querySelector('.monitor-label')?.innerText, value: el.querySelector('.monitor-value')?.innerText })); let y = 34; readings.forEach(r => { doc.text(`${r.label}: ${r.value}`, 14, y); y+=8; }); doc.text('Timestamp: ' + new Date().toLocaleString(), 14, y+8); doc.save('health_readings.pdf'); };
-    window.downloadWheelchairPdf = function(e) { e?.stopPropagation(); const { jsPDF } = window.jspdf; if (!jsPDF) return; const doc = new jsPDF(); doc.text('Wheelchair Monitoring', 14, 20); const items = [...document.querySelectorAll('.wheelchair-card .monitor-item')]; let y = 34; items.forEach(it => { const label = it.querySelector('.monitor-label')?.innerText; const val = it.querySelector('.monitor-value')?.innerText; if (label && val) { doc.text(`${label}: ${val}`, 14, y); y+=8; } }); doc.save('wheelchair.pdf'); };
-    window.downloadLogPdf = function(e) { e?.stopPropagation(); const { jsPDF } = window.jspdf; if (!jsPDF) return; const doc = new jsPDF(); doc.text('Trip Log', 14, 20); const trips = [...document.querySelectorAll('.trip-item')]; let y = 34; trips.forEach(t => { const time = t.querySelector('.trip-time')?.innerText || ''; const dur = t.querySelector('.trip-duration')?.innerText || ''; doc.text(time, 14, y); y+=6; if (dur) { doc.text(dur, 14, y); y+=8; } else y+=4; }); doc.save('trip_log.pdf'); };
+    window.triggerEmergency = () => {
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addTrip('⚠️ Emergency at ' + new Date().toLocaleTimeString());
+    };
+    window.closeShutdown = () => {
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    };
 
     // map
     const map = L.map('map').setView([12.9716, 77.5946], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Current position');
-    window.toggleGpsFullscreen = function() { const card = document.querySelector('.gps-card'); if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen(); };
-    document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 200));
-})();
+    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
+    window.toggleGpsFullscreen = () => {
+        const card = document.querySelector('.map-card');
+        if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen();
+    };
+    document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
 
-// interface switcher function – also redirects to patient.html when patient clicked
-function setInterface(mode) {
-    if (mode === 'patient') {
-        window.location.href = 'patient.html';
-        return;
-    }
-    // caretaker: just update class (already caretaker-view)
-    const body = document.body;
-    const caretakerBtn = document.getElementById('switcherCaretaker');
-    const patientBtn = document.getElementById('switcherPatient');
-    body.classList.remove('patient-view');
-    caretakerBtn.classList.add('active');
-    patientBtn.classList.remove('active');
-}
-window.setInterface = setInterface;
+    // on page load, ensure control pad visibility matches initial mode
+    window.onload = function() {
+        const currentMode = document.getElementById('modeDisplay').innerText;
+        document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+    };
 </script>
-<script>window.jspdf = window.jspdf || window.jspdf?.jsPDF ? window.jspdf : { jsPDF: jspdf?.jsPDF };</script>
 </body>
 </html>
