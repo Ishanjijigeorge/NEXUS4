@@ -1,830 +1,727 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Patient · Flux · wheelchair</title>
-  <!-- Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-  <!-- Google Maps API (use your own key) -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&callback=initMap" async defer></script>
-  <!-- DM Sans for header consistency, but keep Inter for main -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>My Companion · patient dashboard</title>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- DM Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'DM Sans', sans-serif;
+        }
+        :root {
+            --bg: #f4f7fd;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #5b687c;
+            --blue: #1d4ed8;
+            --soft-blue: #e5edff;
+            --danger: #dc2626;
+            --radius: 24px;
+            --shadow: 0 6px 16px rgba(0,0,0,0.05);
+            --outline: 1px solid rgba(29,78,216,0.1);
+        }
+        body {
+            background: var(--bg);
+            padding: 12px;
+            color: var(--text);
+            font-size: 14px;
+        }
+        body.emergency-shutdown .shutdown-overlay { display: flex; }
 
-    body {
-      background: linear-gradient(145deg, #e1eaf5 0%, #f4f9ff 100%);
-      min-height: 100vh;
-      font-family: 'Inter', sans-serif;
-      padding: 24px;
+        /* Welcome card - compact */
+        .welcome-card {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            border-radius: 28px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(29,78,216,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        /* Left section with image */
+        .welcome-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .profile-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            object-fit: cover;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            background: #cbd5e1;
+        }
+        
+        /* Center welcome text - large */
+        .welcome-center {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .welcome-center h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        
+        .welcome-center h1 span {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 18px;
+            margin-left: 8px;
+            display: inline-block;
+        }
+        
+        /* Right section with icons */
+        .welcome-right {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .welcome-icon-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        
+        .welcome-icon-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
+        /* Mobile responsive styles */
+@media screen and (max-width: 480px) {
+    .welcome-card {
+        padding: 12px 16px;
     }
+    
+    .profile-image {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .welcome-center h1 {
+        font-size: 21px;
+    }
+    
+    
+    /* Change icons to vertical on mobile */
+    .welcome-right {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .welcome-icon-btn {
+        width:38px;
+        height:38px;
+        font-size: 16px;
+    }
+    
+    
+    .view-profile-btn-small {
+        padding: 6px 16px;
+        font-size: 12px;
+    }
+}
 
-    /* --- same header style as caretaker dashboard for consistency --- */
-    .app-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 28px;
-      height: 2.5cm;
-      padding: 0 8px;
-      flex-wrap: wrap;
+/* Extra small devices */
+@media screen and (max-width: 360px) {
+    
+    .welcome-icon-btn {
+        width:32px;
+        height: 32px;
+        font-size: 14px;
     }
-    .header-left {
-      flex: 1;
-      display: flex;
-      justify-content: flex-start;
-    }
-    .page-title {
-      margin: 0;
-      color: #1d4ed8; /* dark blue, but keep it readable on light bg? We'll keep white? Actually background is light, so use dark */
-      font-weight: 800;
-      font-size: 30px;
-      letter-spacing: -0.3px;
-      white-space: nowrap;
-      background: rgba(255,255,255,0.5);
-      padding: 8px 22px;
-      border-radius: 60px;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.8);
-      color: #0b2c44;
-    }
-    .header-center {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-    }
-    .switcher-group {
-      display: flex;
-      background: rgba(29,78,216,0.08);
-      padding: 6px;
-      border-radius: 60px;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.7);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.05);
-    }
-    .switcher-btn {
-      border: none;
-      background: transparent;
-      padding: 12px 32px;
-      border-radius: 40px;
-      font-weight: 700;
-      font-size: 16px;
-      color: #1e3a5f;
-      cursor: pointer;
-      transition: 0.15s;
-      text-decoration: none;
-      display: inline-block;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .switcher-btn.active {
-      background: white;
-      color: #1d4ed8;
-      box-shadow: 0 6px 14px rgba(0,20,60,0.1);
-    }
-    .header-right {
-      flex: 1;
-      display: flex;
-      justify-content: flex-end;
-      gap: 16px;
-      align-items: center;
-    }
-    .icon-btn {
-      background: rgba(255,255,255,0.7);
-      border: none;
-      border-radius: 40px;
-      padding: 10px 20px;
-      font-weight: 600;
-      font-size: 15px;
-      box-shadow: 0 8px 20px rgba(0,30,60,0.1);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.7);
-      color: #1e3a5f;
-      font-family: 'DM Sans', sans-serif;
-    }
-    /* log popup same style as main dashboard */
-    .log-popup {
-      position: fixed;
-      top: 100px;
-      right: 24px;
-      width: 360px;
-      max-height: 480px;
-      background: white;
-      border-radius: 24px;
-      box-shadow: 0 30px 50px rgba(0,10,30,0.3);
-      z-index: 300;
-      display: none;
-      flex-direction: column;
-      padding: 20px 16px;
-      border: 1px solid rgba(29,78,216,0.2);
-    }
-    .log-popup.show { display: flex; }
-    .log-popup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .close-log-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 30px;
-      background: #eef2ff;
-      border: none;
-      font-weight: 700;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    .trip-log {
-      max-height: 360px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-    .trip-item {
-      background: #f8fafc;
-      border-left: 4px solid #1d4ed8;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-      border-radius: 0 8px 8px 0;
-    }
-    .trip-time { font-size: 13px; font-weight: 600; }
-    .trip-duration { font-size: 12px; color: #64748b; }
+}
+        
+        /* View profile button - small below */
+        .view-profile-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .view-profile-btn-small {
+            background: white;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--blue);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            border: 1px solid rgba(29,78,216,0.2);
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .view-profile-btn-small:hover {
+            background: #f0f4ff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        /* Date display - small */
+        .date-display-small {
+            background: rgba(255,255,255,0.15);
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        
+        /* Hidden details - only shown after clicking view profile */
+        .patient-details-section {
+            background: white;
+            border-radius: 24px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        
+        .details-grid {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+            background: #f8fafd;
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid var(--soft-blue);
+        }
+        
+        .details-grid.visible {
+            display: grid;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 4px;
+            color: var(--text);
+        }
 
-    /* main glass panel */
-    .flux-panel {
-      max-width: 1440px;
-      width: 100%;
-      background: rgba(255, 255, 255, 0.68);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: 56px;
-      box-shadow: 0 30px 60px -25px rgba(0, 35, 70, 0.35), inset 0 1px 3px rgba(255,255,255,0.9);
-      padding: 2rem 2.2rem;
-      border: 1px solid rgba(255,255,255,0.75);
-    }
+        /* round icons row */
+        .round-row {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 14px 8px;
+            border-radius: 60px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 14px;
+        }
+        .round-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 65px;
+        }
+        .round-icon {
+            width: 52px; height: 52px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29,78,216,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+            transition: 0.2s;
+        }
+        .round-item:hover .round-icon {
+            background: var(--soft-blue);
+            transform: scale(1.05);
+        }
+        .round-item span {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
 
-    /* top band with status chip only */
-    .top-band {
-      display: flex;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-    .status-chip {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .pulse-dot {
-      width: 12px;
-      height: 12px;
-      background: #1f8b4c;
-      border-radius: 20px;
-      box-shadow: 0 0 0 4px rgba(31,139,76,0.15);
-      animation: softPulse 2s infinite;
-    }
-    .chip-text {
-      font-weight: 500;
-      font-size: 0.95rem;
-      color: #194a6a;
-      background: rgba(255,255,255,0.55);
-      padding: 6px 20px;
-      border-radius: 40px;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.85);
-      letter-spacing: 0.2px;
-    }
+        .emergency-btn {
+            width: 100%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(220,38,38,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .drive-mode-card {
+            background: white;
+            border-radius: 40px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .mode-label { font-weight: 600; color: var(--muted); }
+        .mode-value { font-weight: 700; color: var(--blue); background: #e5edff; padding: 6px 24px; border-radius: 40px; }
 
-    @keyframes softPulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.15); }
-      100% { opacity: 1; transform: scale(1); }
-    }
+        .map-card {
+            background: white;
+            border-radius: 24px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        .gps-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .gps-header h3 { font-size: 16px; }
+        .fullscreen-btn {
+            border: none; background: #eef2ff; color: #1e3a8a;
+            padding: 6px 14px; border-radius: 30px; font-weight: 600; font-size: 12px; cursor: pointer;
+        }
+        #map { height: 170px; border-radius: 18px; background: #e2e8f0; }
 
-    /* THREE-COLUMN */
-    .three-col {
-      display: grid;
-      grid-template-columns: 1.2fr 1.5fr 1.3fr;
-      gap: 2rem;
-      align-items: start;
-    }
+        /* popup panels */
+        .popup-panel {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 32px;
+            padding: 22px;
+            width: calc(100% - 32px);
+            max-width: 340px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .popup-header h3 { font-size: 20px; }
+        .close-popup { background: none; border: none; font-size: 28px; cursor: pointer; }
+        .contact-item { background: #f1f5f9; border-radius: 30px; padding: 12px 16px; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; }
+        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .health-item { background: #f8fafc; border-radius: 20px; padding: 14px; text-align: center; }
+        .health-item .value { font-size: 20px; font-weight: 700; color: var(--blue); }
+        .wheel-detail { background: #f1f5f9; border-radius: 20px; padding: 14px; margin: 8px 0; display: flex; justify-content: space-between; font-size: 14px; }
 
-    /* ---------- COLUMN 1: PROFILE + COMPACT SYSTEM ---------- */
-    .left-col {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
+        /* mode switch popup */
+        .mode-option {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .mode-option:hover { background: #e5edff; }
+        .mode-option.active { background: var(--blue); color: white; }
 
-    .profile-card {
-      background: rgba(255,255,255,0.5);
-      backdrop-filter: blur(10px);
-      border-radius: 44px;
-      padding: 1.5rem 1.3rem;
-      border: 1px solid rgba(255,255,255,0.8);
-      box-shadow: 0 15px 35px -20px rgba(0,45,75,0.2);
-    }
-    .avatar-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.2rem;
-    }
-    .avatar-img {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid white;
-      filter: drop-shadow(0 8px 12px rgba(0,50,80,0.1));
-    }
-    .avatar-row h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #113355;
-      line-height: 1.2;
-    }
-    .avatar-row h2 span {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: #406e8e;
-      margin-top: 4px;
-    }
-    .profile-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.6rem 0.8rem;
-    }
-    .prof-item {
-      border-bottom: 1px solid rgba(70,120,160,0.12);
-      padding-bottom: 4px;
-    }
-    .prof-label {
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      font-weight: 600;
-      color: #50799b;
-    }
-    .prof-value {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #0b2c44;
-    }
-    .prof-value.small {
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    /* ----- COMPACT SYSTEM MONITORING (smaller grid) ----- */
-    .system-card {
-      background: rgba(255,255,255,0.45);
-      backdrop-filter: blur(10px);
-      border-radius: 38px;
-      padding: 1.2rem 1.2rem;
-      border: 1px solid rgba(255,255,255,0.8);
-    }
-    .sys-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 600;
-      color: #194f73;
-      font-size: 1rem;
-      margin-bottom: 0.9rem;
-    }
-    .sys-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.7rem;
-    }
-    .sys-item {
-      background: rgba(255,255,255,0.5);
-      border-radius: 22px;
-      padding: 0.7rem 0.6rem;
-    }
-    .sys-label {
-      font-size: 0.6rem;
-      font-weight: 600;
-      color: #3b6282;
-      text-transform: uppercase;
-    }
-    .sys-value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #0b2c44;
-      line-height: 1.2;
-    }
-    .sys-unit {
-      font-size: 0.7rem;
-      color: #527b9c;
-      margin-left: 4px;
-      font-weight: 500;
-    }
-
-    /* ---------- COLUMN 2 ---------- */
-    .mid-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.2rem;
-    }
-
-    .mode-selector {
-      display: flex;
-      gap: 10px;
-      background: rgba(255,255,255,0.3);
-      padding: 8px 12px;
-      border-radius: 60px;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.7);
-      margin-bottom: 0.2rem;
-      align-self: flex-start;
-    }
-    .mode-btn {
-      background: transparent;
-      border: none;
-      padding: 8px 22px;
-      border-radius: 50px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: #1a4462;
-      transition: 0.2s;
-      cursor: pointer;
-      letter-spacing: 0.2px;
-    }
-    .mode-btn.active {
-      background: white;
-      box-shadow: 0 8px 18px -8px rgba(0,65,100,0.2);
-      color: #0d2f49;
-    }
-    .lights-panel {
-      display: flex;
-      justify-content: space-around;
-      background: rgba(255,255,255,0.4);
-      backdrop-filter: blur(6px);
-      border-radius: 80px;
-      padding: 1.5rem 0.8rem;
-      border: 1px solid rgba(255,255,255,0.7);
-    }
-    .light {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-    .light-globe {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: #b7c7d6;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.05), 0 0 0 4px rgba(255,255,255,0.8), inset 0 -3px 8px rgba(0,0,0,0.1);
-      transition: 0.2s;
-    }
-    .light-globe.stop-on {
-      background: radial-gradient(circle at 30% 30%, #ffaaa5, #b33131);
-      box-shadow: 0 0 35px #ef4444, 0 0 0 4px rgba(255,255,255,0.9);
-    }
-    .light-globe.turn-on {
-      background: radial-gradient(circle at 30% 30%, #ffe285, #b45309);
-      box-shadow: 0 0 35px #fbbf24, 0 0 0 4px rgba(255,255,255,0.9);
-    }
-    .light-globe.run-on {
-      background: radial-gradient(circle at 30% 30%, #a3e9b0, #1f7a3d);
-      box-shadow: 0 0 35px #4ade80, 0 0 0 4px rgba(255,255,255,0.9);
-    }
-    .light-label {
-      font-weight: 600;
-      color: #1c4d73;
-      font-size: 0.8rem;
-    }
-    .light-label small {
-      font-size: 0.6rem;
-    }
-
-    .dpad-panel {
-      background: rgba(255,255,255,0.35);
-      backdrop-filter: blur(8px);
-      border-radius: 60px;
-      padding: 1.5rem 1rem;
-      border: 1px solid rgba(255,255,255,0.7);
-    }
-    .dpad-title {
-      text-align: center;
-      font-weight: 500;
-      color: #1f4a6e;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-    }
-    .dpad-arrows {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-    .arrow-row {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-    }
-    .arrow-btn {
-      width: 65px;
-      height: 65px;
-      border-radius: 40px;
-      background: white;
-      border: none;
-      font-size: 1.8rem;
-      font-weight: 400;
-      color: #153e5c;
-      box-shadow: 0 10px 18px -12px rgba(0,55,80,0.3), 0 0 0 2px rgba(255,255,255,0.8);
-      transition: 0.1s;
-      cursor: pointer;
-    }
-    .stop-btn {
-      background: #fef2f2;
-      color: #b91c1c;
-      font-size: 2rem;
-      width: 75px;
-    }
-    .mode-feedback {
-      margin-top: 1.2rem;
-      background: rgba(255,255,255,0.6);
-      border-radius: 40px;
-      padding: 8px 14px;
-      text-align: center;
-      font-weight: 600;
-      color: #0d3757;
-      font-size: 0.85rem;
-    }
-
-    /* ---------- COLUMN 3: COMPACT HEALTH + MAP ---------- */
-    .right-col {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
-
-    .health-card {
-      background: rgba(255,255,255,0.45);
-      backdrop-filter: blur(8px);
-      border-radius: 38px;
-      padding: 1.2rem 1.2rem;
-      border: 1px solid rgba(255,255,255,0.8);
-    }
-    .health-header {
-      display: flex;
-      gap: 6px;
-      font-weight: 600;
-      color: #194f73;
-      font-size: 1rem;
-      margin-bottom: 0.8rem;
-    }
-    .health-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.7rem;
-    }
-    .health-item {
-      background: rgba(255,255,255,0.5);
-      border-radius: 22px;
-      padding: 0.7rem 0.6rem;
-    }
-    .health-label {
-      font-size: 0.6rem;
-      font-weight: 600;
-      color: #3b6282;
-      text-transform: uppercase;
-    }
-    .health-value {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #0b2c44;
-      line-height: 1.2;
-    }
-    .health-unit {
-      font-size: 0.7rem;
-      color: #527b9c;
-    }
-
-    .map-card {
-      background: rgba(255,255,255,0.4);
-      backdrop-filter: blur(8px);
-      border-radius: 38px;
-      padding: 1.2rem 1rem;
-      border: 1px solid rgba(255,255,255,0.8);
-    }
-    .map-header {
-      display: flex;
-      gap: 6px;
-      color: #194f73;
-      font-weight: 500;
-      font-size: 0.9rem;
-      margin-bottom: 10px;
-    }
-    #patientMap {
-      width: 100%;
-      height: 180px;
-      border-radius: 30px;
-      background: #d1deed;
-      border: 3px solid white;
-      box-shadow: 0 10px 20px -12px rgba(0,40,70,0.25);
-    }
-
-    @media (max-width: 1000px) {
-      .three-col { grid-template-columns: 1fr; }
-    }
-  </style>
+        .shutdown-overlay {
+            display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        .shutdown-card { background:#0f172a; padding:22px; border-radius:36px; color:white; text-align:center; width:260px; }
+    </style>
 </head>
 <body>
 
-<!-- consistent header with switcher (patient active) and log icon -->
-<div class="app-header">
-    <div class="header-left">
-        <div class="page-title">Monitoring Dashboard</div>
+<!-- Welcome card - compact with image left, text center, icons right -->
+<div class="welcome-card">
+    <!-- Left: profile image -->
+    <div class="welcome-left">
+        <img class="profile-image" id="profileImage" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile">
     </div>
-    <div class="header-center">
-        <div class="switcher-group">
-            <a href="caretaker.html" class="switcher-btn" id="switcherCaretaker">👤 Caretaker</a>
-            <a href="#" class="switcher-btn active" id="switcherPatient" onclick="return false;">🩺 Patient</a>
-        </div>
+    
+    <!-- Center: large welcome text -->
+    <div class="welcome-center">
+        <h1>Welcome back, <span id="patientFirstName">Rebecca</span>!</h1>
     </div>
-    <div class="header-right">
-        <!-- Log icon (opens popup) -->
-        <button class="icon-btn" id="openLogBtn">📋 Log</button>
-    </div>
-</div>
-
-<!-- LOG POPUP (trip history) - same as main dashboard -->
-<div id="logPopup" class="log-popup">
-    <div class="log-popup-header">
-        <h3>Trip History</h3>
-        <button class="close-log-btn" onclick="closeLogPopup()">×</button>
-    </div>
-    <div class="trip-log" id="tripLog"></div>
-    <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
-        <button class="icon-btn" style="background: #eef2ff; padding:8px 16px;" onclick="downloadLogPdf(event)">📥 Download PDF</button>
+    
+    <!-- Right: icons -->
+    <div class="welcome-right">
+        <button class="welcome-icon-btn" id="welcomeNotifBtn" title="Notifications">🔔</button>
+        <button class="welcome-icon-btn" id="welcomeLogBtn" title="Trip log">📋</button>
+        <button class="welcome-icon-btn" id="welcomeModeBtn" title="Change mode">⚙️</button>
     </div>
 </div>
 
-<div class="flux-panel">
-  <!-- top band with status chip only -->
-  <div class="top-band">
-    <div class="status-chip">
-      <div class="pulse-dot"></div>
-      <div class="chip-text">live · wheelchair · flux</div>
+<!-- Date and View profile below welcome card -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px;">
+    <div class="date-display-small" id="currentDate">
+        <span>📅</span> Loading date...
     </div>
-  </div>
+    
+    <button class="view-profile-btn-small" id="viewProfileBtn">
+        <span>👁️</span> View profile
+    </button>
+</div>
 
-  <!-- three columns -->
-  <div class="three-col">
-    <!-- LEFT: profile + compact system monitoring -->
-    <div class="left-col">
-      <div class="profile-card">
-        <div class="avatar-row">
-          <img class="avatar-img" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="patient">
-          <h2>Rebecca Rowe <span>ID PT‑10234</span></h2>
-        </div>
-        <div class="profile-grid">
-          <div class="prof-item"><span class="prof-label">Age</span><div class="prof-value">67</div></div>
-          <div class="prof-item"><span class="prof-label">DOB</span><div class="prof-value">1958-04-12</div></div>
-          <div class="prof-item"><span class="prof-label">Gender</span><div class="prof-value">Female</div></div>
-          <div class="prof-item"><span class="prof-label">ID</span><div class="prof-value small">PT-10234</div></div>
-          <div class="prof-item"><span class="prof-label">Caregiver</span><div class="prof-value">John Doe</div></div>
-          <div class="prof-item"><span class="prof-label">Contact</span><div class="prof-value small">+91 9876543210</div></div>
-        </div>
-        <div style="margin-top:1rem; font-size:0.7rem; color:#6682a0; border-top:1px dashed #b1cbe0; padding-top:0.6rem;">🔒 non‑editable</div>
-      </div>
-
-      <!-- compact system monitoring -->
-      <div class="system-card">
-        <div class="sys-header">⚙️ system monitoring</div>
-        <div class="sys-grid">
-          <div class="sys-item"><span class="sys-label">Battery</span><div class="sys-value">82<span class="sys-unit">%</span></div></div>
-          <div class="sys-item"><span class="sys-label">Speed</span><div class="sys-value">1.2 <span class="sys-unit">m/s</span></div></div>
-          <div class="sys-item"><span class="sys-label">Obstacle</span><div class="sys-value">Clear</div></div>
-          <div class="sys-item"><span class="sys-label">Wi‑Fi</span><div class="sys-value">-52<span class="sys-unit">dBm</span></div></div>
-        </div>
-      </div>
+<!-- Patient details section (hidden by default) -->
+<div class="patient-details-section" id="patientDetailsSection" style="display: none;">
+    <h3 style="margin-bottom: 10px; font-size: 16px;">📋 Patient Information</h3>
+    <div class="details-grid" id="patientDetailsGrid">
+        <!-- filled via js -->
     </div>
+</div>
 
-    <!-- MID: mode selector, lights, dpad -->
-    <div class="mid-col">
-      <div class="mode-selector" id="modeSelector">
-        <button class="mode-btn" data-mode="line">Line Following</button>
-        <button class="mode-btn" data-mode="blink">Blink Control</button>
-        <button class="mode-btn" data-mode="joystick">Joystick</button>
-      </div>
+<!-- ROUND ICONS ROW -->
+<div class="round-row">
+    <button class="round-item" id="callIcon"><div class="round-icon">📞</div><span>Call</span></button>
+    <button class="round-item" id="healthIcon"><div class="round-icon">❤️</div><span>Health</span></button>
+    <button class="round-item" id="wheelIcon"><div class="round-icon">🦽</div><span>Wheel</span></button>
+    <button class="round-item" id="patientIcon"><div class="round-icon">👤</div><span>Summary</span></button>
+</div>
 
-      <div class="lights-panel">
-        <div class="light">
-          <div id="lightStop" class="light-globe"></div>
-          <span class="light-label">STOP <small>red</small></span>
-        </div>
-        <div class="light">
-          <div id="lightTurn" class="light-globe"></div>
-          <span class="light-label">TURN <small>yellow</small></span>
-        </div>
-        <div class="light">
-          <div id="lightRun" class="light-globe"></div>
-          <span class="light-label">RUN <small>green</small></span>
-        </div>
-      </div>
+<!-- EMERGENCY STOP -->
+<button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
 
-      <div class="dpad-panel">
-        <div class="dpad-title">●  wheelchair control  ●</div>
-        <div class="dpad-arrows">
-          <div class="arrow-row"><button class="arrow-btn" id="btnForward">▲</button></div>
-          <div class="arrow-row">
-            <button class="arrow-btn" id="btnLeft">◀</button>
-            <button class="arrow-btn stop-btn" id="btnStopCenter">⏹</button>
-            <button class="arrow-btn" id="btnRight">▶</button>
-          </div>
-          <div class="arrow-row"><button class="arrow-btn" id="btnBack">▼</button></div>
-        </div>
-        <div id="currentModeText" class="mode-feedback">⚡ idle · no mode</div>
-      </div>
+<!-- DRIVE MODE (display current) -->
+<div class="drive-mode-card">
+    <span class="mode-label">Drive mode</span>
+    <span class="mode-value" id="modeDisplay">Line Following</span>
+</div>
+
+<!-- MAP -->
+<div class="map-card">
+    <div class="gps-header">
+        <h3>📍 My location</h3>
+        <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
     </div>
+    <div id="map"></div>
+</div>
 
-    <!-- RIGHT: compact health monitoring + map -->
-    <div class="right-col">
-      <div class="health-card">
-        <div class="health-header">❤️ health monitoring</div>
-        <div class="health-grid">
-          <div class="health-item"><span class="health-label">Heart rate</span><div class="health-value">84 <span class="health-unit">bpm</span></div></div>
-          <div class="health-item"><span class="health-label">BP</span><div class="health-value">130/80</div></div>
-          <div class="health-item"><span class="health-label">Temp</span><div class="health-value">36.8 <span class="health-unit">°C</span></div></div>
-          <div class="health-item"><span class="health-label">SpO₂</span><div class="health-value">93<span class="health-unit">%</span></div></div>
-        </div>
-      </div>
+<!-- ========== POPUPS ========== -->
+<!-- MODE SWITCH POPUP -->
+<div id="modePopup" class="popup-panel">
+    <div class="popup-header"><h3>⚙️ Select mode</h3><button class="close-popup" onclick="closeModePopup()">×</button></div>
+    <div class="mode-option" data-mode="Line Following" onclick="setMode('Line Following')">➖ Line Following</div>
+    <div class="mode-option" data-mode="Control" onclick="setMode('Control')">🎮 Control</div>
+    <div class="mode-option" data-mode="Self Drive" onclick="setMode('Self Drive')">🤖 Self Drive</div>
+</div>
 
-      <div class="map-card">
-        <div class="map-header">📍 live location · wheelchair</div>
-        <div id="patientMap"></div>
-        <div style="margin-top: 8px; font-size:0.7rem; color:#456f93; text-align:center;">updates periodically</div>
-      </div>
+<!-- CALL popup -->
+<div id="callPopup" class="popup-panel">
+    <div class="popup-header"><h3>📞 Quick call</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
+    <div class="contact-item">🚑 Emergency <span style="margin-left:auto;">108</span></div>
+    <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
+    <div class="contact-item">🏠 Family <span>+1 555 8723</span></div>
+    <div class="contact-item">🚖 Transport <span>+1 555 5000</span></div>
+</div>
+
+<!-- HEALTH popup -->
+<div id="healthPopup" class="popup-panel">
+    <div class="popup-header"><h3>❤️ My health</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
+    <div class="health-grid">
+        <div class="health-item"><span>Heart rate</span><div class="value" id="hrValue">84</div><small>bpm</small></div>
+        <div class="health-item"><span>Blood pressure</span><div class="value">130/80</div><small>mmHg</small></div>
+        <div class="health-item"><span>Temperature</span><div class="value">36.8</div><small>°C</small></div>
+        <div class="health-item"><span>Oxygen</span><div class="value">98</div><small>%</small></div>
     </div>
-  </div>
+    <p style="text-align:center; margin-top:10px; color:var(--muted); font-size:12px;">Last updated 2 min ago</p>
+</div>
+
+<!-- WHEELCHAIR popup -->
+<div id="wheelPopup" class="popup-panel">
+    <div class="popup-header"><h3>🦽 Chair status</h3><button class="close-popup" onclick="closePopup('wheel')">×</button></div>
+    <div class="wheel-detail"><span>🔋 Battery</span> <strong>82%</strong></div>
+    <div class="wheel-detail"><span>⚡ Speed</span> <strong>1.2 m/s</strong></div>
+    <div class="wheel-detail"><span>🚧 Obstacle</span> <strong>Clear</strong></div>
+    <div class="wheel-detail"><span>⏱️ Trip time</span> <strong>12 min</strong></div>
+    <div class="wheel-detail"><span>📍 Range</span> <strong>5.2 km</strong></div>
+</div>
+
+<!-- PATIENT (SELF) popup - summary view -->
+<div id="patientPopup" class="popup-panel">
+    <div class="popup-header"><h3>👤 Quick summary</h3><button class="close-popup" onclick="closePopup('patient')">×</button></div>
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px;">
+        <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" style="width:50px; height:50px; border-radius:25px; object-fit:cover;">
+        <div><strong>Patient</strong><br><span style="color:var(--muted); font-size:13px;">Age 67 · A+</span></div>
+    </div>
+    <p style="font-size:14px;"><strong>👨‍⚕️ Doctor:</strong> Dr. Sarah Adams</p>
+    <p style="font-size:14px;"><strong>📞 Emergency:</strong> Michael (son)</p>
+    <p style="font-size:14px;"><strong>⚠️ Fall risk:</strong> Low</p>
+    <p style="margin-top:10px; font-size:11px; color:var(--muted); text-align:center;">View full profile for complete details</p>
+</div>
+
+<!-- LOG popup -->
+<div id="logPopup" class="popup-panel">
+    <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
+    <div id="tripLog" style="max-height:180px; overflow-y:auto;"></div>
+    <button style="margin-top:10px; background:#eef2ff; border:none; padding:8px; border-radius:30px; width:100%; font-size:13px;" onclick="downloadLog()">📥 Download report</button>
+</div>
+
+<!-- SHUTDOWN OVERLAY -->
+<div class="shutdown-overlay" id="shutdownOverlay">
+    <div class="shutdown-card">
+        <div style="font-size:36px;">⚠️</div>
+        <div style="font-size:20px; font-weight:700;">HALT</div>
+        <p style="margin:10px 0; font-size:14px;">Emergency stop activated</p>
+        <button onclick="closeShutdown()" style="background:white; border:none; padding:8px 24px; border-radius:36px; font-weight:600;">Dismiss</button>
+    </div>
 </div>
 
 <script>
-  (function() {
-    // --- log popup (shared with main dashboard) ---
-    const tripLog = document.getElementById('tripLog');
-    // seed logs if empty
-    if (tripLog.children.length === 0) {
-      const samples = [
-        { start:'09:05 AM', end:'09:42 AM', mins:37, note:'Smooth' },
-        { start:'11:18 AM', end:'11:40 AM', mins:22, note:'Paused' },
-        { start:'14:10', end:'14:26', mins:16, note:'Emergency' }
-      ];
-      samples.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'trip-item';
-        div.innerHTML = `<div class="trip-time">▶ ${s.start} → ■ ${s.end}</div><div class="trip-duration">${s.mins} min (${s.note})</div>`;
-        tripLog.appendChild(div);
-      });
-    }
-
-    // log popup controls
-    window.closeLogPopup = function() { document.getElementById('logPopup').classList.remove('show'); };
-    document.getElementById('openLogBtn').onclick = function() { document.getElementById('logPopup').classList.add('show'); };
-
-    // download log pdf (simple version)
-    window.downloadLogPdf = function(e) {
-      e?.stopPropagation();
-      const { jsPDF } = window.jspdf;
-      if (!jsPDF) { alert('PDF library loading'); return; }
-      const doc = new jsPDF();
-      doc.text('Trip Log', 14, 20);
-      const trips = [...document.querySelectorAll('.trip-item')];
-      let y = 34;
-      trips.forEach(t => {
-        const time = t.querySelector('.trip-time')?.innerText || '';
-        const dur = t.querySelector('.trip-duration')?.innerText || '';
-        doc.text(time, 14, y); y+=6;
-        if (dur) { doc.text(dur, 14, y); y+=8; } else y+=4;
-      });
-      doc.save('trip_log.pdf');
+    // ---------- patient data ----------
+    let patient = {
+        firstName: 'Rebecca',
+        lastName: 'Rowe',
+        fullName: 'Rebecca Rowe',
+        id: 'PT-10234',
+        age: '67',
+        blood: 'A+',
+        doctor: 'Dr. Sarah Adams',
+        contact: '+1 555 0199',
+        emergencyContact: 'Michael (son) · +1 555 8723',
+        photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+        medications: 'Lisinopril 10mg, Metformin 500mg',
+        nextAppointment: 'May 15, 10:30 AM'
     };
 
-    // --- existing patient.js functionality (lights, modes, map) ---
-    const stopLight = document.getElementById('lightStop');
-    const turnLight = document.getElementById('lightTurn');
-    const runLight = document.getElementById('lightRun');
-    const modeSpan = document.getElementById('currentModeText');
-
-    function clearLights() {
-      stopLight.classList.remove('stop-on');
-      turnLight.classList.remove('turn-on');
-      runLight.classList.remove('run-on');
+    // render patient details (hidden by default)
+    function renderPatientDetails() {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Full name', value: patient.fullName },
+            { label: 'Blood type', value: patient.blood },
+            { label: 'Age', value: patient.age + ' years' },
+            { label: 'Doctor', value: patient.doctor },
+            { label: 'Contact', value: patient.contact },
+            { label: 'Emergency', value: 'Michael (son)' },
+            { label: 'Medications', value: patient.medications },
+            { label: 'Next appt', value: patient.nextAppointment }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span>
+                <div class="detail-value">${f.value}</div>`;
+            grid.appendChild(div);
+        });
+        
+        // Update displays
+        document.getElementById('patientFirstName').innerText = patient.firstName;
+        document.getElementById('profileImage').src = patient.photo;
+        
+        // Update date
+        const today = new Date();
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        document.getElementById('currentDate').innerHTML = `<span>📅</span> ${today.toLocaleDateString('en-US', options)}`;
     }
 
-    function setStopMode() { clearLights(); stopLight.classList.add('stop-on'); }
-    function setTurnMode() { clearLights(); turnLight.classList.add('turn-on'); }
-    function setRunMode() { clearLights(); runLight.classList.add('run-on'); }
-    function allLightsOff() { clearLights(); }
+    renderPatientDetails();
 
-    const fwdBtn = document.getElementById('btnForward');
-    const backBtn = document.getElementById('btnBack');
-    const leftBtn = document.getElementById('btnLeft');
-    const rightBtn = document.getElementById('btnRight');
-    const stopBtn = document.getElementById('btnStopCenter');
-
-    // MODE SELECTOR
-    const modeBtns = document.querySelectorAll('.mode-btn');
-    let currentActiveMode = 'line';
-
-    function setActiveMode(modeId) {
-      modeBtns.forEach(btn => {
-        const mode = btn.dataset.mode;
-        if (mode === modeId) btn.classList.add('active');
-        else btn.classList.remove('active');
-      });
-      currentActiveMode = modeId;
-
-      if (modeId === 'line') modeSpan.innerHTML = `⚡ Line Following · awaiting track`;
-      else if (modeId === 'blink') modeSpan.innerHTML = `⚡ Blink Control · eye gesture ready`;
-      else if (modeId === 'joystick') modeSpan.innerHTML = `⚡ Joystick · use arrows`;
-      allLightsOff();
-    }
-
-    modeBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const mode = e.target.dataset.mode;
-        setActiveMode(mode);
-      });
-    });
-    setActiveMode('line');
-
-    function modeEnhancedFeedback(baseAction) {
-      let modePrefix = '';
-      if (currentActiveMode === 'line') modePrefix = '[Line] ';
-      else if (currentActiveMode === 'blink') modePrefix = '[Blink] ';
-      else if (currentActiveMode === 'joystick') modePrefix = '[Joystick] ';
-
-      if (baseAction === 'stop') {
-        setStopMode();
-        modeSpan.innerHTML = `⚡ ${modePrefix} STOP`;
-      } else if (baseAction === 'turn') {
-        setTurnMode();
-        modeSpan.innerHTML = `⚡ ${modePrefix} TURN`;
-      } else if (baseAction === 'run') {
-        setRunMode();
-        modeSpan.innerHTML = `⚡ ${modePrefix} RUN`;
-      }
-    }
-
-    fwdBtn.addEventListener('click', () => modeEnhancedFeedback('run'));
-    backBtn.addEventListener('click', () => modeEnhancedFeedback('run'));
-    leftBtn.addEventListener('click', () => modeEnhancedFeedback('turn'));
-    rightBtn.addEventListener('click', () => modeEnhancedFeedback('turn'));
-    stopBtn.addEventListener('click', () => modeEnhancedFeedback('stop'));
-
-    // MAP init
-    window.initMap = function() {
-      const patientLocation = { lat: 12.9716, lng: 77.5946 };
-      const map = new google.maps.Map(document.getElementById('patientMap'), {
-        center: patientLocation,
-        zoom: 16,
-        mapTypeId: 'roadmap',
-        disableDefaultUI: false,
-        zoomControl: true,
-        mapTypeControl: false,
-        streetViewControl: false,
-        styles: [
-          { featureType: "poi", stylers: [{ visibility: "off" }] },
-          { featureType: "transit", stylers: [{ visibility: "off" }] }
-        ]
-      });
-      new google.maps.Marker({
-        position: patientLocation,
-        map: map,
-        title: 'wheelchair · patient',
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: '#1d4ed8',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3,
+    // View Profile button toggle
+    document.getElementById('viewProfileBtn').onclick = function() {
+        const detailsSection = document.getElementById('patientDetailsSection');
+        const detailsGrid = document.getElementById('patientDetailsGrid');
+        const btn = document.getElementById('viewProfileBtn');
+        
+        if (detailsSection.style.display === 'none' || detailsSection.style.display === '') {
+            detailsSection.style.display = 'block';
+            detailsGrid.classList.add('visible');
+            btn.innerHTML = '<span>🔒</span> Hide profile';
+            
+            // Smooth scroll to details
+            detailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            detailsSection.style.display = 'none';
+            detailsGrid.classList.remove('visible');
+            btn.innerHTML = '<span>👁️</span> View profile';
         }
-      });
     };
-    if (typeof google !== 'undefined' && google.maps) {
-      window.initMap();
+
+    // Welcome icons functionality
+    const modePopup = document.getElementById('modePopup');
+    const logPopup = document.getElementById('logPopup');
+    
+    // Welcome notification button
+    document.getElementById('welcomeNotifBtn').onclick = () => {
+        alert('✨ All systems normal\nNo new alerts');
+    };
+    
+    // Welcome log icon click
+    document.getElementById('welcomeLogBtn').onclick = () => {
+        closeAllPopups();
+        logPopup.style.display = 'block';
+    };
+    
+    // Welcome mode icon click
+    document.getElementById('welcomeModeBtn').onclick = () => {
+        closeAllPopups();
+        modePopup.style.display = 'block';
+    };
+    
+    window.closeModePopup = () => modePopup.style.display = 'none';
+
+    // set mode function
+    window.setMode = (mode) => {
+        document.getElementById('modeDisplay').innerText = mode;
+        document.querySelectorAll('.mode-option').forEach(opt => opt.classList.remove('active'));
+        event.target.classList.add('active');
+        closeModePopup();
+    };
+
+    // other popup controls
+    const callPopup = document.getElementById('callPopup');
+    const healthPopup = document.getElementById('healthPopup');
+    const wheelPopup = document.getElementById('wheelPopup');
+    const patientPopup = document.getElementById('patientPopup');
+
+    document.getElementById('callIcon').onclick = () => showPopup('call');
+    document.getElementById('healthIcon').onclick = () => showPopup('health');
+    document.getElementById('wheelIcon').onclick = () => showPopup('wheel');
+    document.getElementById('patientIcon').onclick = () => showPopup('patient');
+
+    window.showPopup = (type) => {
+        closeAllPopups();
+        if (type === 'call') callPopup.style.display = 'block';
+        if (type === 'health') healthPopup.style.display = 'block';
+        if (type === 'wheel') wheelPopup.style.display = 'block';
+        if (type === 'patient') patientPopup.style.display = 'block';
+    };
+    
+    window.closePopup = (type) => {
+        if (type === 'call') callPopup.style.display = 'none';
+        if (type === 'health') healthPopup.style.display = 'none';
+        if (type === 'wheel') wheelPopup.style.display = 'none';
+        if (type === 'patient') patientPopup.style.display = 'none';
+    };
+    
+    function closeAllPopups() {
+        callPopup.style.display = 'none';
+        healthPopup.style.display = 'none';
+        wheelPopup.style.display = 'none';
+        patientPopup.style.display = 'none';
+        logPopup.style.display = 'none';
+        modePopup.style.display = 'none';
     }
-  })();
+    
+    window.closeLogPopup = () => logPopup.style.display = 'none';
+
+    // trip log mock
+    const tripLog = document.getElementById('tripLog');
+    function addTrip(text) { 
+        let d = document.createElement('div'); 
+        d.style.background='#f1f5f9'; 
+        d.style.borderRadius='14px'; 
+        d.style.padding='8px 12px'; 
+        d.style.marginBottom='6px'; 
+        d.style.fontSize='12px'; 
+        d.innerText = text; 
+        tripLog.appendChild(d); 
+    }
+    
+    if (tripLog.children.length === 0) {
+        addTrip('Today 09:05 → 09:42 · 37 min');
+        addTrip('Today 11:18 → 11:40 · 22 min');
+        addTrip('Yesterday 14:10 → 14:26 · 16 min');
+        addTrip('Yesterday 10:30 → 11:15 · 45 min ⚠️');
+    }
+    
+    window.downloadLog = () => alert('📄 Report downloaded (mock)');
+
+    // emergency
+    window.triggerEmergency = () => {
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addTrip('⚠️ Emergency at ' + new Date().toLocaleTimeString());
+    };
+    
+    window.closeShutdown = () => {
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    };
+
+    // map
+    const map = L.map('map').setView([12.9716, 77.5946], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('You are here');
+    
+    window.toggleGpsFullscreen = () => {
+        const card = document.querySelector('.map-card');
+        if (!document.fullscreenElement) card.requestFullscreen(); 
+        else document.exitFullscreen();
+    };
+    
+    document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
+    
+    // Refresh health data periodically
+    setInterval(() => {
+        const hrElement = document.getElementById('hrValue');
+        if (hrElement) {
+            const currentHr = parseInt(hrElement.innerText) || 84;
+            const newHr = Math.max(68, Math.min(92, currentHr + (Math.random() > 0.5 ? 1 : -1)));
+            hrElement.innerText = newHr;
+        }
+    }, 30000);
 </script>
-<!-- include jspdf for log download -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script>window.jspdf = window.jspdf || window.jspdf?.jsPDF ? window.jspdf : { jsPDF: jspdf?.jsPDF };</script>
 </body>
 </html>
