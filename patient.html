@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient · Flux · wheelchair</title>
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <!-- Google Maps API (use your own key) -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&callback=initMap" async defer></script>
+  <!-- DM Sans for header consistency, but keep Inter for main -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(145deg, #e1eaf5 0%, #f4f9ff 100%);
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      padding: 24px;
+    }
+
+    /* --- same header style as caretaker dashboard for consistency --- */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      height: 2.5cm;
+      padding: 0 8px;
+      flex-wrap: wrap;
+    }
+    .header-left {
+      flex: 1;
+      display: flex;
+      justify-content: flex-start;
+    }
+    .page-title {
+      margin: 0;
+      color: #1d4ed8; /* dark blue, but keep it readable on light bg? We'll keep white? Actually background is light, so use dark */
+      font-weight: 800;
+      font-size: 30px;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+      background: rgba(255,255,255,0.5);
+      padding: 8px 22px;
+      border-radius: 60px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.8);
+      color: #0b2c44;
+    }
+    .header-center {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+    .switcher-group {
+      display: flex;
+      background: rgba(29,78,216,0.08);
+      padding: 6px;
+      border-radius: 60px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+    }
+    .switcher-btn {
+      border: none;
+      background: transparent;
+      padding: 12px 32px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #1e3a5f;
+      cursor: pointer;
+      transition: 0.15s;
+      text-decoration: none;
+      display: inline-block;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .switcher-btn.active {
+      background: white;
+      color: #1d4ed8;
+      box-shadow: 0 6px 14px rgba(0,20,60,0.1);
+    }
+    .header-right {
+      flex: 1;
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+      align-items: center;
+    }
+    .icon-btn {
+      background: rgba(255,255,255,0.7);
+      border: none;
+      border-radius: 40px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 15px;
+      box-shadow: 0 8px 20px rgba(0,30,60,0.1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.7);
+      color: #1e3a5f;
+      font-family: 'DM Sans', sans-serif;
+    }
+    /* log popup same style as main dashboard */
+    .log-popup {
+      position: fixed;
+      top: 100px;
+      right: 24px;
+      width: 360px;
+      max-height: 480px;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 30px 50px rgba(0,10,30,0.3);
+      z-index: 300;
+      display: none;
+      flex-direction: column;
+      padding: 20px 16px;
+      border: 1px solid rgba(29,78,216,0.2);
+    }
+    .log-popup.show { display: flex; }
+    .log-popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .close-log-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 30px;
+      background: #eef2ff;
+      border: none;
+      font-weight: 700;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .trip-log {
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .trip-item {
+      background: #f8fafc;
+      border-left: 4px solid #1d4ed8;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border-radius: 0 8px 8px 0;
+    }
+    .trip-time { font-size: 13px; font-weight: 600; }
+    .trip-duration { font-size: 12px; color: #64748b; }
+
+    /* main glass panel */
+    .flux-panel {
+      max-width: 1440px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 56px;
+      box-shadow: 0 30px 60px -25px rgba(0, 35, 70, 0.35), inset 0 1px 3px rgba(255,255,255,0.9);
+      padding: 2rem 2.2rem;
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+
+    /* top band with status chip only */
+    .top-band {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: #1f8b4c;
+      border-radius: 20px;
+      box-shadow: 0 0 0 4px rgba(31,139,76,0.15);
+      animation: softPulse 2s infinite;
+    }
+    .chip-text {
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: #194a6a;
+      background: rgba(255,255,255,0.55);
+      padding: 6px 20px;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.85);
+      letter-spacing: 0.2px;
+    }
+
+    @keyframes softPulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* THREE-COLUMN */
+    .three-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1.5fr 1.3fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* ---------- COLUMN 1: PROFILE + COMPACT SYSTEM ---------- */
+    .left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .profile-card {
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(10px);
+      border-radius: 44px;
+      padding: 1.5rem 1.3rem;
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: 0 15px 35px -20px rgba(0,45,75,0.2);
+    }
+    .avatar-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    .avatar-img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid white;
+      filter: drop-shadow(0 8px 12px rgba(0,50,80,0.1));
+    }
+    .avatar-row h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #113355;
+      line-height: 1.2;
+    }
+    .avatar-row h2 span {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: #406e8e;
+      margin-top: 4px;
+    }
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem 0.8rem;
+    }
+    .prof-item {
+      border-bottom: 1px solid rgba(70,120,160,0.12);
+      padding-bottom: 4px;
+    }
+    .prof-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #50799b;
+    }
+    .prof-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #0b2c44;
+    }
+    .prof-value.small {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    /* ----- COMPACT SYSTEM MONITORING (smaller grid) ----- */
+    .system-card {
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(10px);
+      border-radius: 38px;
+      padding: 1.2rem 1.2rem;
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+    .sys-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: #194f73;
+      font-size: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .sys-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    .sys-item {
+      background: rgba(255,255,255,0.5);
+      border-radius: 22px;
+      padding: 0.7rem 0.6rem;
+    }
+    .sys-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: #3b6282;
+      text-transform: uppercase;
+    }
+    .sys-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0b2c44;
+      line-height: 1.2;
+    }
+    .sys-unit {
+      font-size: 0.7rem;
+      color: #527b9c;
+      margin-left: 4px;
+      font-weight: 500;
+    }
+
+    /* ---------- COLUMN 2 ---------- */
+    .mid-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 10px;
+      background: rgba(255,255,255,0.3);
+      padding: 8px 12px;
+      border-radius: 60px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.7);
+      margin-bottom: 0.2rem;
+      align-self: flex-start;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      padding: 8px 22px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1a4462;
+      transition: 0.2s;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+    }
+    .mode-btn.active {
+      background: white;
+      box-shadow: 0 8px 18px -8px rgba(0,65,100,0.2);
+      color: #0d2f49;
+    }
+    .lights-panel {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(6px);
+      border-radius: 80px;
+      padding: 1.5rem 0.8rem;
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+    .light {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .light-globe {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #b7c7d6;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.05), 0 0 0 4px rgba(255,255,255,0.8), inset 0 -3px 8px rgba(0,0,0,0.1);
+      transition: 0.2s;
+    }
+    .light-globe.stop-on {
+      background: radial-gradient(circle at 30% 30%, #ffaaa5, #b33131);
+      box-shadow: 0 0 35px #ef4444, 0 0 0 4px rgba(255,255,255,0.9);
+    }
+    .light-globe.turn-on {
+      background: radial-gradient(circle at 30% 30%, #ffe285, #b45309);
+      box-shadow: 0 0 35px #fbbf24, 0 0 0 4px rgba(255,255,255,0.9);
+    }
+    .light-globe.run-on {
+      background: radial-gradient(circle at 30% 30%, #a3e9b0, #1f7a3d);
+      box-shadow: 0 0 35px #4ade80, 0 0 0 4px rgba(255,255,255,0.9);
+    }
+    .light-label {
+      font-weight: 600;
+      color: #1c4d73;
+      font-size: 0.8rem;
+    }
+    .light-label small {
+      font-size: 0.6rem;
+    }
+
+    .dpad-panel {
+      background: rgba(255,255,255,0.35);
+      backdrop-filter: blur(8px);
+      border-radius: 60px;
+      padding: 1.5rem 1rem;
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+    .dpad-title {
+      text-align: center;
+      font-weight: 500;
+      color: #1f4a6e;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .dpad-arrows {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .arrow-row {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+    .arrow-btn {
+      width: 65px;
+      height: 65px;
+      border-radius: 40px;
+      background: white;
+      border: none;
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: #153e5c;
+      box-shadow: 0 10px 18px -12px rgba(0,55,80,0.3), 0 0 0 2px rgba(255,255,255,0.8);
+      transition: 0.1s;
+      cursor: pointer;
+    }
+    .stop-btn {
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 2rem;
+      width: 75px;
+    }
+    .mode-feedback {
+      margin-top: 1.2rem;
+      background: rgba(255,255,255,0.6);
+      border-radius: 40px;
+      padding: 8px 14px;
+      text-align: center;
+      font-weight: 600;
+      color: #0d3757;
+      font-size: 0.85rem;
+    }
+
+    /* ---------- COLUMN 3: COMPACT HEALTH + MAP ---------- */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .health-card {
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(8px);
+      border-radius: 38px;
+      padding: 1.2rem 1.2rem;
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+    .health-header {
+      display: flex;
+      gap: 6px;
+      font-weight: 600;
+      color: #194f73;
+      font-size: 1rem;
+      margin-bottom: 0.8rem;
+    }
+    .health-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    .health-item {
+      background: rgba(255,255,255,0.5);
+      border-radius: 22px;
+      padding: 0.7rem 0.6rem;
+    }
+    .health-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: #3b6282;
+      text-transform: uppercase;
+    }
+    .health-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #0b2c44;
+      line-height: 1.2;
+    }
+    .health-unit {
+      font-size: 0.7rem;
+      color: #527b9c;
+    }
+
+    .map-card {
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(8px);
+      border-radius: 38px;
+      padding: 1.2rem 1rem;
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+    .map-header {
+      display: flex;
+      gap: 6px;
+      color: #194f73;
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+    #patientMap {
+      width: 100%;
+      height: 180px;
+      border-radius: 30px;
+      background: #d1deed;
+      border: 3px solid white;
+      box-shadow: 0 10px 20px -12px rgba(0,40,70,0.25);
+    }
+
+    @media (max-width: 1000px) {
+      .three-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- consistent header with switcher (patient active) and log icon -->
+<div class="app-header">
+    <div class="header-left">
+        <div class="page-title">Monitoring Dashboard</div>
+    </div>
+    <div class="header-center">
+        <div class="switcher-group">
+            <a href="caretaker.html" class="switcher-btn" id="switcherCaretaker">👤 Caretaker</a>
+            <a href="#" class="switcher-btn active" id="switcherPatient" onclick="return false;">🩺 Patient</a>
+        </div>
+    </div>
+    <div class="header-right">
+        <!-- Log icon (opens popup) -->
+        <button class="icon-btn" id="openLogBtn">📋 Log</button>
+    </div>
+</div>
+
+<!-- LOG POPUP (trip history) - same as main dashboard -->
+<div id="logPopup" class="log-popup">
+    <div class="log-popup-header">
+        <h3>Trip History</h3>
+        <button class="close-log-btn" onclick="closeLogPopup()">×</button>
+    </div>
+    <div class="trip-log" id="tripLog"></div>
+    <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+        <button class="icon-btn" style="background: #eef2ff; padding:8px 16px;" onclick="downloadLogPdf(event)">📥 Download PDF</button>
+    </div>
+</div>
+
+<div class="flux-panel">
+  <!-- top band with status chip only -->
+  <div class="top-band">
+    <div class="status-chip">
+      <div class="pulse-dot"></div>
+      <div class="chip-text">live · wheelchair · flux</div>
+    </div>
+  </div>
+
+  <!-- three columns -->
+  <div class="three-col">
+    <!-- LEFT: profile + compact system monitoring -->
+    <div class="left-col">
+      <div class="profile-card">
+        <div class="avatar-row">
+          <img class="avatar-img" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="patient">
+          <h2>Rebecca Rowe <span>ID PT‑10234</span></h2>
+        </div>
+        <div class="profile-grid">
+          <div class="prof-item"><span class="prof-label">Age</span><div class="prof-value">67</div></div>
+          <div class="prof-item"><span class="prof-label">DOB</span><div class="prof-value">1958-04-12</div></div>
+          <div class="prof-item"><span class="prof-label">Gender</span><div class="prof-value">Female</div></div>
+          <div class="prof-item"><span class="prof-label">ID</span><div class="prof-value small">PT-10234</div></div>
+          <div class="prof-item"><span class="prof-label">Caregiver</span><div class="prof-value">John Doe</div></div>
+          <div class="prof-item"><span class="prof-label">Contact</span><div class="prof-value small">+91 9876543210</div></div>
+        </div>
+        <div style="margin-top:1rem; font-size:0.7rem; color:#6682a0; border-top:1px dashed #b1cbe0; padding-top:0.6rem;">🔒 non‑editable</div>
+      </div>
+
+      <!-- compact system monitoring -->
+      <div class="system-card">
+        <div class="sys-header">⚙️ system monitoring</div>
+        <div class="sys-grid">
+          <div class="sys-item"><span class="sys-label">Battery</span><div class="sys-value">82<span class="sys-unit">%</span></div></div>
+          <div class="sys-item"><span class="sys-label">Speed</span><div class="sys-value">1.2 <span class="sys-unit">m/s</span></div></div>
+          <div class="sys-item"><span class="sys-label">Obstacle</span><div class="sys-value">Clear</div></div>
+          <div class="sys-item"><span class="sys-label">Wi‑Fi</span><div class="sys-value">-52<span class="sys-unit">dBm</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MID: mode selector, lights, dpad -->
+    <div class="mid-col">
+      <div class="mode-selector" id="modeSelector">
+        <button class="mode-btn" data-mode="line">Line Following</button>
+        <button class="mode-btn" data-mode="blink">Blink Control</button>
+        <button class="mode-btn" data-mode="joystick">Joystick</button>
+      </div>
+
+      <div class="lights-panel">
+        <div class="light">
+          <div id="lightStop" class="light-globe"></div>
+          <span class="light-label">STOP <small>red</small></span>
+        </div>
+        <div class="light">
+          <div id="lightTurn" class="light-globe"></div>
+          <span class="light-label">TURN <small>yellow</small></span>
+        </div>
+        <div class="light">
+          <div id="lightRun" class="light-globe"></div>
+          <span class="light-label">RUN <small>green</small></span>
+        </div>
+      </div>
+
+      <div class="dpad-panel">
+        <div class="dpad-title">●  wheelchair control  ●</div>
+        <div class="dpad-arrows">
+          <div class="arrow-row"><button class="arrow-btn" id="btnForward">▲</button></div>
+          <div class="arrow-row">
+            <button class="arrow-btn" id="btnLeft">◀</button>
+            <button class="arrow-btn stop-btn" id="btnStopCenter">⏹</button>
+            <button class="arrow-btn" id="btnRight">▶</button>
+          </div>
+          <div class="arrow-row"><button class="arrow-btn" id="btnBack">▼</button></div>
+        </div>
+        <div id="currentModeText" class="mode-feedback">⚡ idle · no mode</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: compact health monitoring + map -->
+    <div class="right-col">
+      <div class="health-card">
+        <div class="health-header">❤️ health monitoring</div>
+        <div class="health-grid">
+          <div class="health-item"><span class="health-label">Heart rate</span><div class="health-value">84 <span class="health-unit">bpm</span></div></div>
+          <div class="health-item"><span class="health-label">BP</span><div class="health-value">130/80</div></div>
+          <div class="health-item"><span class="health-label">Temp</span><div class="health-value">36.8 <span class="health-unit">°C</span></div></div>
+          <div class="health-item"><span class="health-label">SpO₂</span><div class="health-value">93<span class="health-unit">%</span></div></div>
+        </div>
+      </div>
+
+      <div class="map-card">
+        <div class="map-header">📍 live location · wheelchair</div>
+        <div id="patientMap"></div>
+        <div style="margin-top: 8px; font-size:0.7rem; color:#456f93; text-align:center;">updates periodically</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // --- log popup (shared with main dashboard) ---
+    const tripLog = document.getElementById('tripLog');
+    // seed logs if empty
+    if (tripLog.children.length === 0) {
+      const samples = [
+        { start:'09:05 AM', end:'09:42 AM', mins:37, note:'Smooth' },
+        { start:'11:18 AM', end:'11:40 AM', mins:22, note:'Paused' },
+        { start:'14:10', end:'14:26', mins:16, note:'Emergency' }
+      ];
+      samples.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'trip-item';
+        div.innerHTML = `<div class="trip-time">▶ ${s.start} → ■ ${s.end}</div><div class="trip-duration">${s.mins} min (${s.note})</div>`;
+        tripLog.appendChild(div);
+      });
+    }
+
+    // log popup controls
+    window.closeLogPopup = function() { document.getElementById('logPopup').classList.remove('show'); };
+    document.getElementById('openLogBtn').onclick = function() { document.getElementById('logPopup').classList.add('show'); };
+
+    // download log pdf (simple version)
+    window.downloadLogPdf = function(e) {
+      e?.stopPropagation();
+      const { jsPDF } = window.jspdf;
+      if (!jsPDF) { alert('PDF library loading'); return; }
+      const doc = new jsPDF();
+      doc.text('Trip Log', 14, 20);
+      const trips = [...document.querySelectorAll('.trip-item')];
+      let y = 34;
+      trips.forEach(t => {
+        const time = t.querySelector('.trip-time')?.innerText || '';
+        const dur = t.querySelector('.trip-duration')?.innerText || '';
+        doc.text(time, 14, y); y+=6;
+        if (dur) { doc.text(dur, 14, y); y+=8; } else y+=4;
+      });
+      doc.save('trip_log.pdf');
+    };
+
+    // --- existing patient.js functionality (lights, modes, map) ---
+    const stopLight = document.getElementById('lightStop');
+    const turnLight = document.getElementById('lightTurn');
+    const runLight = document.getElementById('lightRun');
+    const modeSpan = document.getElementById('currentModeText');
+
+    function clearLights() {
+      stopLight.classList.remove('stop-on');
+      turnLight.classList.remove('turn-on');
+      runLight.classList.remove('run-on');
+    }
+
+    function setStopMode() { clearLights(); stopLight.classList.add('stop-on'); }
+    function setTurnMode() { clearLights(); turnLight.classList.add('turn-on'); }
+    function setRunMode() { clearLights(); runLight.classList.add('run-on'); }
+    function allLightsOff() { clearLights(); }
+
+    const fwdBtn = document.getElementById('btnForward');
+    const backBtn = document.getElementById('btnBack');
+    const leftBtn = document.getElementById('btnLeft');
+    const rightBtn = document.getElementById('btnRight');
+    const stopBtn = document.getElementById('btnStopCenter');
+
+    // MODE SELECTOR
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    let currentActiveMode = 'line';
+
+    function setActiveMode(modeId) {
+      modeBtns.forEach(btn => {
+        const mode = btn.dataset.mode;
+        if (mode === modeId) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+      currentActiveMode = modeId;
+
+      if (modeId === 'line') modeSpan.innerHTML = `⚡ Line Following · awaiting track`;
+      else if (modeId === 'blink') modeSpan.innerHTML = `⚡ Blink Control · eye gesture ready`;
+      else if (modeId === 'joystick') modeSpan.innerHTML = `⚡ Joystick · use arrows`;
+      allLightsOff();
+    }
+
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        setActiveMode(mode);
+      });
+    });
+    setActiveMode('line');
+
+    function modeEnhancedFeedback(baseAction) {
+      let modePrefix = '';
+      if (currentActiveMode === 'line') modePrefix = '[Line] ';
+      else if (currentActiveMode === 'blink') modePrefix = '[Blink] ';
+      else if (currentActiveMode === 'joystick') modePrefix = '[Joystick] ';
+
+      if (baseAction === 'stop') {
+        setStopMode();
+        modeSpan.innerHTML = `⚡ ${modePrefix} STOP`;
+      } else if (baseAction === 'turn') {
+        setTurnMode();
+        modeSpan.innerHTML = `⚡ ${modePrefix} TURN`;
+      } else if (baseAction === 'run') {
+        setRunMode();
+        modeSpan.innerHTML = `⚡ ${modePrefix} RUN`;
+      }
+    }
+
+    fwdBtn.addEventListener('click', () => modeEnhancedFeedback('run'));
+    backBtn.addEventListener('click', () => modeEnhancedFeedback('run'));
+    leftBtn.addEventListener('click', () => modeEnhancedFeedback('turn'));
+    rightBtn.addEventListener('click', () => modeEnhancedFeedback('turn'));
+    stopBtn.addEventListener('click', () => modeEnhancedFeedback('stop'));
+
+    // MAP init
+    window.initMap = function() {
+      const patientLocation = { lat: 12.9716, lng: 77.5946 };
+      const map = new google.maps.Map(document.getElementById('patientMap'), {
+        center: patientLocation,
+        zoom: 16,
+        mapTypeId: 'roadmap',
+        disableDefaultUI: false,
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        styles: [
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "off" }] }
+        ]
+      });
+      new google.maps.Marker({
+        position: patientLocation,
+        map: map,
+        title: 'wheelchair · patient',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#1d4ed8',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        }
+      });
+    };
+    if (typeof google !== 'undefined' && google.maps) {
+      window.initMap();
+    }
+  })();
+</script>
+<!-- include jspdf for log download -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>window.jspdf = window.jspdf || window.jspdf?.jsPDF ? window.jspdf : { jsPDF: jspdf?.jsPDF };</script>
+</body>
+</html>
