@@ -14,6 +14,37 @@
     <!-- flatpickr for calendar & time -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+            authDomain: "nexus-org-6e7e9.firebaseapp.com",
+            projectId: "nexus-org-6e7e9",
+            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+            messagingSenderId: "989376914258",
+            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+            measurementId: "G-TP1CVNYHNE"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.db = db;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.updateDoc = updateDoc;
+        window.arrayUnion = arrayUnion;
+        window.onSnapshot = onSnapshot;
+        window.collection = collection;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.limit = limit;
+        
+        console.log("Firebase initialized");
+    </script>
     <style>
         * {
             margin: 0;
@@ -325,7 +356,7 @@
         }
         .shutdown-card { background:#0f172a; padding:24px; border-radius:40px; color:white; text-align:center; width:280px; }
 
-        /* control pad (initially hidden) */
+        /* control pad */
         #controlPad {
             margin-top: 16px;
             background: white;
@@ -375,7 +406,6 @@
             accent-color: var(--blue);
         }
 
-        /* patient options menu & subforms */
         .patient-option-item {
             background: #f1f5f9;
             border-radius: 30px;
@@ -393,7 +423,6 @@
         .patient-option-item:active { background: var(--blue); color: white; }
         .patient-option-item span { font-size: 24px; }
 
-        /* form styles inside popups */
         .form-group {
             margin-bottom: 16px;
         }
@@ -450,11 +479,33 @@
         .datetime-row input {
             flex: 1;
         }
+        /* toast notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 60px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 3000;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+            max-width: 350px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-<!-- header: profile left, icons right -->
 <div class="header-row">
     <div class="profile-card" id="caretakerProfileBtn">
         <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver" id="caretakerImg">
@@ -468,13 +519,11 @@
             <button class="icon-btn" id="notifBtn">🔔</button>
             <span id="notifDot" class="notif-dot"></span>
         </div>
-        <!-- MODE SWITCH ICON -->
         <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
         <button class="icon-btn" id="openLogBtn">📋</button>
     </div>
 </div>
 
-<!-- PATIENT CARD with edit icon & photo clickable -->
 <div class="patient-full-card" id="patientCard">
     <button class="edit-icon" id="editPatientBtn" title="Edit patient details">✎</button>
     <div class="patient-row">
@@ -484,15 +533,11 @@
             <span class="light" id="patientIdDisplay">ID PT-10234 · 67y</span>
         </div>
     </div>
-    <div class="details-grid" id="patientDetailsGrid">
-        <!-- filled via js -->
-    </div>
+    <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
 
-<!-- hidden file input for patient photo -->
 <input type="file" id="patientPhotoInput" accept="image/*" style="display:none;">
 
-<!-- ROUND ICONS ROW -->
 <div class="round-row">
     <button class="round-item" id="callIcon"><div class="round-icon">📞</div><span>Call</span></button>
     <button class="round-item" id="healthIcon"><div class="round-icon">❤️</div><span>Health</span></button>
@@ -500,16 +545,13 @@
     <button class="round-item" id="patientIcon"><div class="round-icon">👤</div><span>Patient</span></button>
 </div>
 
-<!-- EMERGENCY STOP -->
 <button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
 
-<!-- DRIVE MODE (display current) -->
 <div class="drive-mode-card">
     <span class="mode-label">Drive mode</span>
     <span class="mode-value" id="modeDisplay">Line Following</span>
 </div>
 
-<!-- MAP -->
 <div class="map-card">
     <div class="gps-header">
         <h3>📍 Live GPS</h3>
@@ -518,25 +560,19 @@
     <div id="map"></div>
 </div>
 
-<!-- CONTROL PAD (shown only in Control mode) -->
 <div id="controlPad">
     <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-        <!-- top: forward -->
         <button class="ctrl-btn" onclick="sendCommand('forward')">⬆️</button>
-        <!-- middle: left + stop + right -->
         <div style="display: flex; gap: 20px;">
             <button class="ctrl-btn" onclick="sendCommand('left')">⬅️</button>
             <button class="ctrl-btn ctrl-stop" onclick="sendCommand('stop')">⏹️</button>
             <button class="ctrl-btn" onclick="sendCommand('right')">➡️</button>
         </div>
-        <!-- bottom: back -->
         <button class="ctrl-btn" onclick="sendCommand('back')">⬇️</button>
     </div>
     <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
 </div>
 
-<!-- ========== POPUPS ========== -->
-<!-- MODE SWITCH POPUP (3 options) -->
 <div id="modePopup" class="popup-panel">
     <div class="popup-header"><h3>⚙️ Select mode</h3><button class="close-popup" onclick="closeModePopup()">×</button></div>
     <div class="mode-option" data-mode="Line Following" onclick="setMode('Line Following')">➖ Line Following</div>
@@ -544,14 +580,13 @@
     <div class="mode-option" data-mode="Self Drive" onclick="setMode('Self Drive')">🤖 Self Drive</div>
 </div>
 
-<!-- CALL popup -->
 <div id="callPopup" class="popup-panel">
     <div class="popup-header"><h3>📞 Emergency</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
     <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
     <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
     <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
 </div>
-<!-- HEALTH popup -->
+
 <div id="healthPopup" class="popup-panel">
     <div class="popup-header"><h3>❤️ Health</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
     <div class="health-grid">
@@ -561,7 +596,7 @@
         <div class="health-item"><span>SpO₂</span><div class="value">93%</div></div>
     </div>
 </div>
-<!-- WHEELCHAIR popup -->
+
 <div id="wheelPopup" class="popup-panel">
     <div class="popup-header"><h3>🦽 Wheelchair</h3><button class="close-popup" onclick="closePopup('wheel')">×</button></div>
     <div class="wheel-detail"><span>Battery</span> <strong>82%</strong></div>
@@ -570,7 +605,6 @@
     <div class="wheel-detail"><span>Trip</span> <strong>12 min</strong></div>
 </div>
 
-<!-- PATIENT MAIN MENU (options) -->
 <div id="patientMainMenu" class="popup-panel">
     <div class="popup-header"><h3>👤 Patient menu</h3><button class="close-popup" onclick="closePatientMainMenu()">×</button></div>
     <div class="patient-option-item" onclick="showPatientSubmenu('message')"><span>💬</span> Send message</div>
@@ -580,19 +614,17 @@
     <div class="patient-option-item" onclick="showPatientSubmenu('alarm')"><span>⏰</span> Set alarm</div>
 </div>
 
-<!-- PATIENT SUBMENU: dynamic container for forms -->
 <div id="patientSubmenu" class="popup-panel" style="display: none;">
     <div class="popup-header"><h3 id="submenuTitle">Title</h3><button class="close-popup" onclick="closePatientSubmenu()">×</button></div>
     <div id="submenuContent"></div>
 </div>
 
-<!-- LOG popup -->
 <div id="logPopup" class="popup-panel">
     <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
     <div id="tripLog" style="max-height:200px; overflow-y:auto;"></div>
     <button style="margin-top:12px; background:#eef2ff; border:none; padding:10px; border-radius:40px; width:100%;" onclick="downloadLog()">📥 PDF</button>
 </div>
-<!-- CARETAKER PROFILE POPUP -->
+
 <div id="caretakerPopup" class="popup-panel caretaker-popup">
     <div class="popup-header"><h3>👤 Caretaker</h3><button class="close-popup" onclick="closeCaretakerPopup()">×</button></div>
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
@@ -605,7 +637,6 @@
     <div class="detail-row"><span>⏱️ Since</span> <span>2021</span></div>
 </div>
 
-<!-- SHUTDOWN OVERLAY -->
 <div class="shutdown-overlay" id="shutdownOverlay">
     <div class="shutdown-card">
         <div style="font-size:40px;">⚠️</div>
@@ -615,9 +646,14 @@
     </div>
 </div>
 
-<script>
-    // ---------- patient data (editable) ----------
-    let patient = {
+<script type="module">
+    import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    
+    const db = window.db;
+    const PATIENT_ID = "patient_main";
+    const CARETAKER_ID = "caretaker_main";
+    
+    let patientData = {
         name: 'Rebecca Rowe',
         id: 'PT-10234',
         age: '67',
@@ -626,16 +662,28 @@
         contact: '+1 555 0199',
         photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
-    let caretaker = {
-        name: 'John Doe',
-        id: 'CT-2210',
-        email: 'john.d@care.com',
-        phone: '+1 555 7700',
-        facility: 'HomeCare Plus',
-        since: '2021'
-    };
-
-    // render patient details into grid
+    
+    // Save patient data to Firestore
+    async function syncPatientToFirestore() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        await setDoc(patientRef, patientData, { merge: true });
+    }
+    
+    // Load patient data from Firestore
+    function listenPatientData() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        onSnapshot(patientRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                Object.assign(patientData, data);
+                renderPatientDetails(false);
+                document.getElementById('patientNameDisplay').innerText = patientData.name;
+                document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.id} · ${patientData.age}y`;
+                document.getElementById('patientPhoto').src = patientData.photo;
+            }
+        });
+    }
+    
     function renderPatientDetails(editMode = false) {
         const grid = document.getElementById('patientDetailsGrid');
         const fields = [
@@ -650,20 +698,17 @@
             div.className = 'detail-item';
             div.innerHTML = `<span class="detail-label">${f.label}</span>
                 <div class="detail-value" id="field-${f.key}">
-                    ${editMode ? `<input type="text" value="${patient[f.key]}" data-key="${f.key}" class="edit-input">` : patient[f.key]}
+                    ${editMode ? `<input type="text" value="${patientData[f.key]}" data-key="${f.key}" class="edit-input">` : patientData[f.key]}
                 </div>`;
             grid.appendChild(div);
         });
-        document.getElementById('patientNameDisplay').innerText = patient.name;
-        document.getElementById('patientIdDisplay').innerHTML = `ID ${patient.id} · ${patient.age}y`;
-        document.getElementById('patientPhoto').src = patient.photo;
     }
-
+    
     renderPatientDetails(false);
-
-    // edit toggle
+    listenPatientData();
+    
     let editMode = false;
-    document.getElementById('editPatientBtn').onclick = () => {
+    document.getElementById('editPatientBtn').onclick = async () => {
         editMode = !editMode;
         renderPatientDetails(editMode);
         document.getElementById('editPatientBtn').innerHTML = editMode ? '💾' : '✎';
@@ -671,372 +716,151 @@
             const inputs = document.querySelectorAll('.edit-input');
             inputs.forEach(inp => {
                 const key = inp.dataset.key;
-                if (key) patient[key] = inp.value;
+                if (key) patientData[key] = inp.value;
             });
             renderPatientDetails(false);
-            alert('Patient details saved');
+            await syncPatientToFirestore();
+            alert('Patient details saved & synced');
         }
     };
-
-    // patient photo upload
+    
     window.triggerPhotoUpload = () => {
         document.getElementById('patientPhotoInput').click();
     };
-    document.getElementById('patientPhotoInput').addEventListener('change', function(e) {
+    document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                patient.photo = ev.target.result;
-                document.getElementById('patientPhoto').src = patient.photo;
+            reader.onload = async (ev) => {
+                patientData.photo = ev.target.result;
+                document.getElementById('patientPhoto').src = patientData.photo;
+                await syncPatientToFirestore();
             };
             reader.readAsDataURL(file);
         }
     });
-
-    // caretaker profile popup
-    document.getElementById('caretakerProfileBtn').onclick = () => {
-        closeAllPopups();
-        document.getElementById('caretakerPopup').style.display = 'block';
-    };
-    window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
-
-    // ---------- MODE SWITCH WITH MANUAL CHECKBOXES ----------
-    const safetyChecks = {
-        'Line Following': [
-            'Ensure path is clear of obstacles',
-            'Check that line sensors are clean',
-            'Confirm maximum speed setting is safe',
-            'Verify emergency stop works'
-        ],
-        'Control': [
-            'Ensure joystick/control is responsive',
-            'Confirm user is ready to manual drive',
-            'Check area around wheelchair is clear',
-            'Verify speed limit is set to low'
-        ],
-        'Self Drive': [
-            'Ensure autonomy mode is enabled',
-            'Check map data is up-to-date',
-            'Confirm no passengers are in the way',
-            'Verify obstacle detection is active'
-        ]
-    };
-
-    let pendingMode = null;
-
-    function confirmModeSwitch(mode) {
-        const checks = safetyChecks[mode];
-        if (!checks) return;
-
-        pendingMode = mode;
-
-        const oldPopup = document.getElementById('safetyPopup');
-        if (oldPopup) oldPopup.remove();
-
-        const modal = document.createElement('div');
-        modal.className = 'popup-panel';
-        modal.id = 'safetyPopup';
-        modal.innerHTML = `
-            <div class="popup-header">
-                <h3>⚠️ Verify before ${mode}</h3>
-                <button class="close-popup" onclick="document.getElementById('safetyPopup').remove()">×</button>
-            </div>
-            <div style="margin: 16px 0;" id="safetyChecklist">
-                ${checks.map((text, index) => `
-                    <div class="safety-check-item">
-                        <input type="checkbox" id="check_${index}" class="safety-checkbox">
-                        <span>${text}</span>
-                    </div>
-                `).join('')}
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="proceedModeSwitchAfterTicks()">Confirm & Switch</button>
-                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="document.getElementById('safetyPopup').remove()">Cancel</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.style.display = 'block';
+    
+    // Save actions to Firestore (for patient page)
+    async function saveActionToFirestore(type, data) {
+        const actionsRef = doc(db, "patientActions", "feed");
+        await updateDoc(actionsRef, {
+            [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
+        }).catch(() => setDoc(actionsRef, { [type]: [data] }));
     }
-
-    window.proceedModeSwitchAfterTicks = function() {
-        const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
-        let allChecked = true;
-        checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
-
-        if (!allChecked) {
-            alert('Please tick all safety checkboxes before switching mode.');
-            return;
-        }
-
-        const mode = pendingMode;
-        document.getElementById('modeDisplay').innerText = mode;
-        const popup = document.getElementById('safetyPopup');
-        if (popup) popup.remove();
-
-        const controlPad = document.getElementById('controlPad');
-        controlPad.style.display = (mode === 'Control') ? 'block' : 'none';
-
-        document.querySelectorAll('.mode-option').forEach(opt => opt.classList.remove('active'));
-        addNotification(`Mode changed to ${mode} (all ticks verified)`);
-        pendingMode = null;
-    };
-
-    window.setMode = function(mode) {
-        closeModePopup();
-        confirmModeSwitch(mode);
-    };
-
-    window.sendCommand = function(cmd) {
-        alert(`🚦 Command sent: ${cmd} (mock)`);
-    };
-
-    // mode popup controls
-    const modePopup = document.getElementById('modePopup');
-    document.getElementById('modeSwitchIcon').onclick = () => {
-        closeAllPopups();
-        modePopup.style.display = 'block';
-    };
-    window.closeModePopup = () => modePopup.style.display = 'none';
-
-    // ---------- PATIENT MENU & SUBMENUS ----------
-    const patientMainMenu = document.getElementById('patientMainMenu');
-    const patientSubmenu = document.getElementById('patientSubmenu');
-    const submenuTitle = document.getElementById('submenuTitle');
-    const submenuContent = document.getElementById('submenuContent');
-
-    document.getElementById('patientIcon').onclick = () => {
-        closeAllPopups();
-        patientMainMenu.style.display = 'block';
-    };
-
-    window.closePatientMainMenu = () => {
-        patientMainMenu.style.display = 'none';
-    };
-
-    window.closePatientSubmenu = () => {
-        patientSubmenu.style.display = 'none';
-    };
-
-    // show selected form
-    window.showPatientSubmenu = (option) => {
-        patientMainMenu.style.display = 'none';
-        let title = '';
-        let content = '';
-
-        if (option === 'message') {
-            title = '💬 Send message';
-            content = `
-                <div class="form-group">
-                    <label>Message to patient</label>
-                    <textarea id="messageText" placeholder="Type your message..."></textarea>
-                </div>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="sendMessage()">Send</button>
-                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
-                </div>
-            `;
-        } else if (option === 'calendar') {
-            title = '📅 Mark calendar';
-            content = `
-                <div class="form-group">
-                    <label>Event / reminder</label>
-                    <input type="text" id="calendarEvent" placeholder="e.g., Doctor appointment">
-                </div>
-                <div class="form-group">
-                    <label>Date & time</label>
-                    <input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time">
-                </div>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="saveCalendar()">Save</button>
-                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
-                </div>
-            `;
-        } else if (option === 'appointment') {
-            title = '📋 Book appointment';
-            content = `
-                <div class="form-group">
-                    <label>Doctor name</label>
-                    <input type="text" id="apptDoctor" value="Dr. Sarah Adams" placeholder="Doctor name">
-                </div>
-                <div class="form-group">
-                    <label>Hospital / clinic</label>
-                    <input type="text" id="apptHospital" placeholder="e.g., City Hospital">
-                </div>
-                <div class="form-group">
-                    <label>Date & time</label>
-                    <input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time">
-                </div>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="bookAppointment()">Save</button>
-                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
-                </div>
-            `;
-        } else if (option === 'media') {
-            title = '🎵 Media & music';
-            content = `
-                <div style="text-align:center; padding:20px;">
-                    <p style="margin-bottom:20px;">🎧 Play relaxing playlist?</p>
-                    <div class="button-group">
-                        <button class="btn-primary" onclick="playMedia()">Play</button>
-                        <button class="btn-secondary" onclick="closePatientSubmenu()">Close</button>
-                    </div>
-                </div>
-            `;
-        } else if (option === 'alarm') {
-            title = '⏰ Set alarm';
-            content = `
-                <div class="form-group">
-                    <label>Alarm label</label>
-                    <input type="text" id="alarmLabel" placeholder="e.g., Medication time">
-                </div>
-                <div class="form-group">
-                    <label>Date & time</label>
-                    <input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time">
-                </div>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="setAlarm()">Save</button>
-                    <button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button>
-                </div>
-            `;
-        }
-
-        submenuTitle.innerText = title;
-        submenuContent.innerHTML = content;
-        patientSubmenu.style.display = 'block';
-
-        // initialize datetime pickers if present
-        if (option === 'calendar' || option === 'appointment' || option === 'alarm') {
-            flatpickr(".datetime-picker", {
-                enableTime: true,
-                dateFormat: "Y-m-d H:i",
-                time_24hr: true
-            });
-        }
-    };
-
-    // action handlers (mock)
-    window.sendMessage = () => {
+    
+    // Submenu handlers with Firebase sync
+    window.sendMessage = async () => {
         const msg = document.getElementById('messageText')?.value;
-        alert(`📨 Message sent: "${msg || 'empty'}" (mock)`);
-        addNotification(`Message sent: ${msg}`);
+        const action = { text: msg, time: new Date().toLocaleTimeString() };
+        await saveActionToFirestore("messages", action);
+        alert(`📨 Message sent: "${msg}"`);
+        addNotification(`Message sent to patient: ${msg}`);
         closePatientSubmenu();
     };
-
-    window.saveCalendar = () => {
+    
+    window.saveCalendar = async () => {
         const event = document.getElementById('calendarEvent')?.value;
         const dt = document.getElementById('calendarDateTime')?.value;
-        alert(`📅 Calendar marked: "${event || 'untitled'}" at ${dt || 'now'} (mock)`);
-        addNotification(`Calendar: ${event} at ${dt}`);
+        const action = { title: event || "Reminder", detail: dt || "No time set", time: dt };
+        await saveActionToFirestore("calendar", action);
+        alert(`📅 Calendar marked`);
+        addNotification(`Calendar event added: ${event}`);
         closePatientSubmenu();
     };
-
-    window.bookAppointment = () => {
+    
+    window.bookAppointment = async () => {
         const dr = document.getElementById('apptDoctor')?.value;
         const hosp = document.getElementById('apptHospital')?.value;
         const dt = document.getElementById('apptDateTime')?.value;
-        alert(`📋 Appointment booked with ${dr} at ${hosp || 'clinic'} on ${dt || 'TBD'} (mock)`);
-        addNotification(`Appointment: ${dr}, ${hosp}, ${dt}`);
+        const action = { title: dr || "Appointment", detail: hosp || "Clinic", time: dt };
+        await saveActionToFirestore("appointments", action);
+        alert(`📋 Appointment booked`);
+        addNotification(`Appointment booked with ${dr}`);
         closePatientSubmenu();
     };
-
-    window.playMedia = () => {
-        alert('🎵 Playing media (mock)');
-        addNotification('Media player started');
+    
+    window.playMedia = async () => {
+        const action = { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleTimeString() };
+        await saveActionToFirestore("media", action);
+        alert('🎵 Playing media');
+        addNotification('Media player started for patient');
         closePatientSubmenu();
     };
-
-    window.setAlarm = () => {
+    
+    window.setAlarm = async () => {
         const label = document.getElementById('alarmLabel')?.value;
         const dt = document.getElementById('alarmDateTime')?.value;
-        alert(`⏰ Alarm set: "${label || 'reminder'}" at ${dt || 'now'} (mock)`);
-        addNotification(`Alarm: ${label} at ${dt}`);
+        const action = { title: label || "Reminder", detail: dt || "Now", time: dt };
+        await saveActionToFirestore("alarms", action);
+        alert(`⏰ Alarm set`);
+        addNotification(`Alarm set: ${label}`);
         closePatientSubmenu();
     };
-
-    // other popup controls (call, health, wheel)
-    const callPopup = document.getElementById('callPopup');
-    const healthPopup = document.getElementById('healthPopup');
-    const wheelPopup = document.getElementById('wheelPopup');
-    const logPopup = document.getElementById('logPopup');
-
-    document.getElementById('callIcon').onclick = () => showPopup('call');
-    document.getElementById('healthIcon').onclick = () => showPopup('health');
-    document.getElementById('wheelIcon').onclick = () => showPopup('wheel');
-
-    window.showPopup = (type) => {
-        closeAllPopups();
-        if (type === 'call') callPopup.style.display = 'block';
-        if (type === 'health') healthPopup.style.display = 'block';
-        if (type === 'wheel') wheelPopup.style.display = 'block';
+    
+    window.showPatientSubmenu = (option) => {
+        document.getElementById('patientMainMenu').style.display = 'none';
+        let title = '', content = '';
+        if (option === 'message') {
+            title = '💬 Send message';
+            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..."></textarea></div>
+                <div class="button-group"><button class="btn-primary" onclick="sendMessage()">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        } else if (option === 'calendar') {
+            title = '📅 Mark calendar';
+            content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker"></div>
+                <div class="button-group"><button class="btn-primary" onclick="saveCalendar()">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        } else if (option === 'appointment') {
+            title = '📋 Book appointment';
+            content = `<div class="form-group"><label>Doctor</label><input type="text" id="apptDoctor" value="Dr. Sarah Adams"></div>
+                <div class="form-group"><label>Clinic</label><input type="text" id="apptHospital"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker"></div>
+                <div class="button-group"><button class="btn-primary" onclick="bookAppointment()">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        } else if (option === 'media') {
+            title = '🎵 Media & music';
+            content = `<div style="text-align:center;padding:20px;"><p>🎧 Play relaxing music?</p><div class="button-group"><button class="btn-primary" onclick="playMedia()">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
+        } else if (option === 'alarm') {
+            title = '⏰ Set alarm';
+            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker"></div>
+                <div class="button-group"><button class="btn-primary" onclick="setAlarm()">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        }
+        document.getElementById('submenuTitle').innerText = title;
+        document.getElementById('submenuContent').innerHTML = content;
+        document.getElementById('patientSubmenu').style.display = 'block';
+        if (option === 'calendar' || option === 'appointment' || option === 'alarm') {
+            flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+        }
     };
-    window.closePopup = (type) => {
-        if (type === 'call') callPopup.style.display = 'none';
-        if (type === 'health') healthPopup.style.display = 'none';
-        if (type === 'wheel') wheelPopup.style.display = 'none';
-    };
-
-    function closeAllPopups() {
-        callPopup.style.display = 'none';
-        healthPopup.style.display = 'none';
-        wheelPopup.style.display = 'none';
-        patientMainMenu.style.display = 'none';
-        patientSubmenu.style.display = 'none';
-        logPopup.style.display = 'none';
-        document.getElementById('caretakerPopup').style.display = 'none';
-        modePopup.style.display = 'none';
-        const safety = document.getElementById('safetyPopup');
-        if (safety) safety.remove();
-    }
-
-    document.getElementById('openLogBtn').onclick = () => {
-        closeAllPopups();
-        logPopup.style.display = 'block';
-    };
-    window.closeLogPopup = () => logPopup.style.display = 'none';
-
-    // notifications mock
-    const notifDot = document.getElementById('notifDot');
-    notifDot.style.display = 'block';
-    document.getElementById('notifBtn').onclick = () => { alert('No new alerts'); notifDot.style.display = 'none'; };
-    window.addNotification = (msg) => { console.log('notif:', msg); };
-
-    // trip log mock
-    const tripLog = document.getElementById('tripLog');
-    function addTrip(text) { let d = document.createElement('div'); d.style.background='#f1f5f9'; d.style.borderRadius='16px'; d.style.padding='10px'; d.style.marginBottom='6px'; d.style.fontSize='13px'; d.innerText = text; tripLog.appendChild(d); }
-    if (tripLog.children.length === 0) {
-        addTrip('09:05 → 09:42 · 37 min');
-        addTrip('11:18 → 11:40 · 22 min');
-        addTrip('14:10 → 14:26 · 16 min ⚠️');
-    }
+    
+    // Rest of UI handlers (popups, map, etc)
+    document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); document.getElementById('caretakerPopup').style.display = 'block'; };
+    window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
+    window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
+    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
+    window.setMode = (mode) => { document.getElementById('modeDisplay').innerText = mode; closeModePopup(); document.getElementById('controlPad').style.display = (mode === 'Control') ? 'block' : 'none'; };
+    window.sendCommand = (cmd) => alert(`🚦 Command: ${cmd}`);
+    window.closePopup = (type) => { if(type==='call') document.getElementById('callPopup').style.display='none'; if(type==='health') document.getElementById('healthPopup').style.display='none'; if(type==='wheel') document.getElementById('wheelPopup').style.display='none'; };
+    document.getElementById('callIcon').onclick = () => { closeAllPopups(); document.getElementById('callPopup').style.display='block'; };
+    document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display='block'; };
+    document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display='block'; };
+    document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display='block'; };
+    window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display='none';
+    window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display='none';
+    document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('logPopup').style.display='block'; };
+    window.closeLogPopup = () => document.getElementById('logPopup').style.display='none';
     window.downloadLog = () => alert('PDF mock');
-
-    // emergency
-    window.triggerEmergency = () => {
-        document.body.classList.add('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'flex';
-        addTrip('⚠️ Emergency at ' + new Date().toLocaleTimeString());
-    };
-    window.closeShutdown = () => {
-        document.body.classList.remove('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'none';
-    };
-
-    // map
+    function closeAllPopups() { document.querySelectorAll('.popup-panel').forEach(p => p.style.display='none'); }
+    window.addNotification = (msg) => { console.log(msg); };
+    document.getElementById('notifBtn').onclick = () => alert('No new alerts');
+    
     const map = L.map('map').setView([12.9716, 77.5946], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
-    window.toggleGpsFullscreen = () => {
-        const card = document.querySelector('.map-card');
-        if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen();
-    };
+    window.toggleGpsFullscreen = () => { const card = document.querySelector('.map-card'); if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen(); };
     document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
-
-    // on page load, ensure control pad visibility matches initial mode
-    window.onload = function() {
-        const currentMode = document.getElementById('modeDisplay').innerText;
-        document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-    };
+    window.triggerEmergency = () => { document.body.classList.add('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display = 'flex'; };
+    window.closeShutdown = () => { document.body.classList.remove('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display = 'none'; };
+    window.onload = () => { document.getElementById('controlPad').style.display = 'none'; };
 </script>
 </body>
 </html>
