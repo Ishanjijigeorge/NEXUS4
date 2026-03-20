@@ -55,6 +55,8 @@
             --muted: #5b687c;
             --blue: #1d4ed8;
             --danger: #dc2626;
+            --amber: #f59e0b;
+            --green: #10b981;
             --radius: 24px;
             --shadow: 0 6px 16px rgba(0,0,0,0.05);
             --outline: 1px solid rgba(29,78,216,0.1);
@@ -96,6 +98,15 @@
             color: var(--blue);
         }
 
+        .health-item.warning {
+            background: #fff5f5;
+            border-color: var(--danger);
+        }
+        
+        .health-item.warning .value {
+            color: var(--danger);
+        }
+
         .wheel-detail {
             background: #f8fafc;
             border-radius: 20px;
@@ -106,6 +117,15 @@
             align-items: center;
             font-size: 14px;
             border: 1px solid #eef2ff;
+        }
+
+        .wheel-detail.warning {
+            background: #fff5f5;
+            border-color: var(--danger);
+        }
+        
+        .wheel-detail.warning strong {
+            color: var(--danger);
         }
 
         .wheel-detail span {
@@ -179,14 +199,32 @@
             box-shadow: var(--shadow);
             border: var(--outline);
             gap: 6px;
+            position: relative;
         }
         .icon-btn {
             background: #f0f4fe;
             border: none;
-            width: 38px; height: 38px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             font-size: 18px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -538,6 +576,92 @@
             border: 1px solid #d0d5dd;
             font-size: 14px;
         }
+        
+        .alert-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 32px;
+            padding: 28px 24px;
+            min-width: 280px;
+            max-width: 340px;
+            text-align: center;
+            z-index: 3500;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .alert-popup .alert-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .alert-popup .alert-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .alert-popup .alert-message {
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
+        }
+        
+        .alert-popup button {
+            background: white;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .notification-log-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--blue);
+        }
+        
+        .notification-log-item.warning {
+            border-left-color: var(--danger);
+            background: #fff5f5;
+        }
+        
+        .notification-log-item .log-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .notification-log-item .log-message {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        
+        .notification-log-item .log-time {
+            font-size: 10px;
+            color: var(--muted);
+        }
     </style>
 </head>
 <body>
@@ -551,6 +675,10 @@
         </div>
     </div>
     <div class="icon-group">
+        <button class="icon-btn" id="notificationBtn" style="position: relative;">
+            🔔
+            <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+        </button>
         <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
         <button class="icon-btn" id="openLogBtn">📋</button>
     </div>
@@ -620,21 +748,49 @@
 </div>
 
 <div id="healthPopup" class="popup-panel">
-    <div class="popup-header"><h3>❤️ Health</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
+    <div class="popup-header"><h3>❤️ Health Monitoring</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
     <div class="health-grid">
-        <div class="health-item"><span>Heart</span><div class="value" id="hrValue">84</div></div>
-        <div class="health-item"><span>BP</span><div class="value">130/80</div></div>
-        <div class="health-item"><span>Temp</span><div class="value">36.8°C</div></div>
-        <div class="health-item"><span>SpO₂</span><div class="value">93%</div></div>
+        <div class="health-item" id="healthHeartItem">
+            <span>Heart Rate</span>
+            <div class="value" id="hrValue">84</div>
+            <small>bpm</small>
+        </div>
+        <div class="health-item" id="healthBPItem">
+            <span>Blood Pressure</span>
+            <div class="value" id="bpValue">130/80</div>
+            <small>mmHg</small>
+        </div>
+        <div class="health-item" id="healthTempItem">
+            <span>Temperature</span>
+            <div class="value" id="tempValue">36.8</div>
+            <small>°C</small>
+        </div>
+        <div class="health-item" id="healthO2Item">
+            <span>SpO₂</span>
+            <div class="value" id="o2Value">98</div>
+            <small>%</small>
+        </div>
     </div>
 </div>
 
 <div id="wheelPopup" class="popup-panel">
-    <div class="popup-header"><h3>🦽 Wheelchair</h3><button class="close-popup" onclick="closePopup('wheel')">×</button></div>
-    <div class="wheel-detail"><span>Battery</span> <strong>82%</strong></div>
-    <div class="wheel-detail"><span>Speed</span> <strong>1.2 m/s</strong></div>
-    <div class="wheel-detail"><span>Obstacle</span> <strong>Clear</strong></div>
-    <div class="wheel-detail"><span>Trip</span> <strong>12 min</strong></div>
+    <div class="popup-header"><h3>🦽 Wheelchair Status</h3><button class="close-popup" onclick="closePopup('wheel')">×</button></div>
+    <div class="wheel-detail" id="batteryDetail">
+        <span>🔋 Battery</span>
+        <strong id="batteryValue">82%</strong>
+    </div>
+    <div class="wheel-detail" id="speedDetail">
+        <span>⚡ Speed</span>
+        <strong id="speedValue">1.2 m/s</strong>
+    </div>
+    <div class="wheel-detail" id="obstacleDetail">
+        <span>🚧 Obstacle</span>
+        <strong id="obstacleValue">Clear</strong>
+    </div>
+    <div class="wheel-detail" id="rangeDetail">
+        <span>📍 Range</span>
+        <strong id="rangeValue">5.2 km</strong>
+    </div>
 </div>
 
 <div id="patientMainMenu" class="popup-panel">
@@ -651,10 +807,10 @@
     <div id="submenuContent"></div>
 </div>
 
-<div id="logPopup" class="popup-panel">
-    <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
-    <div id="tripLog" style="max-height:200px; overflow-y:auto;"></div>
-    <button style="margin-top:12px; background:#eef2ff; border:none; padding:10px; border-radius:40px; width:100%;" onclick="downloadLog()">📥 PDF</button>
+<div id="notificationPopup" class="popup-panel" style="max-width: 400px;">
+    <div class="popup-header"><h3>🔔 Notifications</h3><button class="close-popup" onclick="closeNotificationPopup()">×</button></div>
+    <div id="notificationList" style="max-height: 400px; overflow-y: auto;"></div>
+    <button class="btn-secondary" style="margin-top: 16px; width: 100%;" onclick="clearAllNotifications()">Clear All</button>
 </div>
 
 <div id="caretakerPopup" class="popup-panel caretaker-popup">
@@ -705,6 +861,23 @@
     
     let currentMode = 'Line Following';
     let pendingMode = null;
+    let notifications = [];
+    let notificationCount = 0;
+    
+    // Health monitoring state
+    let lastHealthState = {
+        hr: 84,
+        bp: '130/80',
+        temp: 36.8,
+        o2: 98
+    };
+    
+    let lastWheelState = {
+        battery: 82,
+        speed: 1.2,
+        obstacle: 'Clear',
+        range: 5.2
+    };
     
     const safetyChecks = {
         'Line Following': [
@@ -735,7 +908,201 @@
         setTimeout(() => toast.remove(), 3000);
     }
     
-    // Listen for drive mode changes from Firebase (sync from patient)
+    function showAlertPopup(title, message) {
+        const existingPopup = document.querySelector('.alert-popup');
+        if (existingPopup) existingPopup.remove();
+        
+        const popup = document.createElement('div');
+        popup.className = 'alert-popup';
+        popup.innerHTML = `
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-title">${title}</div>
+            <div class="alert-message">${message}</div>
+            <button onclick="this.parentElement.remove()">Dismiss</button>
+        `;
+        document.body.appendChild(popup);
+        
+        setTimeout(() => {
+            if (popup.parentElement) popup.remove();
+        }, 8000);
+    }
+    
+    function addNotification(title, message, isWarning = false) {
+        const notification = {
+            id: Date.now() + Math.random(),
+            title: title,
+            message: message,
+            time: new Date().toLocaleString(),
+            isWarning: isWarning
+        };
+        notifications.unshift(notification);
+        notificationCount++;
+        updateNotificationBadge();
+        updateNotificationList();
+        
+        if (isWarning) {
+            showAlertPopup(title, message);
+            showToast(`⚠️ ${title}: ${message}`);
+        } else {
+            showToast(`📢 ${title}`);
+        }
+    }
+    
+    function updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        if (notificationCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    function updateNotificationList() {
+        const container = document.getElementById('notificationList');
+        if (!container) return;
+        
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="empty-message">No notifications yet</div>';
+            return;
+        }
+        
+        container.innerHTML = notifications.map(n => `
+            <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
+                <div class="log-title">${escapeHtml(n.title)}</div>
+                <div class="log-message">${escapeHtml(n.message)}</div>
+                <div class="log-time">${n.time}</div>
+            </div>
+        `).join('');
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function clearAllNotifications() {
+        notifications = [];
+        notificationCount = 0;
+        updateNotificationBadge();
+        updateNotificationList();
+        showToast('All notifications cleared');
+    }
+    
+    // Simulate health monitoring with alerts
+    function simulateHealthMonitoring() {
+        // Random health changes
+        let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
+        hr = Math.min(120, Math.max(55, hr));
+        
+        let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
+        temp = Math.min(39, Math.max(35, temp));
+        
+        let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
+        o2 = Math.min(100, Math.max(90, o2));
+        
+        let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
+        let diastolic = 80 + (systolic - 120) * 0.6;
+        systolic = Math.min(160, Math.max(90, systolic));
+        diastolic = Math.min(100, Math.max(60, diastolic));
+        const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
+        
+        // Update UI
+        document.getElementById('hrValue').innerText = hr;
+        document.getElementById('tempValue').innerText = temp.toFixed(1);
+        document.getElementById('o2Value').innerText = o2;
+        document.getElementById('bpValue').innerText = bp;
+        
+        // Check for abnormal values and notify
+        if (hr < 60 || hr > 100) {
+            if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
+                addNotification('⚠️ Abnormal Heart Rate', `Heart rate is ${hr} bpm (normal: 60-100)`, true);
+                document.getElementById('healthHeartItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthHeartItem').classList.remove('warning');
+        }
+        
+        if (temp < 36.1 || temp > 37.2) {
+            if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
+                addNotification('⚠️ Abnormal Temperature', `Temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
+                document.getElementById('healthTempItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthTempItem').classList.remove('warning');
+        }
+        
+        if (o2 < 95) {
+            if (lastHealthState.o2 >= 95) {
+                addNotification('⚠️ Low Oxygen Level', `SpO₂ is ${o2}% (normal: 95-100)`, true);
+                document.getElementById('healthO2Item').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthO2Item').classList.remove('warning');
+        }
+        
+        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
+            if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
+                addNotification('⚠️ Abnormal Blood Pressure', `BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
+                document.getElementById('healthBPItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthBPItem').classList.remove('warning');
+        }
+        
+        lastHealthState = { hr, temp, o2, bp };
+    }
+    
+    // Simulate wheelchair monitoring
+    function simulateWheelchairMonitoring() {
+        let battery = lastWheelState.battery - (Math.random() * 2);
+        battery = Math.max(10, Math.min(100, battery));
+        
+        let speed = (Math.random() * 1.2 + 0.8).toFixed(1);
+        let range = (Math.random() * 8 + 2).toFixed(1);
+        let r = Math.random();
+        let obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
+        
+        // Update UI
+        document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
+        document.getElementById('speedValue').innerText = speed + ' m/s';
+        document.getElementById('rangeValue').innerText = range + ' km';
+        
+        const obstacleSpan = document.getElementById('obstacleValue');
+        obstacleSpan.innerText = obstacle;
+        
+        if (obstacle === 'Blocked') {
+            obstacleSpan.style.color = 'var(--danger)';
+        } else if (obstacle === 'Nearby') {
+            obstacleSpan.style.color = 'var(--amber)';
+        } else {
+            obstacleSpan.style.color = 'var(--green)';
+        }
+        
+        // Check for alerts
+        if (battery < 20 && lastWheelState.battery >= 20) {
+            addNotification('⚠️ Low Battery', `Battery level is ${Math.round(battery)}% - Please charge soon`, true);
+            document.getElementById('batteryDetail').classList.add('warning');
+        } else if (battery >= 20) {
+            document.getElementById('batteryDetail').classList.remove('warning');
+        }
+        
+        if (obstacle === 'Blocked' && lastWheelState.obstacle !== 'Blocked') {
+            addNotification('⚠️ Obstacle Detected', 'Path is blocked! Please check immediately', true);
+        }
+        
+        if (obstacle === 'Nearby' && lastWheelState.obstacle !== 'Nearby') {
+            addNotification('⚠️ Obstacle Nearby', 'Obstacle detected nearby - please proceed with caution', true);
+        }
+        
+        lastWheelState = { battery, speed, obstacle, range };
+    }
+    
     function listenDriveMode() {
         const modeRef = doc(db, "settings", MODE_ID);
         onSnapshot(modeRef, (docSnap) => {
@@ -745,13 +1112,12 @@
                     currentMode = newMode;
                     document.getElementById('modeDisplay').innerText = currentMode;
                     document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-                    showToast(`🔄 Drive mode changed to: ${currentMode} (from patient)`);
+                    addNotification('🔄 Drive Mode Changed', `Mode changed to: ${currentMode} (by patient)`, false);
                 }
             }
         });
     }
     
-    // Save mode to Firebase when caretaker changes it
     async function saveModeToFirestore(mode) {
         const modeRef = doc(db, "settings", MODE_ID);
         await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
@@ -810,16 +1176,6 @@
         document.getElementById('editPatientPopup').style.display = 'block';
     }
     
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-    
     async function savePatientEdits() {
         const newData = {
             fullName: document.getElementById('editFullName')?.value || patientData.fullName,
@@ -835,7 +1191,7 @@
         renderPatientDetails();
         await syncPatientToFirestore();
         closeEditPatientPopup();
-        showToast('✅ Patient details saved permanently');
+        addNotification('✅ Patient Updated', 'Patient details have been updated successfully', false);
     }
     
     window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
@@ -849,7 +1205,7 @@
                 patientData.photo = ev.target.result;
                 document.getElementById('patientPhoto').src = patientData.photo;
                 await syncPatientToFirestore();
-                showToast('📸 Patient photo updated permanently');
+                addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
             };
             reader.readAsDataURL(file);
         }
@@ -870,7 +1226,7 @@
             console.error("Error saving action:", error);
             await setDoc(actionsRef, { [type]: [data] });
         }
-        showToast(`✅ Action saved to patient dashboard`);
+        addNotification('✅ Action Saved', `${type} saved to patient dashboard`, false);
     }
     
     window.sendMessage = async () => {
@@ -1002,6 +1358,7 @@
             document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
             modal.remove();
             await saveModeToFirestore(currentMode);
+            addNotification('🔄 Mode Changed', `Mode switched to: ${currentMode}`, false);
             showToast(`✅ Mode switched to ${currentMode}`);
         };
     }
@@ -1038,9 +1395,10 @@
     document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display='block'; };
     window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display='none';
     window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display='none';
-    document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('logPopup').style.display='block'; };
-    window.closeLogPopup = () => document.getElementById('logPopup').style.display='none';
-    window.downloadLog = () => showToast('📄 PDF report ready');
+    document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
+    window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
+    window.clearAllNotifications = clearAllNotifications;
+    document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
     
     document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
     document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
@@ -1059,16 +1417,19 @@
     window.triggerEmergency = () => {
         document.body.classList.add('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'flex';
-        showToast('⚠️ EMERGENCY STOP ACTIVATED');
+        addNotification('⚠️ EMERGENCY STOP', 'Emergency stop has been activated', true);
     };
     window.closeShutdown = () => {
         document.body.classList.remove('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'none';
     };
     
-    // Initialize listeners
     await loadPatientFromFirestore();
     listenDriveMode();
+    
+    // Start monitoring intervals
+    setInterval(simulateHealthMonitoring, 8000);
+    setInterval(simulateWheelchairMonitoring, 5000);
     
     window.onload = () => {
         document.getElementById('controlPad').style.display = 'none';
