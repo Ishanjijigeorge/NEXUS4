@@ -28,8 +28,6 @@
             --danger: #dc2626;
             --amber: #f59e0b;
             --green: #10b981;
-            --purple: #8b5cf6;
-            --teal: #14b8a6;
             --radius: 24px;
             --shadow: 0 6px 16px rgba(0,0,0,0.05);
             --outline: 1px solid rgba(29,78,216,0.1);
@@ -42,21 +40,20 @@
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
-        /* ===== TWO COLUMN LAYOUT FOR MOBILE (welcome + map side by side) ===== */
+        /* ===== TWO COLUMN LAYOUT ===== */
         .top-row {
             display: flex;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         
         /* Welcome Card */
         .welcome-card {
             background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
-            border-radius: 28px;
-            padding: 16px;
+            border-radius: 24px;
+            padding: 14px;
             color: white;
-            box-shadow: 0 12px 24px rgba(29,78,216,0.3);
-            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 20px rgba(29,78,216,0.25);
             flex: 1.2;
             display: flex;
             flex-direction: column;
@@ -66,76 +63,67 @@
         .welcome-top {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         
         .profile-image {
-            width: 52px;
-            height: 52px;
-            border-radius: 26px;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
             object-fit: cover;
             border: 2px solid white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             background: #cbd5e1;
         }
         
-        .greeting-text {
-            flex: 1;
-        }
-        
         .greeting-text .hello {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 500;
             opacity: 0.9;
         }
         
         .greeting-text .name-large {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             line-height: 1.2;
         }
         
         .patient-badge {
             background: rgba(255,255,255,0.2);
-            padding: 4px 10px;
-            border-radius: 40px;
-            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 30px;
+            font-size: 9px;
             font-weight: 500;
-            backdrop-filter: blur(4px);
             display: inline-block;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         
         .welcome-date {
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0.95;
+            font-size: 11px;
+            font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-top: 8px;
+            gap: 5px;
             background: rgba(255,255,255,0.15);
-            padding: 6px 12px;
-            border-radius: 30px;
+            padding: 4px 10px;
+            border-radius: 25px;
             width: fit-content;
         }
         
-        /* Welcome icons - horizontal on mobile */
         .welcome-icons {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: flex-end;
             margin-top: 8px;
         }
         
-        .icon-small {
+        .icon-small, .profile-icon-btn {
             background: rgba(255,255,255,0.18);
             border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 18px;
-            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -144,34 +132,12 @@
             transition: 0.2s;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255,255,255,0.25);
-        }
-        
-        .profile-icon-btn {
-            background: rgba(255,255,255,0.18);
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 18px;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            transition: 0.2s;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.25);
-        }
-        
-        .icon-small:hover, .profile-icon-btn:hover {
-            background: rgba(255,255,255,0.35);
-            transform: scale(1.05);
         }
         
         /* Map Card */
         .map-card {
             background: white;
-            border-radius: 28px;
+            border-radius: 24px;
             padding: 0;
             box-shadow: var(--shadow);
             border: var(--outline);
@@ -181,26 +147,22 @@
         
         #map {
             height: 100%;
-            min-height: 140px;
+            min-height: 128px;
             width: 100%;
-            border-radius: 28px;
+            border-radius: 24px;
             background: #e2e8f0;
         }
         
-        /* Hide Leaflet default zoom controls */
-        .leaflet-control-zoom {
-            display: none !important;
-        }
-        .leaflet-control-attribution {
+        .leaflet-control-zoom, .leaflet-control-attribution {
             display: none !important;
         }
         
-        /* Patient details section */
+        /* Patient details */
         .patient-details-section {
             background: white;
-            border-radius: 28px;
-            padding: 20px;
-            margin-bottom: 18px;
+            border-radius: 24px;
+            padding: 16px;
+            margin-bottom: 16px;
             box-shadow: var(--shadow);
             border: var(--outline);
         }
@@ -208,11 +170,11 @@
         .details-grid {
             display: none;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-top: 16px;
+            gap: 12px;
+            margin-top: 12px;
             background: #f8fafd;
-            padding: 20px;
-            border-radius: 24px;
+            padding: 14px;
+            border-radius: 20px;
         }
         
         .details-grid.visible { display: grid; }
@@ -223,29 +185,29 @@
         }
         
         .detail-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--muted);
             text-transform: uppercase;
         }
         
         .detail-value {
             font-weight: 600;
-            font-size: 15px;
-            margin-top: 4px;
+            font-size: 13px;
+            margin-top: 3px;
         }
 
-        /* ===== TWO COLUMN METRICS SECTION (Telemetry + Vital Signs) ===== */
+        /* ===== TWO COLUMN METRICS SECTION - COMPACT & SQUARE ===== */
         .metrics-two-column {
             display: flex;
             gap: 12px;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
         
-        /* Telemetry Card - 2x2 grid layout */
+        /* Telemetry Card - 2x2 grid */
         .telemetry-card {
             background: white;
-            padding: 16px 12px;
-            border-radius: 28px;
+            padding: 14px 10px;
+            border-radius: 24px;
             box-shadow: var(--shadow);
             border: var(--outline);
             flex: 1;
@@ -254,7 +216,7 @@
         .telemetry-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px 12px;
+            gap: 12px 10px;
         }
         
         .telemetry-item {
@@ -265,21 +227,21 @@
         }
         
         .tele-icon {
-            width: 52px;
-            height: 52px;
+            width: 44px;
+            height: 44px;
             background: #f0f5ff;
-            border: 2px solid rgba(29,78,216,0.15);
+            border: 2px solid rgba(29,78,216,0.12);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
             color: var(--blue);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
         .tele-label {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
@@ -287,9 +249,9 @@
         }
         
         .tele-value {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
-            margin-top: 4px;
+            margin-top: 2px;
             color: var(--text);
         }
         
@@ -297,58 +259,48 @@
         .obstacle-warn { color: var(--amber); }
         .obstacle-block { color: var(--danger); }
         
-        /* Health Card - 2x2 grid layout */
+        /* Health Card - 2x2 grid */
         .health-card-compact {
             background: white;
-            border-radius: 28px;
-            padding: 16px 12px;
+            border-radius: 24px;
+            padding: 14px 10px;
             box-shadow: var(--shadow);
             border: 1px solid #e2e8f0;
             flex: 1;
             position: relative;
-            overflow: hidden;
-        }
-        
-        .health-card-compact::before {
-            content: "❤️";
-            position: absolute;
-            right: -5px;
-            top: -5px;
-            font-size: 50px;
-            opacity: 0.05;
-            pointer-events: none;
         }
         
         .health-header-compact {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
             border-bottom: 2px solid #e5e7eb;
         }
         
         .health-header-compact h4 {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--text);
         }
         
         .health-header-compact span {
-            font-size: 18px;
+            font-size: 16px;
         }
         
         .health-metrics-compact {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
         }
         
         .health-metric-compact {
             text-align: center;
             background: white;
-            padding: 10px 6px;
-            border-radius: 18px;
+            padding: 8px 4px;
+            border-radius: 16px;
             transition: all 0.2s;
             border: 2px solid var(--green);
         }
@@ -359,7 +311,7 @@
         }
         
         .health-metric-compact .metric-value-compact {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 800;
             color: var(--blue);
         }
@@ -369,51 +321,43 @@
         }
         
         .health-metric-compact .metric-label-compact {
-            font-size: 10px;
+            font-size: 8px;
             color: var(--muted);
             text-transform: uppercase;
             font-weight: 600;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         
         .health-metric-compact small {
-            font-size: 9px;
+            font-size: 7px;
             color: var(--muted);
         }
 
-        /* ===== DRIVE MODE - COMPACT ROW ===== */
+        /* ===== DRIVE MODE - COMPACT ===== */
         .drive-mode-row {
             display: flex;
-            gap: 10px;
-            margin-bottom: 18px;
-            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 16px;
         }
         
         .mode-btn {
             flex: 1;
             background: white;
             border: 2px solid #e2e8f0;
-            border-radius: 60px;
-            padding: 10px 6px;
+            border-radius: 50px;
+            padding: 8px 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 3px;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: var(--shadow);
         }
         
-        .mode-btn:hover {
-            transform: translateY(-2px);
-            border-color: var(--blue);
-            background: var(--soft-blue);
-        }
-        
         .mode-btn.active {
             background: linear-gradient(135deg, var(--blue) 0%, #3b82f6 100%);
             border-color: var(--blue);
-            box-shadow: 0 4px 12px rgba(29,78,216,0.3);
         }
         
         .mode-btn.active .mode-name {
@@ -421,48 +365,42 @@
         }
         
         .mode-emoji {
-            font-size: 24px;
+            font-size: 20px;
         }
         
         .mode-name {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
             color: var(--text);
-        }
-        
-        .mode-btn.active .mode-name {
-            color: white;
         }
         
         /* ===== DIRECTION SECTION ===== */
         .direction-container {
             background: white;
-            border-radius: 28px;
-            padding: 16px;
-            margin-bottom: 18px;
+            border-radius: 24px;
+            padding: 14px;
+            margin-bottom: 16px;
             box-shadow: var(--shadow);
             border: var(--outline);
         }
         
         .direction-header h4 {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         
         .direction-status-badge {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-            padding: 16px 20px;
+            gap: 12px;
+            padding: 12px 16px;
             border-radius: 50px;
             transition: all 0.3s ease;
             background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-            box-shadow: 0 6px 16px rgba(16,185,129,0.25);
         }
         
         .direction-status-badge.forward { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
@@ -475,13 +413,12 @@
         }
         
         @keyframes pulse-red {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.02); opacity: 0.95; }
-            100% { transform: scale(1); opacity: 1; }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.01); opacity: 0.95; }
         }
         
-        .direction-icon-large { font-size: 40px; }
-        .direction-text-large { font-size: 20px; font-weight: 800; color: white; }
+        .direction-icon-large { font-size: 32px; }
+        .direction-text-large { font-size: 16px; font-weight: 800; color: white; }
         
         .emergency-btn {
             width: 100%;
@@ -489,10 +426,9 @@
             color: white;
             border: none;
             border-radius: 50px;
-            padding: 14px;
-            font-size: 16px;
+            padding: 12px;
+            font-size: 15px;
             font-weight: 700;
-            box-shadow: 0 6px 14px rgba(220,38,38,0.3);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -507,10 +443,10 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            border-radius: 36px;
-            padding: 24px;
+            border-radius: 32px;
+            padding: 20px;
             width: calc(100% - 32px);
-            max-width: 340px;
+            max-width: 300px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.25);
             z-index: 1000;
             display: none;
@@ -520,21 +456,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
         
         .close-popup {
             background: none;
             border: none;
-            font-size: 32px;
+            font-size: 28px;
             cursor: pointer;
         }
         
         .contact-item {
             background: #f1f5f9;
             border-radius: 40px;
-            padding: 12px 16px;
-            margin-bottom: 10px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
         
         .shutdown-overlay {
@@ -550,103 +487,187 @@
         
         .shutdown-card {
             background: #0f172a;
-            padding: 24px;
-            border-radius: 48px;
+            padding: 20px;
+            border-radius: 40px;
             color: white;
             text-align: center;
-            width: 270px;
+            width: 250px;
         }
         
-        /* Mobile responsive adjustments */
+        /* Desktop fallback - hide mobile specific styles on desktop */
+        @media screen and (min-width: 768px) {
+            .tele-icon { width: 52px; height: 52px; font-size: 24px; }
+            .tele-value { font-size: 14px; }
+            .metric-value-compact { font-size: 18px; }
+        }
+        
+        /* Mobile specific - ensure square, compact shapes */
         @media screen and (max-width: 600px) {
-            .direction-icon-large { font-size: 32px; }
-            .direction-text-large { font-size: 16px; }
-            .direction-status-badge { padding: 12px 16px; gap: 10px; }
-            .mode-emoji { font-size: 20px; }
-            .mode-name { font-size: 10px; }
-            
-            .welcome-icons {
-                flex-direction: row;
-                gap: 8px;
-                align-items: center;
+            .metrics-two-column {
+                gap: 10px;
             }
             
-            .icon-small, .profile-icon-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
+            .telemetry-card, .health-card-compact {
+                padding: 12px 8px;
+                border-radius: 20px;
             }
             
-            .welcome-date {
-                font-size: 13px;
-                padding: 5px 10px;
+            .telemetry-grid {
+                gap: 10px 8px;
             }
             
             .tele-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 20px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+            
+            .tele-label {
+                font-size: 8px;
             }
             
             .tele-value {
-                font-size: 13px;
+                font-size: 12px;
             }
             
-            .metric-value-compact {
+            .health-metrics-compact {
+                gap: 8px;
+            }
+            
+            .health-metric-compact {
+                padding: 6px 3px;
+                border-radius: 14px;
+            }
+            
+            .health-metric-compact .metric-value-compact {
+                font-size: 15px;
+            }
+            
+            .health-metric-compact .metric-label-compact {
+                font-size: 7px;
+            }
+            
+            .health-header-compact {
+                margin-bottom: 10px;
+            }
+            
+            .health-header-compact h4 {
+                font-size: 10px;
+            }
+            
+            .direction-icon-large {
+                font-size: 28px;
+            }
+            
+            .direction-text-large {
+                font-size: 14px;
+            }
+            
+            .direction-status-badge {
+                padding: 10px 14px;
+                gap: 10px;
+            }
+            
+            .mode-emoji {
                 font-size: 18px;
+            }
+            
+            .mode-name {
+                font-size: 8px;
+            }
+            
+            .welcome-icons {
+                gap: 5px;
+            }
+            
+            .icon-small, .profile-icon-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
             }
         }
         
         @media screen and (max-width: 480px) {
             .top-row {
-                flex-direction: row;
-                gap: 10px;
+                gap: 8px;
             }
-            .welcome-card { padding: 12px; }
-            .profile-image { width: 44px; height: 44px; }
-            .greeting-text .name-large { font-size: 16px; }
-            .patient-badge { font-size: 9px; padding: 3px 8px; }
-            .welcome-date { font-size: 12px; padding: 4px 10px; }
-            .icon-small, .profile-icon-btn {
-                width: 30px;
-                height: 30px;
-                font-size: 15px;
+            
+            .welcome-card {
+                padding: 10px;
             }
-            .map-card {
-                min-height: 120px;
-            }
-            #map {
-                min-height: 120px;
-            }
-            .telemetry-grid {
-                gap: 12px 8px;
-            }
-            .tele-icon {
+            
+            .profile-image {
                 width: 40px;
                 height: 40px;
-                font-size: 18px;
             }
+            
+            .greeting-text .name-large {
+                font-size: 15px;
+            }
+            
+            .patient-badge {
+                font-size: 8px;
+                padding: 2px 6px;
+            }
+            
+            .welcome-date {
+                font-size: 9px;
+                padding: 3px 8px;
+            }
+            
+            .tele-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            
             .tele-value {
+                font-size: 11px;
+            }
+            
+            .metric-value-compact {
+                font-size: 14px;
+            }
+            
+            .health-metric-compact .metric-label-compact {
+                font-size: 6px;
+            }
+            
+            .direction-icon-large {
+                font-size: 24px;
+            }
+            
+            .direction-text-large {
                 font-size: 12px;
             }
-            .tele-label {
-                font-size: 10px;
+            
+            .mode-btn {
+                padding: 6px 3px;
             }
-            .metric-value-compact {
+            
+            .mode-emoji {
                 font-size: 16px;
             }
         }
         
         @media screen and (max-width: 380px) {
-            .welcome-date {
-                font-size: 11px;
-            }
-            .greeting-text .name-large {
+            .tele-icon {
+                width: 32px;
+                height: 32px;
                 font-size: 14px;
             }
-            .profile-image {
-                width: 38px;
-                height: 38px;
+            
+            .tele-value {
+                font-size: 10px;
+            }
+            
+            .metric-value-compact {
+                font-size: 13px;
+            }
+            
+            .health-metric-compact {
+                padding: 5px 2px;
             }
         }
     </style>
@@ -655,7 +676,6 @@
 
 <!-- Two Column Top Row: Welcome + Map -->
 <div class="top-row">
-    <!-- Welcome Card with Date -->
     <div class="welcome-card">
         <div>
             <div class="welcome-top">
@@ -666,7 +686,7 @@
                     <div class="patient-badge" id="patientBadge">PT-10234 · A+</div>
                 </div>
             </div>
-            <div class="welcome-date" id="welcomeDate">
+            <div class="welcome-date">
                 <span>📅</span> <span id="dateText">Loading...</span>
             </div>
         </div>
@@ -677,24 +697,23 @@
         </div>
     </div>
     
-    <!-- Map Card -->
     <div class="map-card">
         <div id="map"></div>
     </div>
 </div>
 
-<!-- Patient Details Popup -->
+<!-- Patient Details -->
 <div id="patientDetailsSection" class="patient-details-section" style="display: none;">
-    <div class="popup-header" style="padding: 0 0 12px 0;">
-        <h3 style="font-size: 18px;">📋 Patient Information</h3>
-        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px;">×</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="font-size: 16px;">📋 Patient Information</h3>
+        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 24px;">×</button>
     </div>
     <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
 
-<!-- Two Column Metrics: Telemetry (4 items 2x2) + Vital Signs (4 items 2x2) -->
+<!-- Two Column Metrics: Telemetry (4 items) + Vital Signs (4 items) -->
 <div class="metrics-two-column">
-    <!-- Telemetry Card - 2x2 Grid with 4 items: Speed, Battery, Obstacle, Range -->
+    <!-- Telemetry Card - 2x2 Grid -->
     <div class="telemetry-card">
         <div class="telemetry-grid">
             <div class="telemetry-item">
@@ -720,7 +739,7 @@
         </div>
     </div>
     
-    <!-- Health Card Compact - 2x2 Grid with 4 vitals -->
+    <!-- Health Card - 2x2 Grid -->
     <div class="health-card-compact">
         <div class="health-header-compact">
             <span>❤️</span>
@@ -729,7 +748,7 @@
         <div class="health-metrics-compact">
             <div class="health-metric-compact" id="hrMetric">
                 <div class="metric-value-compact" id="healthHeartRate">84</div>
-                <div class="metric-label-compact">Heart Rate</div>
+                <div class="metric-label-compact">HR</div>
                 <small>bpm</small>
             </div>
             <div class="health-metric-compact" id="bpMetric">
@@ -739,7 +758,7 @@
             </div>
             <div class="health-metric-compact" id="tempMetric">
                 <div class="metric-value-compact" id="healthTemp">36.8</div>
-                <div class="metric-label-compact">Temp</div>
+                <div class="metric-label-compact">TEMP</div>
                 <small>°C</small>
             </div>
             <div class="health-metric-compact" id="o2Metric">
@@ -791,7 +810,7 @@
 
 <div id="healthPopup" class="popup-panel">
     <div class="popup-header"><h3>❤️ Health details</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
-    <div class="health-grid" style="display:grid; gap:10px;">
+    <div style="display:grid; gap:8px;">
         <div>Heart rate: <strong id="popupHR">84</strong> bpm</div>
         <div>Blood pressure: <strong>130/80</strong></div>
         <div>Temperature: <strong>36.8°C</strong></div>
@@ -801,20 +820,19 @@
 
 <div id="logPopup" class="popup-panel">
     <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
-    <div id="tripLog" style="max-height:180px; overflow-y:auto;"></div>
-    <button style="margin-top:12px; background:#eef2ff; border:none; padding:10px; border-radius:40px; width:100%;" onclick="downloadLog()">📥 Download</button>
+    <div id="tripLog" style="max-height:160px; overflow-y:auto;"></div>
+    <button style="margin-top:10px; background:#eef2ff; border:none; padding:8px; border-radius:30px; width:100%;" onclick="downloadLog()">📥 Download</button>
 </div>
 
 <div class="shutdown-overlay" id="shutdownOverlay">
     <div class="shutdown-card">
-        <div style="font-size:42px;">⚠️</div>
-        <div style="font-size:22px; font-weight:700;">EMERGENCY HALT</div>
-        <button onclick="closeShutdown()" style="margin-top:16px; background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
+        <div style="font-size:36px;">⚠️</div>
+        <div style="font-size:18px; font-weight:700;">EMERGENCY HALT</div>
+        <button onclick="closeShutdown()" style="margin-top:12px; background:white; border:none; padding:8px 20px; border-radius:30px;">Dismiss</button>
     </div>
 </div>
 
 <script>
-    // Patient data
     let patient = {
         firstName: 'Rebecca',
         fullName: 'Rebecca Rowe',
@@ -823,7 +841,6 @@
         blood: 'A+',
         doctor: 'Dr. Sarah Adams',
         contact: '+1 555 0199',
-        emergencyContact: 'Michael (son) · +1 555 8723',
         medications: 'Lisinopril 10mg, Metformin 500mg',
         nextAppointment: 'May 15, 10:30 AM',
         photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
@@ -851,34 +868,27 @@
         document.getElementById('patientFirstName').innerText = patient.firstName;
         document.getElementById('profileImage').src = patient.photo;
         document.getElementById('patientBadge').innerText = `${patient.id} · ${patient.blood}`;
-        
-        const today = new Date();
-        const options = { month: 'short', day: 'numeric', year: 'numeric' };
-        document.getElementById('dateText').innerText = today.toLocaleDateString('en-US', options);
+        document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
     }
     renderPatientDetails();
 
-    // Profile icon popup
-    const patientDetailsSection = document.getElementById('patientDetailsSection');
+    const patientSection = document.getElementById('patientDetailsSection');
     const detailsGrid = document.getElementById('patientDetailsGrid');
-    
-    document.getElementById('profileIconBtn').onclick = function() {
-        if (patientDetailsSection.style.display === 'none' || patientDetailsSection.style.display === '') {
-            patientDetailsSection.style.display = 'block';
+    document.getElementById('profileIconBtn').onclick = () => {
+        if (patientSection.style.display === 'none' || patientSection.style.display === '') {
+            patientSection.style.display = 'block';
             detailsGrid.classList.add('visible');
-            patientDetailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            patientSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } else {
-            patientDetailsSection.style.display = 'none';
+            patientSection.style.display = 'none';
             detailsGrid.classList.remove('visible');
         }
     };
-    
-    window.closePatientDetails = function() {
-        patientDetailsSection.style.display = 'none';
+    window.closePatientDetails = () => {
+        patientSection.style.display = 'none';
         detailsGrid.classList.remove('visible');
     };
 
-    // Direction state
     let directionIndex = 0;
     const directions = ['forward', 'right', 'forward', 'left', 'forward', 'stop', 'backward', 'forward'];
     
@@ -886,9 +896,7 @@
         const badge = document.getElementById('directionBadge');
         const iconLarge = document.getElementById('dirIconLarge');
         const textLarge = document.getElementById('dirTextLarge');
-        
         badge.className = 'direction-status-badge';
-        
         if (direction === 'forward') {
             badge.classList.add('forward');
             iconLarge.innerHTML = '⬆️';
@@ -917,13 +925,12 @@
         updateDirectionUI(directions[directionIndex]);
     }
     
-    // Update all telemetry values (including range)
     function updateTelemetry() {
         let battery = Math.floor(Math.random() * 25) + 70;
         let speed = (Math.random() * 1.2 + 0.8).toFixed(1);
+        let range = (Math.random() * 8 + 2).toFixed(1);
         let r = Math.random();
         let obs = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
-        let range = (Math.random() * 8 + 2).toFixed(1); // Range between 2-10 km
         
         document.getElementById('speedValue').innerText = speed + ' m/s';
         document.getElementById('batteryValue').innerText = battery + '%';
@@ -937,7 +944,6 @@
         else obsSpan.classList.add('obstacle-block');
     }
     
-    // Health metrics
     function updateHealthMetrics() {
         let hr = parseInt(document.getElementById('healthHeartRate').innerText) || 84;
         let change = Math.random() > 0.5 ? 1 : -1;
@@ -979,7 +985,6 @@
         else bpMetric.classList.remove('unstable');
     }
     
-    // Mode switching
     function setMode(mode) {
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -987,19 +992,10 @@
         });
     }
     
-    // Map
-    const map = L.map('map', {
-        zoomControl: false,
-        attributionControl: false
-    }).setView([12.9716, 77.5946], 15);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: ''
-    }).addTo(map);
-    
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([12.9716, 77.5946], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
     L.marker([12.9716, 77.5946]).addTo(map).bindPopup('You are here');
     
-    // Popup handlers
     const logPopup = document.getElementById('logPopup');
     const callPopup = document.getElementById('callPopup');
     const healthPopup = document.getElementById('healthPopup');
@@ -1018,7 +1014,6 @@
     };
     window.closeLogPopup = () => logPopup.style.display = 'none';
     
-    // Mode selector
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => setMode(btn.dataset.mode));
     });
@@ -1027,10 +1022,10 @@
     function addTrip(text) {
         let d = document.createElement('div');
         d.style.background = '#f1f5f9';
-        d.style.borderRadius = '18px';
-        d.style.padding = '10px 14px';
-        d.style.marginBottom = '8px';
-        d.style.fontSize = '13px';
+        d.style.borderRadius = '14px';
+        d.style.padding = '8px 12px';
+        d.style.marginBottom = '6px';
+        d.style.fontSize = '12px';
         d.innerText = text;
         tripLog.appendChild(d);
     }
@@ -1052,7 +1047,6 @@
         updateDirectionUI('forward');
     };
     
-    // Initialize
     setMode('Line Following');
     updateDirectionUI('forward');
     updateTelemetry();
