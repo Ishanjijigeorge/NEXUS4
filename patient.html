@@ -44,16 +44,16 @@
         .top-row {
             display: flex;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
         
         /* Welcome Card */
         .welcome-card {
             background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
-            border-radius: 24px;
-            padding: 14px;
+            border-radius: 28px;
+            padding: 16px;
             color: white;
-            box-shadow: 0 8px 20px rgba(29,78,216,0.25);
+            box-shadow: 0 10px 24px rgba(29,78,216,0.3);
             flex: 1.2;
             display: flex;
             flex-direction: column;
@@ -63,67 +63,67 @@
         .welcome-top {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         
         .profile-image {
-            width: 48px;
-            height: 48px;
-            border-radius: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
             object-fit: cover;
             border: 2px solid white;
             background: #cbd5e1;
         }
         
         .greeting-text .hello {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 500;
             opacity: 0.9;
         }
         
         .greeting-text .name-large {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 700;
             line-height: 1.2;
         }
         
         .patient-badge {
             background: rgba(255,255,255,0.2);
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 30px;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 500;
             display: inline-block;
-            margin-top: 3px;
+            margin-top: 4px;
         }
         
         .welcome-date {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 500;
             display: flex;
             align-items: center;
             gap: 5px;
             background: rgba(255,255,255,0.15);
-            padding: 4px 10px;
-            border-radius: 25px;
+            padding: 5px 12px;
+            border-radius: 30px;
             width: fit-content;
         }
         
         .welcome-icons {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             justify-content: flex-end;
-            margin-top: 8px;
+            margin-top: 10px;
         }
         
         .icon-small, .profile-icon-btn {
             background: rgba(255,255,255,0.18);
             border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 16px;
-            font-size: 16px;
+            width: 38px;
+            height: 38px;
+            border-radius: 19px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -137,7 +137,7 @@
         /* Map Card */
         .map-card {
             background: white;
-            border-radius: 24px;
+            border-radius: 28px;
             padding: 0;
             box-shadow: var(--shadow);
             border: var(--outline);
@@ -147,9 +147,9 @@
         
         #map {
             height: 100%;
-            min-height: 128px;
+            min-height: 148px;
             width: 100%;
-            border-radius: 24px;
+            border-radius: 28px;
             background: #e2e8f0;
         }
         
@@ -160,9 +160,9 @@
         /* Patient details */
         .patient-details-section {
             background: white;
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 16px;
+            border-radius: 28px;
+            padding: 18px;
+            margin-bottom: 18px;
             box-shadow: var(--shadow);
             border: var(--outline);
         }
@@ -170,11 +170,11 @@
         .details-grid {
             display: none;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 12px;
+            gap: 14px;
+            margin-top: 14px;
             background: #f8fafd;
-            padding: 14px;
-            border-radius: 20px;
+            padding: 16px;
+            border-radius: 22px;
         }
         
         .details-grid.visible { display: grid; }
@@ -192,22 +192,22 @@
         
         .detail-value {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 14px;
             margin-top: 3px;
         }
 
-        /* ===== TWO COLUMN METRICS SECTION - COMPACT & SQUARE ===== */
+        /* ===== TWO COLUMN METRICS SECTION - INCREASED SIZES ===== */
         .metrics-two-column {
             display: flex;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
         
         /* Telemetry Card - 2x2 grid */
         .telemetry-card {
             background: white;
-            padding: 14px 10px;
-            border-radius: 24px;
+            padding: 16px 12px;
+            border-radius: 28px;
             box-shadow: var(--shadow);
             border: var(--outline);
             flex: 1;
@@ -216,7 +216,7 @@
         .telemetry-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px 10px;
+            gap: 16px 12px;
         }
         
         .telemetry-item {
@@ -227,31 +227,31 @@
         }
         
         .tele-icon {
-            width: 44px;
-            height: 44px;
+            width: 52px;
+            height: 52px;
             background: #f0f5ff;
             border: 2px solid rgba(29,78,216,0.12);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 24px;
             color: var(--blue);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         
         .tele-label {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.4px;
         }
         
         .tele-value {
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 700;
-            margin-top: 2px;
+            margin-top: 3px;
             color: var(--text);
         }
         
@@ -262,8 +262,8 @@
         /* Health Card - 2x2 grid */
         .health-card-compact {
             background: white;
-            border-radius: 24px;
-            padding: 14px 10px;
+            border-radius: 28px;
+            padding: 16px 12px;
             box-shadow: var(--shadow);
             border: 1px solid #e2e8f0;
             flex: 1;
@@ -274,33 +274,33 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            margin-bottom: 12px;
-            padding-bottom: 6px;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
             border-bottom: 2px solid #e5e7eb;
         }
         
         .health-header-compact h4 {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--text);
         }
         
         .health-header-compact span {
-            font-size: 16px;
+            font-size: 20px;
         }
         
         .health-metrics-compact {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 12px;
         }
         
         .health-metric-compact {
             text-align: center;
             background: white;
-            padding: 8px 4px;
-            border-radius: 16px;
+            padding: 10px 6px;
+            border-radius: 18px;
             transition: all 0.2s;
             border: 2px solid var(--green);
         }
@@ -311,7 +311,7 @@
         }
         
         .health-metric-compact .metric-value-compact {
-            font-size: 17px;
+            font-size: 20px;
             font-weight: 800;
             color: var(--blue);
         }
@@ -321,35 +321,35 @@
         }
         
         .health-metric-compact .metric-label-compact {
-            font-size: 8px;
+            font-size: 9px;
             color: var(--muted);
             text-transform: uppercase;
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 3px;
         }
         
         .health-metric-compact small {
-            font-size: 7px;
+            font-size: 8px;
             color: var(--muted);
         }
 
-        /* ===== DRIVE MODE - COMPACT ===== */
+        /* ===== DRIVE MODE ===== */
         .drive-mode-row {
             display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin-bottom: 18px;
         }
         
         .mode-btn {
             flex: 1;
             background: white;
             border: 2px solid #e2e8f0;
-            border-radius: 50px;
-            padding: 8px 4px;
+            border-radius: 60px;
+            padding: 10px 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: var(--shadow);
@@ -365,11 +365,11 @@
         }
         
         .mode-emoji {
-            font-size: 20px;
+            font-size: 24px;
         }
         
         .mode-name {
-            font-size: 9px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--text);
         }
@@ -377,28 +377,28 @@
         /* ===== DIRECTION SECTION ===== */
         .direction-container {
             background: white;
-            border-radius: 24px;
-            padding: 14px;
-            margin-bottom: 16px;
+            border-radius: 28px;
+            padding: 18px;
+            margin-bottom: 18px;
             box-shadow: var(--shadow);
             border: var(--outline);
         }
         
         .direction-header h4 {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         .direction-status-badge {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-radius: 50px;
+            gap: 14px;
+            padding: 16px 20px;
+            border-radius: 60px;
             transition: all 0.3s ease;
             background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
         }
@@ -417,24 +417,24 @@
             50% { transform: scale(1.01); opacity: 0.95; }
         }
         
-        .direction-icon-large { font-size: 32px; }
-        .direction-text-large { font-size: 16px; font-weight: 800; color: white; }
+        .direction-icon-large { font-size: 38px; }
+        .direction-text-large { font-size: 19px; font-weight: 800; color: white; }
         
         .emergency-btn {
             width: 100%;
             background: var(--danger);
             color: white;
             border: none;
-            border-radius: 50px;
-            padding: 12px;
-            font-size: 15px;
+            border-radius: 60px;
+            padding: 14px;
+            font-size: 17px;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
         
         /* Popups */
@@ -443,10 +443,10 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            border-radius: 32px;
-            padding: 20px;
+            border-radius: 36px;
+            padding: 24px;
             width: calc(100% - 32px);
-            max-width: 300px;
+            max-width: 320px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.25);
             z-index: 1000;
             display: none;
@@ -456,22 +456,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
         
         .close-popup {
             background: none;
             border: none;
-            font-size: 28px;
+            font-size: 32px;
             cursor: pointer;
         }
         
         .contact-item {
             background: #f1f5f9;
             border-radius: 40px;
-            padding: 10px 14px;
-            margin-bottom: 8px;
-            font-size: 13px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            font-size: 14px;
         }
         
         .shutdown-overlay {
@@ -487,187 +487,185 @@
         
         .shutdown-card {
             background: #0f172a;
-            padding: 20px;
-            border-radius: 40px;
+            padding: 24px;
+            border-radius: 48px;
             color: white;
             text-align: center;
-            width: 250px;
+            width: 280px;
         }
         
-        /* Desktop fallback - hide mobile specific styles on desktop */
-        @media screen and (min-width: 768px) {
-            .tele-icon { width: 52px; height: 52px; font-size: 24px; }
-            .tele-value { font-size: 14px; }
-            .metric-value-compact { font-size: 18px; }
-        }
-        
-        /* Mobile specific - ensure square, compact shapes */
+        /* Mobile responsive - slightly increased sizes */
         @media screen and (max-width: 600px) {
             .metrics-two-column {
                 gap: 10px;
             }
             
             .telemetry-card, .health-card-compact {
-                padding: 12px 8px;
-                border-radius: 20px;
+                padding: 14px 10px;
+                border-radius: 24px;
             }
             
             .telemetry-grid {
-                gap: 10px 8px;
+                gap: 14px 10px;
             }
             
             .tele-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-                margin-bottom: 4px;
+                width: 48px;
+                height: 48px;
+                font-size: 22px;
+                margin-bottom: 6px;
             }
             
             .tele-label {
-                font-size: 8px;
+                font-size: 9px;
             }
             
             .tele-value {
-                font-size: 12px;
+                font-size: 14px;
             }
             
             .health-metrics-compact {
-                gap: 8px;
-            }
-            
-            .health-metric-compact {
-                padding: 6px 3px;
-                border-radius: 14px;
-            }
-            
-            .health-metric-compact .metric-value-compact {
-                font-size: 15px;
-            }
-            
-            .health-metric-compact .metric-label-compact {
-                font-size: 7px;
-            }
-            
-            .health-header-compact {
-                margin-bottom: 10px;
-            }
-            
-            .health-header-compact h4 {
-                font-size: 10px;
-            }
-            
-            .direction-icon-large {
-                font-size: 28px;
-            }
-            
-            .direction-text-large {
-                font-size: 14px;
-            }
-            
-            .direction-status-badge {
-                padding: 10px 14px;
                 gap: 10px;
             }
             
-            .mode-emoji {
+            .health-metric-compact {
+                padding: 8px 5px;
+                border-radius: 16px;
+            }
+            
+            .health-metric-compact .metric-value-compact {
                 font-size: 18px;
             }
             
-            .mode-name {
+            .health-metric-compact .metric-label-compact {
                 font-size: 8px;
             }
             
+            .health-header-compact {
+                margin-bottom: 12px;
+            }
+            
+            .health-header-compact h4 {
+                font-size: 12px;
+            }
+            
+            .direction-icon-large {
+                font-size: 34px;
+            }
+            
+            .direction-text-large {
+                font-size: 17px;
+            }
+            
+            .direction-status-badge {
+                padding: 14px 18px;
+                gap: 12px;
+            }
+            
+            .mode-emoji {
+                font-size: 22px;
+            }
+            
+            .mode-name {
+                font-size: 10px;
+            }
+            
             .welcome-icons {
-                gap: 5px;
+                gap: 6px;
             }
             
             .icon-small, .profile-icon-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 14px;
+                width: 34px;
+                height: 34px;
+                font-size: 16px;
+            }
+            
+            .profile-image {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .greeting-text .name-large {
+                font-size: 20px;
             }
         }
         
         @media screen and (max-width: 480px) {
             .top-row {
-                gap: 8px;
+                gap: 10px;
             }
             
             .welcome-card {
-                padding: 10px;
+                padding: 14px;
             }
             
             .profile-image {
-                width: 40px;
-                height: 40px;
+                width: 46px;
+                height: 46px;
             }
             
             .greeting-text .name-large {
-                font-size: 15px;
+                font-size: 18px;
             }
             
             .patient-badge {
-                font-size: 8px;
-                padding: 2px 6px;
-            }
-            
-            .welcome-date {
                 font-size: 9px;
                 padding: 3px 8px;
             }
             
+            .welcome-date {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            
             .tele-icon {
-                width: 36px;
-                height: 36px;
-                font-size: 16px;
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
             }
             
             .tele-value {
-                font-size: 11px;
+                font-size: 13px;
             }
             
             .metric-value-compact {
-                font-size: 14px;
-            }
-            
-            .health-metric-compact .metric-label-compact {
-                font-size: 6px;
+                font-size: 17px;
             }
             
             .direction-icon-large {
-                font-size: 24px;
+                font-size: 30px;
             }
             
             .direction-text-large {
-                font-size: 12px;
+                font-size: 15px;
             }
             
-            .mode-btn {
-                padding: 6px 3px;
+            .direction-status-badge {
+                padding: 12px 16px;
             }
             
             .mode-emoji {
-                font-size: 16px;
+                font-size: 20px;
+            }
+            
+            .mode-name {
+                font-size: 9px;
             }
         }
         
         @media screen and (max-width: 380px) {
             .tele-icon {
-                width: 32px;
-                height: 32px;
-                font-size: 14px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
             }
             
             .tele-value {
-                font-size: 10px;
+                font-size: 12px;
             }
             
             .metric-value-compact {
-                font-size: 13px;
-            }
-            
-            .health-metric-compact {
-                padding: 5px 2px;
+                font-size: 15px;
             }
         }
     </style>
@@ -705,8 +703,8 @@
 <!-- Patient Details -->
 <div id="patientDetailsSection" class="patient-details-section" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <h3 style="font-size: 16px;">📋 Patient Information</h3>
-        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 24px;">×</button>
+        <h3 style="font-size: 18px;">📋 Patient Information</h3>
+        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px;">×</button>
     </div>
     <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
@@ -820,15 +818,15 @@
 
 <div id="logPopup" class="popup-panel">
     <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
-    <div id="tripLog" style="max-height:160px; overflow-y:auto;"></div>
-    <button style="margin-top:10px; background:#eef2ff; border:none; padding:8px; border-radius:30px; width:100%;" onclick="downloadLog()">📥 Download</button>
+    <div id="tripLog" style="max-height:170px; overflow-y:auto;"></div>
+    <button style="margin-top:12px; background:#eef2ff; border:none; padding:10px; border-radius:40px; width:100%;" onclick="downloadLog()">📥 Download</button>
 </div>
 
 <div class="shutdown-overlay" id="shutdownOverlay">
     <div class="shutdown-card">
-        <div style="font-size:36px;">⚠️</div>
-        <div style="font-size:18px; font-weight:700;">EMERGENCY HALT</div>
-        <button onclick="closeShutdown()" style="margin-top:12px; background:white; border:none; padding:8px 20px; border-radius:30px;">Dismiss</button>
+        <div style="font-size:42px;">⚠️</div>
+        <div style="font-size:20px; font-weight:700;">EMERGENCY HALT</div>
+        <button onclick="closeShutdown()" style="margin-top:14px; background:white; border:none; padding:10px 24px; border-radius:40px;">Dismiss</button>
     </div>
 </div>
 
@@ -1022,9 +1020,9 @@
     function addTrip(text) {
         let d = document.createElement('div');
         d.style.background = '#f1f5f9';
-        d.style.borderRadius = '14px';
-        d.style.padding = '8px 12px';
-        d.style.marginBottom = '6px';
+        d.style.borderRadius = '16px';
+        d.style.padding = '10px 14px';
+        d.style.marginBottom = '8px';
         d.style.fontSize = '12px';
         d.innerText = text;
         tripLog.appendChild(d);
