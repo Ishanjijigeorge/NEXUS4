@@ -130,26 +130,22 @@
             margin-top: 4px;
         }
         
-        .patient-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 4px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-            font-weight: 500;
-            display: inline-block;
-            margin-top: 6px;
-        }
-        
-        .welcome-date {
+        .datetime-display {
             font-size: 12px;
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
             background: rgba(255,255,255,0.15);
             padding: 5px 12px;
             border-radius: 30px;
             width: fit-content;
+            margin-top: 8px;
+        }
+        
+        .datetime-display .time {
+            font-weight: 700;
+            font-size: 14px;
         }
         
         .welcome-icons {
@@ -615,11 +611,6 @@
             transition: 0.2s;
         }
         
-        .popup-close-btn:hover {
-            background: #1e40af;
-            transform: scale(0.98);
-        }
-        
         .contact-item {
             background: #f1f5f9;
             border-radius: 40px;
@@ -648,47 +639,91 @@
             width: 280px;
         }
         
-        .action-toast {
+        .alert-popup {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 28px;
-            padding: 24px 28px;
-            min-width: 260px;
-            max-width: 320px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 32px;
+            padding: 28px 24px;
+            min-width: 280px;
+            max-width: 340px;
             text-align: center;
             z-index: 3000;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-            animation: fadeInOut 5s ease forwards;
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
         }
         
-        .action-toast .toast-title {
+        .alert-popup .alert-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .alert-popup .alert-title {
             font-size: 20px;
-            font-weight: 700;
-            color: var(--blue);
+            font-weight: 800;
+            color: white;
             margin-bottom: 8px;
         }
         
-        .action-toast .toast-message {
-            font-size: 15px;
-            color: var(--text);
-            line-height: 1.4;
+        .alert-popup .alert-message {
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
         }
         
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
-            15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); visibility: hidden; }
+        .alert-popup .alert-time {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 20px;
+        }
+        
+        .alert-popup button {
+            background: white;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .notification-badge {
+            position: relative;
+        }
+        
+        .notification-badge .badge-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         @media screen and (max-width: 600px) {
             .metrics-two-column { gap: 10px; }
             .tele-icon { width: 48px; height: 48px; font-size: 22px; }
-            .action-toast { width: calc(100% - 48px); }
         }
     </style>
 </head>
@@ -705,12 +740,18 @@
                     <span class="patient-id-small" id="patientIdSmall"></span>
                 </div>
             </div>
-            <div class="welcome-date">
-                <span>📅</span> <span id="dateText"></span>
+            <div class="datetime-display" id="datetimeDisplay">
+                <span>📅</span>
+                <span id="dateText"></span>
+                <span>⏰</span>
+                <span class="time" id="timeText">--:-- --</span>
             </div>
         </div>
         <div class="welcome-icons">
-            <button class="icon-small" id="welcomeNotifBtn">🔔</button>
+            <button class="icon-small notification-badge" id="welcomeNotifBtn">
+                🔔
+                <span id="notificationBadge" class="badge-count" style="display: none;">0</span>
+            </button>
             <button class="icon-small" id="welcomeLogBtn">📋</button>
             <button class="profile-icon-btn" id="profileIconBtn">👤</button>
         </div>
@@ -791,12 +832,8 @@
 <button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
 
 <div id="callPopup" class="popup-panel square">
-    <div class="popup-header">
-        <h3>📞 Quick Call</h3>
-    </div>
-    <div class="popup-message">
-        Emergency contacts available
-    </div>
+    <div class="popup-header"><h3>📞 Quick Call</h3></div>
+    <div class="popup-message">Emergency contacts available</div>
     <div style="margin-bottom: 16px;">
         <div class="contact-item">🚑 Emergency <span style="float:right;">108</span></div>
         <div class="contact-item">👨‍⚕️ Dr. Adams <span style="float:right;">+1 555 1234</span></div>
@@ -806,10 +843,8 @@
 </div>
 
 <div id="logPopup" class="popup-panel square">
-    <div class="popup-header">
-        <h3>📋 Trip Log</h3>
-    </div>
-    <div id="tripLog" style="max-height:200px; overflow-y:auto; margin-bottom: 16px;"></div>
+    <div class="popup-header"><h3>📋 Notifications Log</h3></div>
+    <div id="notificationLog" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;"></div>
     <button class="popup-close-btn" onclick="closeLogPopup()">Close</button>
 </div>
 
@@ -839,6 +874,16 @@
     };
     
     let currentMode = 'Line Following';
+    
+    // Track processed items by ID to prevent duplicates
+    let processedItems = {
+        messages: new Set(),
+        alarms: new Set(),
+        appointments: new Set(),
+        media: new Set(),
+        calendar: new Set()
+    };
+    
     let dataStore = {
         messages: [],
         alarms: [],
@@ -847,133 +892,220 @@
         calendar: []
     };
     
+    let notifications = []; // Store notifications for log
+    let notificationCount = 0;
+    let scheduledAlerts = [];
+    
     let carouselIndex = 0;
     let slides = [];
     let autoSlideInterval = null;
     let isVitalsAbnormal = false;
     let touchStartX = 0, touchEndX = 0;
     
-    function showSquareToast(title, message) {
-        const existingToast = document.querySelector('.action-toast');
-        if (existingToast) existingToast.remove();
+    // Update live date and time
+    function updateDateTime() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('dateText').innerText = dateStr;
+        document.getElementById('timeText').innerText = timeStr;
+    }
+    
+    // Show alert popup
+    function showAlertPopup(title, message, time) {
+        const existingPopup = document.querySelector('.alert-popup');
+        if (existingPopup) existingPopup.remove();
         
-        const toast = document.createElement('div');
-        toast.className = 'action-toast';
-        toast.innerHTML = `
-            <div class="toast-title">${title}</div>
-            <div class="toast-message">${message}</div>
+        const popup = document.createElement('div');
+        popup.className = 'alert-popup';
+        popup.innerHTML = `
+            <div class="alert-icon">⏰</div>
+            <div class="alert-title">${title}</div>
+            <div class="alert-message">${message}</div>
+            <div class="alert-time">📅 ${time || 'Now'}</div>
+            <button onclick="this.parentElement.remove()">Dismiss</button>
         `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
+        document.body.appendChild(popup);
+        
+        // Auto remove after 10 seconds
+        setTimeout(() => {
+            if (popup.parentElement) popup.remove();
+        }, 10000);
+        
+        // Add to notification log
+        addToNotificationLog(title, message, time);
     }
     
-    // Listen for patient data from Firebase
-    function listenPatientData() {
-        const patientRef = doc(db, "patients", PATIENT_ID);
-        onSnapshot(patientRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                Object.assign(patientData, data);
-                renderPatientDetails();
-                updatePatientDisplay();
+    // Add to notification log
+    function addToNotificationLog(title, message, time) {
+        const logEntry = {
+            id: Date.now() + Math.random(),
+            title: title,
+            message: message,
+            time: time || new Date().toLocaleString(),
+            timestamp: new Date()
+        };
+        notifications.unshift(logEntry);
+        notificationCount++;
+        updateNotificationBadge();
+        updateNotificationLogDisplay();
+        
+        // Play sound effect (optional - using beep)
+        try {
+            const audio = new Audio('data:audio/wav;base64,U3RlYWx0aCBzb3VuZA==');
+            audio.play().catch(() => {});
+        } catch(e) {}
+    }
+    
+    function updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        if (notificationCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    function updateNotificationLogDisplay() {
+        const logContainer = document.getElementById('notificationLog');
+        if (!logContainer) return;
+        
+        if (notifications.length === 0) {
+            logContainer.innerHTML = '<div class="empty-message">No notifications yet</div>';
+            return;
+        }
+        
+        logContainer.innerHTML = notifications.slice(0, 20).map(n => `
+            <div class="content-item" style="background: #f1f5f9; margin-bottom: 8px;">
+                <div class="title">${escapeHtml(n.title)}</div>
+                <div class="detail">${escapeHtml(n.message)}</div>
+                <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${n.time}</div>
+            </div>
+        `).join('');
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Check and trigger time-based alerts
+    function checkTimeBasedAlerts() {
+        const now = new Date();
+        const nowStr = now.toLocaleString();
+        
+        // Check alarms
+        dataStore.alarms.forEach(alarm => {
+            if (alarm.triggered) return;
+            if (alarm.time && shouldTriggerAlert(alarm.time, now)) {
+                alarm.triggered = true;
+                showAlertPopup('⏰ Alarm', alarm.title, alarm.time);
+            }
+        });
+        
+        // Check appointments
+        dataStore.appointments.forEach(appt => {
+            if (appt.triggered) return;
+            if (appt.time && shouldTriggerAlert(appt.time, now)) {
+                appt.triggered = true;
+                showAlertPopup('📋 Appointment Reminder', `${appt.title} at ${appt.detail || ''}`, appt.time);
+            }
+        });
+        
+        // Check calendar events
+        dataStore.calendar.forEach(event => {
+            if (event.triggered) return;
+            if (event.time && shouldTriggerAlert(event.time, now)) {
+                event.triggered = true;
+                showAlertPopup('📅 Calendar Event', event.title, event.time);
             }
         });
     }
     
-    // Listen for drive mode from Firebase (unified across devices)
-    function listenDriveMode() {
-        const modeRef = doc(db, "settings", MODE_ID);
-        onSnapshot(modeRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().mode) {
-                currentMode = docSnap.data().mode;
-                updateModeUI(currentMode);
-                showSquareToast("🔄 Drive Mode", `Mode changed to: ${currentMode}`);
+    function shouldTriggerAlert(alertTime, currentTime) {
+        if (!alertTime) return false;
+        
+        try {
+            // Parse different date formats
+            let alertDate;
+            if (alertTime.includes(' - ')) {
+                alertDate = new Date(alertTime.split(' - ')[0]);
+            } else if (alertTime.match(/\d{4}-\d{2}-\d{2}/)) {
+                alertDate = new Date(alertTime.replace(/-/g, '/'));
+            } else if (alertTime.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+                alertDate = new Date(alertTime);
+            } else if (alertTime.match(/\d{1,2}:\d{2}/)) {
+                // Time-only alert - check if that time is within the next minute
+                const [hours, minutes] = alertTime.split(':').map(Number);
+                const alertToday = new Date();
+                alertToday.setHours(hours, minutes, 0, 0);
+                const diff = Math.abs(alertToday - currentTime);
+                return diff < 60000; // Within 1 minute
+            } else {
+                alertDate = new Date(alertTime);
             }
-        });
+            
+            if (isNaN(alertDate.getTime())) return false;
+            
+            const diff = Math.abs(alertDate - currentTime);
+            return diff < 60000; // Within 1 minute
+        } catch(e) {
+            return false;
+        }
     }
     
-    // Update mode when patient clicks
-    async function setMode(mode) {
-        if (mode === currentMode) return;
-        currentMode = mode;
-        const modeRef = doc(db, "settings", MODE_ID);
-        await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
-        updateModeUI(mode);
-        showSquareToast("✅ Mode Changed", `Switched to: ${mode}`);
-    }
-    
-    function updateModeUI(mode) {
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.mode === mode) btn.classList.add('active');
-        });
-    }
-    
-    function updatePatientDisplay() {
-        document.getElementById('patientFirstName').innerText = patientData.fullName;
-        document.getElementById('patientIdSmall').innerHTML = `ID: ${patientData.patientId} · ${patientData.age}y`;
-        document.getElementById('profileImage').src = patientData.photo;
-        document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-    
-    function renderPatientDetails() {
-        const grid = document.getElementById('patientDetailsGrid');
-        const fields = [
-            { label: 'Full Name', value: patientData.fullName },
-            { label: 'Patient ID', value: patientData.patientId },
-            { label: 'Age', value: patientData.age + ' years' },
-            { label: 'Blood Group', value: patientData.bloodGroup },
-            { label: 'Doctor', value: patientData.doctor },
-            { label: 'Contact', value: patientData.contactNo }
-        ];
-        grid.innerHTML = '';
-        fields.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'detail-item';
-            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
-            grid.appendChild(div);
-        });
-    }
-    
-    // Listen for caretaker actions
+    // Listen for caretaker actions with duplicate prevention
     function listenCaretakerActions() {
         const actionsRef = doc(db, "patientActions", "feed");
         onSnapshot(actionsRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                let hasUpdate = false;
                 
                 const types = ['messages', 'alarms', 'appointments', 'media', 'calendar'];
-                const titles = {
-                    messages: '💬 New Message',
-                    alarms: '⏰ New Alarm',
-                    appointments: '📋 New Appointment',
-                    media: '🎵 New Media',
-                    calendar: '📅 New Calendar Event'
-                };
                 
                 types.forEach(type => {
                     if (data[type] && Array.isArray(data[type])) {
-                        const newItems = data[type].slice(dataStore[type].length);
-                        newItems.forEach(item => {
-                            hasUpdate = true;
-                            const displayText = item.title || item.text || 'Update';
-                            const detailText = item.detail || '';
-                            showSquareToast(titles[type], `${displayText} ${detailText ? '• ' + detailText : ''}`);
-                            dataStore[type].push(item);
+                        data[type].forEach(item => {
+                            // Create unique ID for item
+                            const itemId = `${item.timestamp || item.time || Date.now()}_${item.title || item.text || ''}`;
+                            
+                            if (!processedItems[type].has(itemId)) {
+                                processedItems[type].add(itemId);
+                                
+                                // Add to store
+                                dataStore[type].push({ ...item, triggered: false });
+                                
+                                // Show alert for time-based items
+                                if (type === 'alarms' && item.time) {
+                                    showAlertPopup('⏰ New Alarm', item.title, item.time);
+                                } else if (type === 'appointments' && item.time) {
+                                    showAlertPopup('📋 New Appointment', `${item.title} - ${item.detail || ''}`, item.time);
+                                } else if (type === 'calendar' && item.time) {
+                                    showAlertPopup('📅 New Calendar Event', item.title, item.time);
+                                } else if (type === 'messages') {
+                                    addToNotificationLog('💬 New Message', item.text, item.time);
+                                } else if (type === 'media') {
+                                    addToNotificationLog('🎵 Media', item.title, item.time);
+                                }
+                            }
                         });
                     }
                 });
                 
-                if (hasUpdate) {
-                    rebuildCarousel();
-                }
+                rebuildCarousel();
             }
         });
     }
     
     function rebuildCarousel() {
         const container = document.getElementById('carouselSlides');
+        if (!container) return;
         container.innerHTML = '';
         slides = [];
         
@@ -1045,18 +1177,9 @@
         updateCarouselPosition();
     }
     
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-    
     function updateDots() {
         const dotsContainer = document.getElementById('carouselDots');
+        if (!dotsContainer) return;
         dotsContainer.innerHTML = '';
         slides.forEach((_, idx) => {
             const dot = document.createElement('div');
@@ -1068,7 +1191,9 @@
     
     function updateCarouselPosition() {
         const wrapper = document.querySelector('.carousel-slides');
-        wrapper.style.transform = `translateX(-${carouselIndex * 100}%)`;
+        if (wrapper) {
+            wrapper.style.transform = `translateX(-${carouselIndex * 100}%)`;
+        }
         updateDots();
     }
     
@@ -1097,6 +1222,7 @@
     
     function initTouchEvents() {
         const wrapper = document.querySelector('.carousel-wrapper');
+        if (!wrapper) return;
         wrapper.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
         wrapper.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
@@ -1113,35 +1239,71 @@
         });
     }
     
-    // Health metrics simulation
-    function updateHealthMetrics() {
-        let hr = parseInt(document.getElementById('healthHeartRateSlide')?.innerText) || 84;
-        hr = Math.min(110, Math.max(65, hr + (Math.random() > 0.5 ? 1 : -1)));
-        let temp = 36.8 + (Math.random() - 0.5) * 0.2;
-        let o2 = Math.min(100, Math.max(92, 98 + (Math.random() > 0.8 ? -1 : 0)));
-        let systolic = 130 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0);
-        let diastolic = 80 + (systolic - 130) * 0.6;
-        
-        if (document.getElementById('healthHeartRateSlide')) {
-            document.getElementById('healthHeartRateSlide').innerText = hr;
-            document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
-            document.getElementById('healthO2Slide').innerText = o2;
-            document.getElementById('healthBPSlide').innerText = `${Math.min(160, Math.max(85, systolic))}/${Math.min(100, Math.max(55, diastolic))}`;
-        }
-        
-        const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95);
-        if (abnormal && !isVitalsAbnormal) {
-            isVitalsAbnormal = true;
-            if (autoSlideInterval) clearInterval(autoSlideInterval);
-            if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
-            showSquareToast("⚠️ Health Alert", "Vitals are abnormal! Check your health metrics.");
-        } else if (!abnormal && isVitalsAbnormal) {
-            isVitalsAbnormal = false;
-            resetAutoSlideTimer();
-            showSquareToast("✅ Health Normal", "Vitals have returned to normal range.");
-        }
+    // Listen for drive mode
+    function listenDriveMode() {
+        const modeRef = doc(db, "settings", MODE_ID);
+        onSnapshot(modeRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().mode) {
+                currentMode = docSnap.data().mode;
+                updateModeUI(currentMode);
+            }
+        });
     }
     
+    async function setMode(mode) {
+        if (mode === currentMode) return;
+        currentMode = mode;
+        const modeRef = doc(db, "settings", MODE_ID);
+        await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
+        updateModeUI(mode);
+    }
+    
+    function updateModeUI(mode) {
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.mode === mode) btn.classList.add('active');
+        });
+    }
+    
+    // Listen for patient data
+    function listenPatientData() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        onSnapshot(patientRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                Object.assign(patientData, data);
+                renderPatientDetails();
+                updatePatientDisplay();
+            }
+        });
+    }
+    
+    function updatePatientDisplay() {
+        document.getElementById('patientFirstName').innerText = patientData.fullName;
+        document.getElementById('patientIdSmall').innerHTML = `ID: ${patientData.patientId} · ${patientData.age}y`;
+        document.getElementById('profileImage').src = patientData.photo;
+    }
+    
+    function renderPatientDetails() {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Full Name', value: patientData.fullName },
+            { label: 'Patient ID', value: patientData.patientId },
+            { label: 'Age', value: patientData.age + ' years' },
+            { label: 'Blood Group', value: patientData.bloodGroup },
+            { label: 'Doctor', value: patientData.doctor },
+            { label: 'Contact', value: patientData.contactNo }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
+            grid.appendChild(div);
+        });
+    }
+    
+    // Telemetry and direction simulation
     function updateTelemetry() {
         document.getElementById('speedValue').innerText = (Math.random() * 1.2 + 0.8).toFixed(1) + ' m/s';
         document.getElementById('batteryValue').innerText = Math.floor(Math.random() * 25) + 70 + '%';
@@ -1167,6 +1329,34 @@
         text.innerHTML = texts[dir];
     }
     
+    function updateHealthMetrics() {
+        let hr = parseInt(document.getElementById('healthHeartRateSlide')?.innerText) || 84;
+        hr = Math.min(110, Math.max(65, hr + (Math.random() > 0.5 ? 1 : -1)));
+        let temp = 36.8 + (Math.random() - 0.5) * 0.2;
+        let o2 = Math.min(100, Math.max(92, 98 + (Math.random() > 0.8 ? -1 : 0)));
+        let systolic = 130 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0);
+        let diastolic = 80 + (systolic - 130) * 0.6;
+        
+        if (document.getElementById('healthHeartRateSlide')) {
+            document.getElementById('healthHeartRateSlide').innerText = hr;
+            document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
+            document.getElementById('healthO2Slide').innerText = o2;
+            document.getElementById('healthBPSlide').innerText = `${Math.min(160, Math.max(85, systolic))}/${Math.min(100, Math.max(55, diastolic))}`;
+        }
+        
+        const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95);
+        if (abnormal && !isVitalsAbnormal) {
+            isVitalsAbnormal = true;
+            if (autoSlideInterval) clearInterval(autoSlideInterval);
+            if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
+            addToNotificationLog('⚠️ Health Alert', 'Vitals are abnormal! Please check your health metrics.', new Date().toLocaleString());
+        } else if (!abnormal && isVitalsAbnormal) {
+            isVitalsAbnormal = false;
+            resetAutoSlideTimer();
+            addToNotificationLog('✅ Health Normal', 'Vitals have returned to normal range.', new Date().toLocaleString());
+        }
+    }
+    
     // UI Handlers
     window.closePatientDetails = () => {
         document.getElementById('patientDetailsSection').style.display = 'none';
@@ -1174,12 +1364,16 @@
     window.closePopup = (type) => { 
         if(type==='call') document.getElementById('callPopup').style.display='none';
     };
-    window.closeLogPopup = () => document.getElementById('logPopup').style.display = 'none';
-    window.downloadLog = () => showSquareToast("📄 Report", "Log downloaded successfully");
+    window.closeLogPopup = () => {
+        document.getElementById('logPopup').style.display = 'none';
+        notificationCount = 0;
+        updateNotificationBadge();
+    };
+    
     window.triggerEmergency = () => {
         document.body.classList.add('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'flex';
-        showSquareToast("⚠️ EMERGENCY", "Emergency stop activated");
+        addToNotificationLog('⚠️ EMERGENCY', 'Emergency stop activated', new Date().toLocaleString());
     };
     window.closeShutdown = () => {
         document.body.classList.remove('emergency-shutdown');
@@ -1192,34 +1386,24 @@
     
     document.getElementById('profileIconBtn').onclick = () => {
         const section = document.getElementById('patientDetailsSection');
-        if (section.style.display === 'none' || section.style.display === '') {
-            section.style.display = 'block';
-        } else {
-            section.style.display = 'none';
-        }
+        section.style.display = section.style.display === 'none' || section.style.display === '' ? 'block' : 'none';
     };
-    document.getElementById('welcomeNotifBtn').onclick = () => showSquareToast("🔔 Notifications", "No new alerts at this time");
-    document.getElementById('welcomeLogBtn').onclick = () => document.getElementById('logPopup').style.display = 'block';
+    document.getElementById('welcomeNotifBtn').onclick = () => {
+        document.getElementById('logPopup').style.display = 'block';
+        notificationCount = 0;
+        updateNotificationBadge();
+    };
+    document.getElementById('welcomeLogBtn').onclick = () => {
+        document.getElementById('logPopup').style.display = 'block';
+    };
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => setMode(btn.dataset.mode));
     });
     
-    // Add trip log entries
-    const tripLog = document.getElementById('tripLog');
-    function addTrip(text) {
-        let d = document.createElement('div');
-        d.style.background = '#f1f5f9';
-        d.style.borderRadius = '16px';
-        d.style.padding = '10px 14px';
-        d.style.marginBottom = '8px';
-        d.style.fontSize = '12px';
-        d.innerText = text;
-        tripLog.appendChild(d);
-    }
-    addTrip('Today 09:05 → 09:42 · 37 min');
-    addTrip('Today 11:18 → 11:40 · 22 min');
-    
     // Initialize
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    
     listenPatientData();
     listenDriveMode();
     listenCaretakerActions();
@@ -1229,6 +1413,7 @@
     setInterval(updateDirection, 4500);
     setInterval(updateTelemetry, 4000);
     setInterval(updateHealthMetrics, 8000);
+    setInterval(checkTimeBasedAlerts, 30000); // Check for time-based alerts every 30 seconds
     updatePatientDisplay();
 </script>
 </body>
