@@ -42,7 +42,7 @@
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
-        /* ===== TWO COLUMN LAYOUT FOR WELCOME + MAP ===== */
+        /* ===== TWO COLUMN LAYOUT FOR MOBILE (welcome + map side by side) ===== */
         .top-row {
             display: flex;
             gap: 12px;
@@ -121,6 +121,7 @@
             width: fit-content;
         }
         
+        /* Welcome icons - horizontal on mobile */
         .welcome-icons {
             display: flex;
             gap: 8px;
@@ -167,7 +168,7 @@
             transform: scale(1.05);
         }
         
-        /* Map Card */
+        /* Map Card - without title and fullscreen button */
         .map-card {
             background: white;
             border-radius: 28px;
@@ -186,153 +187,13 @@
             background: #e2e8f0;
         }
         
-        /* Hide Leaflet default zoom controls */
+        /* Hide Leaflet default zoom controls (+/-) */
         .leaflet-control-zoom {
             display: none !important;
         }
+        
         .leaflet-control-attribution {
             display: none !important;
-        }
-        
-        /* ===== TWO COLUMN LAYOUT FOR TELEMETRY + HEALTH ===== */
-        .stats-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 18px;
-        }
-        
-        /* Telemetry Card */
-        .telemetry-card {
-            background: white;
-            border-radius: 28px;
-            padding: 14px 12px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            flex: 1;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-        
-        .tele-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-        }
-        
-        .tele-icon {
-            width: 52px;
-            height: 52px;
-            background: #f0f5ff;
-            border: 2px solid rgba(29,78,216,0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: var(--blue);
-            margin-bottom: 6px;
-        }
-        
-        .tele-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-        
-        .tele-value {
-            font-size: 14px;
-            font-weight: 700;
-            margin-top: 2px;
-        }
-        
-        .obstacle-clear { color: var(--green); }
-        .obstacle-warn { color: var(--amber); }
-        .obstacle-block { color: var(--danger); }
-        
-        /* Health Card - Compact for side by side */
-        .health-card-compact {
-            background: white;
-            border-radius: 28px;
-            padding: 14px;
-            box-shadow: var(--shadow);
-            border: 1px solid #e2e8f0;
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .health-card-compact::before {
-            content: "❤️";
-            position: absolute;
-            right: -8px;
-            top: -8px;
-            font-size: 55px;
-            opacity: 0.05;
-            pointer-events: none;
-        }
-        
-        .health-header-compact {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        
-        .health-header-compact h4 {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-        }
-        
-        .health-header-compact span {
-            font-size: 20px;
-        }
-        
-        .health-metrics-compact {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-        
-        .health-metric-compact {
-            text-align: center;
-            background: white;
-            padding: 8px 4px;
-            border-radius: 16px;
-            transition: all 0.2s;
-            border: 2px solid var(--green);
-        }
-        
-        .health-metric-compact.unstable {
-            border: 2px solid var(--danger);
-            background: #fff5f5;
-        }
-        
-        .health-metric-compact .metric-value {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--blue);
-        }
-        
-        .health-metric-compact.unstable .metric-value {
-            color: var(--danger);
-        }
-        
-        .health-metric-compact .metric-label {
-            font-size: 9px;
-            color: var(--muted);
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        
-        .health-metric-compact small {
-            font-size: 8px;
-            color: var(--muted);
         }
         
         /* Patient details section */
@@ -374,7 +235,148 @@
             margin-top: 4px;
         }
 
-        /* DRIVE MODE ROW */
+        /* ===== TELEMETRY + VITAL SIGNS TWO COLUMN SECTION (for mobile) ===== */
+        .metrics-two-column {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        /* TELEMETRY ROW - now as a column in the left side */
+        .telemetry-card {
+            background: white;
+            padding: 14px 8px;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .telemetry-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .tele-icon {
+            width: 52px;
+            height: 52px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29,78,216,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+        
+        .tele-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        
+        .tele-value {
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        
+        .obstacle-clear { color: var(--green); }
+        .obstacle-warn { color: var(--amber); }
+        .obstacle-block { color: var(--danger); }
+        
+        /* Health Card - now compact for right side */
+        .health-card-compact {
+            background: white;
+            border-radius: 28px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .health-card-compact::before {
+            content: "❤️";
+            position: absolute;
+            right: -5px;
+            top: -5px;
+            font-size: 50px;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+        
+        .health-header-compact {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .health-header-compact h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .health-header-compact span {
+            font-size: 18px;
+        }
+        
+        .health-metrics-compact {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .health-metric-compact {
+            text-align: center;
+            background: white;
+            padding: 8px 4px;
+            border-radius: 16px;
+            transition: all 0.2s;
+            border: 2px solid var(--green);
+        }
+        
+        .health-metric-compact.unstable {
+            border: 2px solid var(--danger);
+            background: #fff5f5;
+        }
+        
+        .health-metric-compact .metric-value-compact {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+        
+        .health-metric-compact.unstable .metric-value-compact {
+            color: var(--danger);
+        }
+        
+        .health-metric-compact .metric-label-compact {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .health-metric-compact small {
+            font-size: 8px;
+            color: var(--muted);
+        }
+
+        /* ===== DRIVE MODE - COMPACT ROW ===== */
         .drive-mode-row {
             display: flex;
             gap: 10px;
@@ -423,7 +425,11 @@
             color: var(--text);
         }
         
-        /* DIRECTION SECTION */
+        .mode-btn.active .mode-name {
+            color: white;
+        }
+        
+        /* ===== DIRECTION SECTION ===== */
         .direction-container {
             background: white;
             border-radius: 28px;
@@ -546,14 +552,118 @@
             width: 270px;
         }
         
-        /* Mobile Responsive */
+        /* Desktop styles - revert to original layout */
+        @media screen and (min-width: 601px) {
+            .metrics-two-column {
+                display: none;
+            }
+            
+            .telemetry-row {
+                display: flex;
+                justify-content: space-around;
+                background: white;
+                padding: 14px 8px;
+                border-radius: 80px;
+                box-shadow: var(--shadow);
+                border: var(--outline);
+                margin-bottom: 16px;
+            }
+            
+            .tele-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 80px;
+            }
+            
+            .health-card {
+                background: white;
+                border-radius: 28px;
+                padding: 16px;
+                margin-bottom: 18px;
+                box-shadow: var(--shadow);
+                border: 1px solid #e2e8f0;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .health-card::before {
+                content: "❤️";
+                position: absolute;
+                right: -10px;
+                top: -10px;
+                font-size: 70px;
+                opacity: 0.05;
+                pointer-events: none;
+            }
+            
+            .health-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 14px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #e5e7eb;
+            }
+            
+            .health-header h3 { font-size: 16px; font-weight: 700; }
+            .health-header span { font-size: 24px; }
+            
+            .health-metrics {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                margin-bottom: 6px;
+            }
+            
+            .health-metric {
+                text-align: center;
+                background: white;
+                padding: 10px 6px;
+                border-radius: 18px;
+                transition: all 0.2s;
+                border: 2px solid var(--green);
+            }
+            
+            .health-metric .metric-value {
+                font-size: 20px;
+                font-weight: 800;
+                color: var(--blue);
+            }
+            
+            .health-metric .metric-label {
+                font-size: 10px;
+                color: var(--muted);
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+            
+            .health-metric small { font-size: 9px; color: var(--muted); }
+        }
+        
+        /* Mobile responsive adjustments - two column layout for telemetry and vitals */
         @media screen and (max-width: 600px) {
+            /* Hide desktop versions */
+            .telemetry-row {
+                display: none;
+            }
+            
+            .health-card {
+                display: none;
+            }
+            
+            /* Show mobile two column layout */
+            .metrics-two-column {
+                display: flex;
+            }
+            
             .direction-icon-large { font-size: 32px; }
             .direction-text-large { font-size: 16px; }
             .direction-status-badge { padding: 12px 16px; gap: 10px; }
             .mode-emoji { font-size: 20px; }
             .mode-name { font-size: 10px; }
             
+            /* Keep welcome icons horizontal on mobile */
             .welcome-icons {
                 flex-direction: row;
                 gap: 8px;
@@ -569,26 +679,6 @@
             .welcome-date {
                 font-size: 13px;
                 padding: 5px 10px;
-            }
-            
-            /* Make stats row column on smaller screens */
-            .stats-row {
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .telemetry-card {
-                padding: 12px;
-            }
-            
-            .tele-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 20px;
-            }
-            
-            .tele-value {
-                font-size: 13px;
             }
         }
         
@@ -613,9 +703,16 @@
             #map {
                 min-height: 120px;
             }
-            
-            .tele-item {
-                width: auto;
+            .tele-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+            }
+            .tele-value {
+                font-size: 12px;
+            }
+            .health-metric-compact .metric-value-compact {
+                font-size: 16px;
             }
         }
         
@@ -665,7 +762,7 @@
     </div>
 </div>
 
-<!-- Patient Details Popup (triggered by profile icon) -->
+<!-- Patient Details Popup -->
 <div id="patientDetailsSection" class="patient-details-section" style="display: none;">
     <div class="popup-header" style="padding: 0 0 12px 0;">
         <h3 style="font-size: 18px;">📋 Patient Information</h3>
@@ -674,28 +771,47 @@
     <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
 
-<!-- Two Column Row: Telemetry + Vital Signs -->
-<div class="stats-row">
-    <!-- Telemetry Card -->
+<!-- Desktop Telemetry Row (hidden on mobile) -->
+<div class="telemetry-row">
+    <div class="tele-item">
+        <div class="tele-icon">⚡</div>
+        <span class="tele-label">SPEED</span>
+        <span class="tele-value" id="speedValueDesktop">1.2 m/s</span>
+    </div>
+    <div class="tele-item">
+        <div class="tele-icon">🔋</div>
+        <span class="tele-label">BATTERY</span>
+        <span class="tele-value" id="batteryValueDesktop">82%</span>
+    </div>
+    <div class="tele-item">
+        <div class="tele-icon">🚧</div>
+        <span class="tele-label">OBSTACLE</span>
+        <span class="tele-value" id="obstacleValueDesktop">Clear</span>
+    </div>
+</div>
+
+<!-- Mobile: Two Column Layout for Telemetry + Vital Signs -->
+<div class="metrics-two-column">
+    <!-- Telemetry Card (vertical layout) -->
     <div class="telemetry-card">
-        <div class="tele-item">
+        <div class="telemetry-item">
             <div class="tele-icon">⚡</div>
             <span class="tele-label">SPEED</span>
-            <span class="tele-value" id="speedValue">1.2 m/s</span>
+            <span class="tele-value" id="speedValueMobile">1.2 m/s</span>
         </div>
-        <div class="tele-item">
+        <div class="telemetry-item">
             <div class="tele-icon">🔋</div>
             <span class="tele-label">BATTERY</span>
-            <span class="tele-value" id="batteryValue">82%</span>
+            <span class="tele-value" id="batteryValueMobile">82%</span>
         </div>
-        <div class="tele-item">
+        <div class="telemetry-item">
             <div class="tele-icon">🚧</div>
             <span class="tele-label">OBSTACLE</span>
-            <span class="tele-value" id="obstacleValue">Clear</span>
+            <span class="tele-value" id="obstacleValueMobile">Clear</span>
         </div>
     </div>
     
-    <!-- Vital Signs Card (Compact) -->
+    <!-- Health Card Compact -->
     <div class="health-card-compact">
         <div class="health-header-compact">
             <span>❤️</span>
@@ -703,25 +819,55 @@
         </div>
         <div class="health-metrics-compact">
             <div class="health-metric-compact" id="hrMetricCompact">
-                <div class="metric-value" id="healthHeartRate">84</div>
-                <div class="metric-label">Heart</div>
+                <div class="metric-value-compact" id="healthHeartRateCompact">84</div>
+                <div class="metric-label-compact">HR</div>
                 <small>bpm</small>
             </div>
             <div class="health-metric-compact" id="bpMetricCompact">
-                <div class="metric-value" id="healthBP">130/80</div>
-                <div class="metric-label">BP</div>
+                <div class="metric-value-compact" id="healthBPCompact">130/80</div>
+                <div class="metric-label-compact">BP</div>
                 <small>mmHg</small>
             </div>
             <div class="health-metric-compact" id="tempMetricCompact">
-                <div class="metric-value" id="healthTemp">36.8</div>
-                <div class="metric-label">Temp</div>
+                <div class="metric-value-compact" id="healthTempCompact">36.8</div>
+                <div class="metric-label-compact">Temp</div>
                 <small>°C</small>
             </div>
             <div class="health-metric-compact" id="o2MetricCompact">
-                <div class="metric-value" id="healthO2">98</div>
-                <div class="metric-label">SpO₂</div>
+                <div class="metric-value-compact" id="healthO2Compact">98</div>
+                <div class="metric-label-compact">SpO₂</div>
                 <small>%</small>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Desktop Health Card (hidden on mobile) -->
+<div class="health-card">
+    <div class="health-header">
+        <span>❤️</span>
+        <h3>Vital Signs Monitor</h3>
+    </div>
+    <div class="health-metrics">
+        <div class="health-metric" id="hrMetricDesktop">
+            <div class="metric-value" id="healthHeartRateDesktop">84</div>
+            <div class="metric-label">Heart Rate</div>
+            <small>bpm</small>
+        </div>
+        <div class="health-metric" id="bpMetricDesktop">
+            <div class="metric-value" id="healthBPDesktop">130/80</div>
+            <div class="metric-label">BP</div>
+            <small>mmHg</small>
+        </div>
+        <div class="health-metric" id="tempMetricDesktop">
+            <div class="metric-value" id="healthTempDesktop">36.8</div>
+            <div class="metric-label">Temp</div>
+            <small>°C</small>
+        </div>
+        <div class="health-metric" id="o2MetricDesktop">
+            <div class="metric-value" id="healthO2Desktop">98</div>
+            <div class="metric-label">SpO₂</div>
+            <small>%</small>
         </div>
     </div>
 </div>
@@ -789,7 +935,7 @@
 </div>
 
 <script>
-    // Patient data
+    // Patient data (same as before)
     let patient = {
         firstName: 'Rebecca',
         fullName: 'Rebecca Rowe',
@@ -803,6 +949,87 @@
         nextAppointment: 'May 15, 10:30 AM',
         photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
+
+    function updateAllTelemetryValues(speed, battery, obstacle) {
+        // Desktop
+        document.getElementById('speedValueDesktop').innerText = speed;
+        document.getElementById('batteryValueDesktop').innerText = battery;
+        document.getElementById('obstacleValueDesktop').innerText = obstacle;
+        // Mobile
+        document.getElementById('speedValueMobile').innerText = speed;
+        document.getElementById('batteryValueMobile').innerText = battery;
+        document.getElementById('obstacleValueMobile').innerText = obstacle;
+        
+        const obsSpanDesktop = document.getElementById('obstacleValueDesktop');
+        const obsSpanMobile = document.getElementById('obstacleValueMobile');
+        obsSpanDesktop.className = 'tele-value';
+        obsSpanMobile.className = 'tele-value';
+        if (obstacle === 'Clear') {
+            obsSpanDesktop.classList.add('obstacle-clear');
+            obsSpanMobile.classList.add('obstacle-clear');
+        } else if (obstacle === 'Nearby') {
+            obsSpanDesktop.classList.add('obstacle-warn');
+            obsSpanMobile.classList.add('obstacle-warn');
+        } else {
+            obsSpanDesktop.classList.add('obstacle-block');
+            obsSpanMobile.classList.add('obstacle-block');
+        }
+    }
+    
+    function updateAllHealthValues(hr, temp, o2, systolic, diastolic) {
+        // Desktop
+        document.getElementById('healthHeartRateDesktop').innerText = hr;
+        document.getElementById('healthTempDesktop').innerText = temp.toFixed(1);
+        document.getElementById('healthO2Desktop').innerText = o2;
+        document.getElementById('healthBPDesktop').innerText = `${systolic}/${diastolic}`;
+        
+        // Mobile compact
+        document.getElementById('healthHeartRateCompact').innerText = hr;
+        document.getElementById('healthTempCompact').innerText = temp.toFixed(1);
+        document.getElementById('healthO2Compact').innerText = o2;
+        document.getElementById('healthBPCompact').innerText = `${systolic}/${diastolic}`;
+        
+        // Update borders
+        const hrMetricDesktop = document.getElementById('hrMetricDesktop');
+        const hrMetricCompact = document.getElementById('hrMetricCompact');
+        if (hr < 60 || hr > 100) {
+            hrMetricDesktop.classList.add('unstable');
+            hrMetricCompact.classList.add('unstable');
+        } else {
+            hrMetricDesktop.classList.remove('unstable');
+            hrMetricCompact.classList.remove('unstable');
+        }
+        
+        const tempMetricDesktop = document.getElementById('tempMetricDesktop');
+        const tempMetricCompact = document.getElementById('tempMetricCompact');
+        if (temp < 36.1 || temp > 37.2) {
+            tempMetricDesktop.classList.add('unstable');
+            tempMetricCompact.classList.add('unstable');
+        } else {
+            tempMetricDesktop.classList.remove('unstable');
+            tempMetricCompact.classList.remove('unstable');
+        }
+        
+        const o2MetricDesktop = document.getElementById('o2MetricDesktop');
+        const o2MetricCompact = document.getElementById('o2MetricCompact');
+        if (o2 < 95) {
+            o2MetricDesktop.classList.add('unstable');
+            o2MetricCompact.classList.add('unstable');
+        } else {
+            o2MetricDesktop.classList.remove('unstable');
+            o2MetricCompact.classList.remove('unstable');
+        }
+        
+        const bpMetricDesktop = document.getElementById('bpMetricDesktop');
+        const bpMetricCompact = document.getElementById('bpMetricCompact');
+        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
+            bpMetricDesktop.classList.add('unstable');
+            bpMetricCompact.classList.add('unstable');
+        } else {
+            bpMetricDesktop.classList.remove('unstable');
+            bpMetricCompact.classList.remove('unstable');
+        }
+    }
 
     function renderPatientDetails() {
         const grid = document.getElementById('patientDetailsGrid');
@@ -892,62 +1119,37 @@
         updateDirectionUI(directions[directionIndex]);
     }
     
-    // Health metrics update with compact card support
+    // Health metrics
     function updateHealthMetrics() {
-        let hr = parseInt(document.getElementById('healthHeartRate').innerText) || 84;
+        let hr = parseInt(document.getElementById('healthHeartRateDesktop').innerText) || 84;
         let change = Math.random() > 0.5 ? 1 : -1;
         hr = Math.min(110, Math.max(65, hr + change));
-        document.getElementById('healthHeartRate').innerText = hr;
         
-        const hrMetric = document.getElementById('hrMetricCompact');
-        if (hr < 60 || hr > 100) hrMetric.classList.add('unstable');
-        else hrMetric.classList.remove('unstable');
-        
-        let temp = parseFloat(document.getElementById('healthTemp').innerText) || 36.8;
+        let temp = parseFloat(document.getElementById('healthTempDesktop').innerText) || 36.8;
         let tempChange = (Math.random() - 0.5) * 0.2;
         temp = Math.min(38.5, Math.max(35.5, temp + tempChange));
-        document.getElementById('healthTemp').innerText = temp.toFixed(1);
         
-        const tempMetric = document.getElementById('tempMetricCompact');
-        if (temp < 36.1 || temp > 37.2) tempMetric.classList.add('unstable');
-        else tempMetric.classList.remove('unstable');
-        
-        let o2 = parseInt(document.getElementById('healthO2').innerText) || 98;
+        let o2 = parseInt(document.getElementById('healthO2Desktop').innerText) || 98;
         let o2Change = Math.random() > 0.8 ? -1 : (Math.random() > 0.9 ? 1 : 0);
         o2 = Math.min(100, Math.max(92, o2 + o2Change));
-        document.getElementById('healthO2').innerText = o2;
-        
-        const o2Metric = document.getElementById('o2MetricCompact');
-        if (o2 < 95) o2Metric.classList.add('unstable');
-        else o2Metric.classList.remove('unstable');
         
         let systolic = 130;
         let diastolic = 80;
         let bpChange = Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0;
         systolic = Math.min(160, Math.max(85, 130 + bpChange));
         diastolic = Math.min(100, Math.max(55, 80 + (bpChange * 0.6)));
-        document.getElementById('healthBP').innerText = `${systolic}/${diastolic}`;
         
-        const bpMetric = document.getElementById('bpMetricCompact');
-        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) bpMetric.classList.add('unstable');
-        else bpMetric.classList.remove('unstable');
+        updateAllHealthValues(hr, temp, o2, systolic, diastolic);
     }
     
     // Telemetry updates
     function updateTelemetry() {
         let battery = Math.floor(Math.random() * 25) + 70;
-        document.getElementById('batteryValue').innerText = battery + '%';
         let speed = (Math.random() * 1.2 + 0.8).toFixed(1);
-        document.getElementById('speedValue').innerText = speed + ' m/s';
-        
         let r = Math.random();
         let obs = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
-        document.getElementById('obstacleValue').innerText = obs;
-        const obsSpan = document.getElementById('obstacleValue');
-        obsSpan.className = 'tele-value';
-        if (obs === 'Clear') obsSpan.classList.add('obstacle-clear');
-        else if (obs === 'Nearby') obsSpan.classList.add('obstacle-warn');
-        else obsSpan.classList.add('obstacle-block');
+        
+        updateAllTelemetryValues(speed + ' m/s', battery + '%', obs);
     }
     
     // Mode switching
@@ -1026,11 +1228,11 @@
     // Initialize
     setMode('Line Following');
     updateDirectionUI('forward');
+    updateTelemetry();
+    updateHealthMetrics();
     setInterval(simulateDirectionChange, 4500);
     setInterval(updateTelemetry, 4000);
     setInterval(updateHealthMetrics, 8000);
-    updateHealthMetrics();
-    updateTelemetry();
 </script>
 </body>
 </html>
