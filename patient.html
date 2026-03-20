@@ -49,7 +49,7 @@
             margin-bottom: 20px;
         }
         
-        /* Welcome Card - now part of flex row */
+        /* Welcome Card */
         .welcome-card {
             background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
             border-radius: 28px;
@@ -108,79 +108,20 @@
         }
         
         .welcome-date {
-            font-size: 11px;
-            opacity: 0.85;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0.95;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             margin-top: 8px;
-        }
-        
-        /* Map Card - now part of flex row */
-        .map-card {
-            background: white;
-            border-radius: 28px;
-            padding: 12px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .gps-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        
-        .gps-header h3 {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
-        }
-        
-        .fullscreen-btn {
-            border: none;
-            background: #eef2ff;
-            color: #1e3a8a;
-            padding: 4px 10px;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 12px;
             border-radius: 30px;
-            font-weight: 600;
-            font-size: 10px;
-            cursor: pointer;
+            width: fit-content;
         }
         
-        #map {
-            height: 120px;
-            border-radius: 18px;
-            background: #e2e8f0;
-        }
-        
-        /* Profile icon (replaces settings icon) */
-        .profile-icon-btn {
-            background: rgba(255,255,255,0.18);
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 22px;
-            font-size: 22px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            transition: 0.2s;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.25);
-        }
-        
-        .profile-icon-btn:hover {
-            background: rgba(255,255,255,0.35);
-            transform: scale(1.06);
-        }
-        
+        /* Welcome icons - vertical on mobile */
         .welcome-icons {
             display: flex;
             gap: 8px;
@@ -205,14 +146,55 @@
             border: 1px solid rgba(255,255,255,0.25);
         }
         
-        /* info bar - hidden on mobile, date now in welcome card */
-        .info-bar {
-            display: none;
+        .profile-icon-btn {
+            background: rgba(255,255,255,0.18);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.25);
         }
         
-        /* View profile button removed - now using profile icon popup */
-        .view-profile-btn-small {
-            display: none;
+        .icon-small:hover, .profile-icon-btn:hover {
+            background: rgba(255,255,255,0.35);
+            transform: scale(1.05);
+        }
+        
+        /* Map Card - without title and fullscreen button */
+        .map-card {
+            background: white;
+            border-radius: 28px;
+            padding: 0;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        #map {
+            height: 100%;
+            min-height: 140px;
+            width: 100%;
+            border-radius: 28px;
+            background: #e2e8f0;
+        }
+        
+        /* Hide Leaflet default zoom controls (+/-) */
+        .leaflet-control-zoom {
+            display: none !important;
+        }
+        
+        /* Also hide any other controls that might appear */
+        .leaflet-control-attribution {
+            display: none !important;
         }
         
         /* Patient details section */
@@ -539,20 +521,37 @@
             width: 270px;
         }
         
-        /* Mobile responsive adjustments */
-        @media screen and (max-width: 600px) {
-            .health-metrics {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .direction-icon-large { font-size: 32px; }
-            .direction-text-large { font-size: 16px; }
-            .direction-status-badge { padding: 12px 16px; gap: 10px; }
-            .mode-emoji { font-size: 20px; }
-            .mode-name { font-size: 10px; }
-            .tele-icon { width: 48px; height: 48px; font-size: 22px; }
-            .tele-item { width: 70px; }
-        }
-        
+/* Mobile responsive adjustments - icons horizontal */
+@media screen and (max-width: 600px) {
+    .health-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .direction-icon-large { font-size: 32px; }
+    .direction-text-large { font-size: 16px; }
+    .direction-status-badge { padding: 12px 16px; gap: 10px; }
+    .mode-emoji { font-size: 20px; }
+    .mode-name { font-size: 10px; }
+    .tele-icon { width: 48px; height: 48px; font-size: 22px; }
+    .tele-item { width: 70px; }
+    
+    /* Keep welcome icons horizontal on mobile */
+    .welcome-icons {
+        flex-direction: row;  /* <-- CHANGE THIS TO row */
+        gap: 8px;
+        align-items: center;
+    }
+    
+    .icon-small, .profile-icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+    
+    .welcome-date {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+}
         @media screen and (max-width: 480px) {
             .top-row {
                 flex-direction: row;
@@ -562,10 +561,32 @@
             .profile-image { width: 44px; height: 44px; }
             .greeting-text .name-large { font-size: 16px; }
             .patient-badge { font-size: 9px; padding: 3px 8px; }
-            .welcome-date { font-size: 9px; }
-            .icon-small { width: 32px; height: 32px; font-size: 16px; }
-            .map-card { padding: 10px; }
-            #map { height: 100px; }
+            .welcome-date { font-size: 12px; padding: 4px 10px; }
+            .icon-small, .profile-icon-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 15px;
+            }
+            .map-card {
+                min-height: 120px;
+            }
+            #map {
+                min-height: 120px;
+            }
+        }
+        
+        /* For very small screens */
+        @media screen and (max-width: 380px) {
+            .welcome-date {
+                font-size: 11px;
+            }
+            .greeting-text .name-large {
+                font-size: 14px;
+            }
+            .profile-image {
+                width: 38px;
+                height: 38px;
+            }
         }
     </style>
 </head>
@@ -595,12 +616,8 @@
         </div>
     </div>
     
-    <!-- Map Card -->
+    <!-- Map Card - No title, no fullscreen button, no zoom controls -->
     <div class="map-card">
-        <div class="gps-header">
-            <h3>📍 Location</h3>
-            <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
-        </div>
         <div id="map"></div>
     </div>
 </div>
@@ -737,7 +754,8 @@
         contact: '+1 555 0199',
         emergencyContact: 'Michael (son) · +1 555 8723',
         medications: 'Lisinopril 10mg, Metformin 500mg',
-        nextAppointment: 'May 15, 10:30 AM'
+        nextAppointment: 'May 15, 10:30 AM',
+        photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
 
     function renderPatientDetails() {
@@ -760,7 +778,7 @@
             grid.appendChild(div);
         });
         document.getElementById('patientFirstName').innerText = patient.firstName;
-        document.getElementById('profileImage').src = patient.photo || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+        document.getElementById('profileImage').src = patient.photo;
         document.getElementById('patientBadge').innerText = `${patient.id} · ${patient.blood}`;
         
         // Set date in welcome card
@@ -895,16 +913,17 @@
         });
     }
     
-    // Map
-    const map = L.map('map').setView([12.9716, 77.5946], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    // Map - without zoom controls
+    const map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([12.9716, 77.5946], 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: ''
+    }).addTo(map);
+    
     L.marker([12.9716, 77.5946]).addTo(map).bindPopup('You are here');
-    window.toggleGpsFullscreen = () => {
-        const card = document.querySelector('.map-card');
-        if (!document.fullscreenElement) card.requestFullscreen(); 
-        else document.exitFullscreen();
-    };
-    document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
     
     // Popup handlers
     const logPopup = document.getElementById('logPopup');
