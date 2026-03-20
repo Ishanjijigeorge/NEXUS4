@@ -14,7 +14,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
@@ -33,6 +33,7 @@
         window.doc = doc;
         window.setDoc = setDoc;
         window.onSnapshot = onSnapshot;
+        window.getDoc = getDoc;
         window.collection = collection;
         console.log("Patient page Firebase initialized");
     </script>
@@ -189,7 +190,7 @@
         }
         
         .details-grid {
-            display: none;
+            display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 14px;
             margin-top: 14px;
@@ -197,8 +198,6 @@
             padding: 16px;
             border-radius: 22px;
         }
-        
-        .details-grid.visible { display: grid; }
         
         .detail-item {
             display: flex;
@@ -209,12 +208,14 @@
             font-size: 10px;
             color: var(--muted);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .detail-value {
             font-weight: 600;
             font-size: 14px;
             margin-top: 3px;
+            color: var(--text);
         }
 
         .metrics-two-column {
@@ -602,7 +603,6 @@
             width: 280px;
         }
         
-        /* Toast notification */
         .toast-notification {
             position: fixed;
             bottom: 30px;
@@ -643,12 +643,12 @@
                 <img class="profile-image" id="profileImage" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile">
                 <div class="greeting-text">
                     <span class="hello">Welcome back</span>
-                    <span class="name-large" id="patientFirstName">Rebecca</span>
-                    <div class="patient-badge" id="patientBadge">PT-10234 · A+</div>
+                    <span class="name-large" id="patientFirstName">Loading...</span>
+                    <div class="patient-badge" id="patientBadge"></div>
                 </div>
             </div>
             <div class="welcome-date">
-                <span>📅</span> <span id="dateText">Loading...</span>
+                <span>📅</span> <span id="dateText"></span>
             </div>
         </div>
         <div class="welcome-icons">
@@ -706,7 +706,7 @@
 </div>
 
 <div class="drive-mode-row">
-    <div class="mode-btn active" data-mode="Line Following">
+    <div class="mode-btn" data-mode="Line Following">
         <span class="mode-emoji">➖</span>
         <span class="mode-name">Line Following</span>
     </div>
@@ -754,25 +754,23 @@
 </div>
 
 <script type="module">
-    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     
     const db = window.db;
     const PATIENT_ID = "patient_main";
+    const MODE_ID = "drive_mode";
     
     let patientData = {
-        firstName: 'Rebecca',
         fullName: 'Rebecca Rowe',
-        id: 'PT-10234',
+        patientId: 'PT-10234',
         age: '67',
-        blood: 'A+',
+        bloodGroup: 'A+',
         doctor: 'Dr. Sarah Adams',
-        contact: '+1 555 0199',
-        medications: 'Lisinopril 10mg, Metformin 500mg',
-        nextAppointment: 'May 15, 10:30 AM',
+        contactNo: '+1 555 0199',
         photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
     
-    // Data stores for carousel
+    let currentMode = 'Line Following';
     let dataStore = {
         messages: [],
         alarms: [],
@@ -787,8 +785,7 @@
     let isVitalsAbnormal = false;
     let touchStartX = 0, touchEndX = 0;
     
-    // Show toast notification
-    function showToast(message, type = 'info') {
+    function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast-notification';
         toast.innerHTML = message;
@@ -796,33 +793,7 @@
         setTimeout(() => toast.remove(), 5000);
     }
     
-    // Render patient details from Firebase
-    function renderPatientDetails() {
-        const grid = document.getElementById('patientDetailsGrid');
-        const fields = [
-            { label: 'Full name', value: patientData.fullName },
-            { label: 'Blood type', value: patientData.blood },
-            { label: 'Age', value: patientData.age + ' years' },
-            { label: 'Doctor', value: patientData.doctor },
-            { label: 'Contact', value: patientData.contact },
-            { label: 'Emergency', value: 'Michael (son)' },
-            { label: 'Medications', value: patientData.medications },
-            { label: 'Next appt', value: patientData.nextAppointment }
-        ];
-        grid.innerHTML = '';
-        fields.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'detail-item';
-            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
-            grid.appendChild(div);
-        });
-        document.getElementById('patientFirstName').innerText = patientData.firstName;
-        document.getElementById('profileImage').src = patientData.photo;
-        document.getElementById('patientBadge').innerHTML = `${patientData.id} · ${patientData.blood}`;
-        document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-    }
-    
-    // Listen for patient data changes from caretaker
+    // Listen for patient data from Firebase
     function listenPatientData() {
         const patientRef = doc(db, "patients", PATIENT_ID);
         onSnapshot(patientRef, (docSnap) => {
@@ -830,7 +801,63 @@
                 const data = docSnap.data();
                 Object.assign(patientData, data);
                 renderPatientDetails();
+                updatePatientDisplay();
             }
+        });
+    }
+    
+    // Listen for drive mode from Firebase (unified across devices)
+    function listenDriveMode() {
+        const modeRef = doc(db, "settings", MODE_ID);
+        onSnapshot(modeRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().mode) {
+                currentMode = docSnap.data().mode;
+                updateModeUI(currentMode);
+                showToast(`🔄 Drive mode changed to: ${currentMode}`);
+            }
+        });
+    }
+    
+    // Update mode when patient clicks
+    async function setMode(mode) {
+        if (mode === currentMode) return;
+        currentMode = mode;
+        const modeRef = doc(db, "settings", MODE_ID);
+        await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
+        updateModeUI(mode);
+        showToast(`✅ Mode switched to: ${mode}`);
+    }
+    
+    function updateModeUI(mode) {
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.mode === mode) btn.classList.add('active');
+        });
+    }
+    
+    function updatePatientDisplay() {
+        document.getElementById('patientFirstName').innerText = patientData.fullName.split(' ')[0];
+        document.getElementById('profileImage').src = patientData.photo;
+        document.getElementById('patientBadge').innerHTML = `${patientData.patientId} · ${patientData.bloodGroup}`;
+        document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    function renderPatientDetails() {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Full Name', value: patientData.fullName },
+            { label: 'Patient ID', value: patientData.patientId },
+            { label: 'Age', value: patientData.age + ' years' },
+            { label: 'Blood Group', value: patientData.bloodGroup },
+            { label: 'Doctor', value: patientData.doctor },
+            { label: 'Contact', value: patientData.contactNo }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
+            grid.appendChild(div);
         });
     }
     
@@ -842,14 +869,13 @@
                 const data = docSnap.data();
                 let hasUpdate = false;
                 
-                // Check each type for new items
                 const types = ['messages', 'alarms', 'appointments', 'media', 'calendar'];
                 types.forEach(type => {
                     if (data[type] && Array.isArray(data[type])) {
                         const newItems = data[type].slice(dataStore[type].length);
                         newItems.forEach(item => {
                             hasUpdate = true;
-                            showToast(`📢 New ${type.slice(0,-1)}: ${item.title || item.text || 'Update'}`, 'action');
+                            showToast(`📢 New ${type.slice(0,-1)}: ${item.title || item.text || 'Update'}`);
                             dataStore[type].push(item);
                         });
                     }
@@ -862,7 +888,6 @@
         });
     }
     
-    // Build carousel with current data
     function rebuildCarousel() {
         const container = document.getElementById('carouselSlides');
         container.innerHTML = '';
@@ -902,7 +927,6 @@
         container.appendChild(vitalsSlide);
         slides.push({ type: 'vitals', element: vitalsSlide });
         
-        // Content slides from Firebase data
         const contentConfigs = [
             { key: 'messages', icon: '💬', title: 'Messages' },
             { key: 'alarms', icon: '⏰', title: 'Alarms' },
@@ -921,10 +945,10 @@
                     <h4>${config.title}</h4>
                 </div>
                 <div class="content-list">
-                    ${items.length > 0 ? items.slice().reverse().map(item => `
+                    ${items.length > 0 ? items.slice().reverse().slice(0, 5).map(item => `
                         <div class="content-item">
-                            <div class="title">${item.title || item.text || 'Update'}</div>
-                            <div class="detail">${item.detail || ''} ${item.time ? '• ' + item.time : ''}</div>
+                            <div class="title">${escapeHtml(item.title || item.text || 'Update')}</div>
+                            <div class="detail">${escapeHtml(item.detail || '')} ${item.time ? '• ' + item.time : ''}</div>
                         </div>
                     `).join('') : '<div class="empty-message">No items yet</div>'}
                 </div>
@@ -935,6 +959,16 @@
         
         updateDots();
         updateCarouselPosition();
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
     
     function updateDots() {
@@ -1004,17 +1038,19 @@
         let systolic = 130 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0);
         let diastolic = 80 + (systolic - 130) * 0.6;
         
-        document.getElementById('healthHeartRateSlide').innerText = hr;
-        document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
-        document.getElementById('healthO2Slide').innerText = o2;
-        document.getElementById('healthBPSlide').innerText = `${Math.min(160, Math.max(85, systolic))}/${Math.min(100, Math.max(55, diastolic))}`;
+        if (document.getElementById('healthHeartRateSlide')) {
+            document.getElementById('healthHeartRateSlide').innerText = hr;
+            document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
+            document.getElementById('healthO2Slide').innerText = o2;
+            document.getElementById('healthBPSlide').innerText = `${Math.min(160, Math.max(85, systolic))}/${Math.min(100, Math.max(55, diastolic))}`;
+        }
         
         const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95);
         if (abnormal && !isVitalsAbnormal) {
             isVitalsAbnormal = true;
             if (autoSlideInterval) clearInterval(autoSlideInterval);
             if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
-            showToast("⚠️ Vitals abnormal! Check your health metrics", "warning");
+            showToast("⚠️ Vitals abnormal! Check your health metrics");
         } else if (!abnormal && isVitalsAbnormal) {
             isVitalsAbnormal = false;
             resetAutoSlideTimer();
@@ -1046,26 +1082,17 @@
         text.innerHTML = texts[dir];
     }
     
-    function setMode(mode) {
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.mode === mode) btn.classList.add('active');
-        });
-    }
-    
     // UI Handlers
     window.closePatientDetails = () => {
         document.getElementById('patientDetailsSection').style.display = 'none';
-        document.getElementById('patientDetailsGrid').classList.remove('visible');
     };
     window.closePopup = (type) => { if(type==='call') document.getElementById('callPopup').style.display='none'; };
     window.closeLogPopup = () => document.getElementById('logPopup').style.display = 'none';
-    window.downloadLog = () => alert('📄 Report downloaded');
+    window.downloadLog = () => showToast('📄 Report downloaded');
     window.triggerEmergency = () => {
         document.body.classList.add('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'flex';
-        showToast("⚠️ EMERGENCY STOP ACTIVATED", "danger");
-        updateDirection();
+        showToast("⚠️ EMERGENCY STOP ACTIVATED");
     };
     window.closeShutdown = () => {
         document.body.classList.remove('emergency-shutdown');
@@ -1078,30 +1105,29 @@
     
     document.getElementById('profileIconBtn').onclick = () => {
         const section = document.getElementById('patientDetailsSection');
-        const grid = document.getElementById('patientDetailsGrid');
         if (section.style.display === 'none' || section.style.display === '') {
             section.style.display = 'block';
-            grid.classList.add('visible');
         } else {
             section.style.display = 'none';
-            grid.classList.remove('visible');
         }
     };
-    document.getElementById('welcomeNotifBtn').onclick = () => showToast("✨ No new alerts", "info");
+    document.getElementById('welcomeNotifBtn').onclick = () => showToast("✨ No new alerts");
     document.getElementById('welcomeLogBtn').onclick = () => document.getElementById('logPopup').style.display = 'block';
-    document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => setMode(btn.dataset.mode));
+    });
     
     // Initialize
     listenPatientData();
+    listenDriveMode();
     listenCaretakerActions();
     rebuildCarousel();
     initTouchEvents();
-    setMode('Line Following');
     resetAutoSlideTimer();
     setInterval(updateDirection, 4500);
     setInterval(updateTelemetry, 4000);
     setInterval(updateHealthMetrics, 8000);
-    renderPatientDetails();
+    updatePatientDisplay();
 </script>
 </body>
 </html>
