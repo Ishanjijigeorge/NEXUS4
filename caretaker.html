@@ -17,7 +17,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
@@ -38,11 +38,6 @@
         window.updateDoc = updateDoc;
         window.arrayUnion = arrayUnion;
         window.onSnapshot = onSnapshot;
-        window.collection = collection;
-        window.query = query;
-        window.orderBy = orderBy;
-        window.limit = limit;
-        
         console.log("Firebase initialized");
     </script>
     <style>
@@ -71,7 +66,6 @@
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
-        /* header: profile left, icons right */
         .header-row {
             display: flex;
             align-items: center;
@@ -129,7 +123,6 @@
             background: var(--danger); border-radius: 50%; display: none;
         }
 
-        /* patient card with edit icon */
         .patient-full-card {
             background: white;
             border-radius: 28px;
@@ -201,18 +194,17 @@
             font-size: 15px;
             margin-top: 2px;
         }
-        .detail-value input {
+        .detail-value input, .detail-value select {
             font-weight: 600;
-            font-size: 15px;
-            border: 1px dashed var(--blue);
-            border-radius: 8px;
-            padding: 2px 6px;
+            font-size: 14px;
+            border: 1px solid var(--blue);
+            border-radius: 12px;
+            padding: 8px 10px;
             width: 100%;
             background: #fafcff;
             font-family: 'DM Sans', sans-serif;
         }
 
-        /* round icons row */
         .round-row {
             display: flex;
             justify-content: space-around;
@@ -301,7 +293,6 @@
         }
         #map { height: 170px; border-radius: 20px; background: #e2e8f0; }
 
-        /* popup panels (shared style) */
         .popup-panel {
             position: fixed;
             top: 50%; left: 50%;
@@ -326,7 +317,6 @@
         .health-item .value { font-size: 20px; font-weight: 700; color: var(--blue); }
         .wheel-detail { background: #f1f5f9; border-radius: 24px; padding: 14px; margin: 8px 0; display: flex; justify-content: space-between; font-size: 14px; }
 
-        /* mode option in popup */
         .mode-option {
             background: #f1f5f9;
             border-radius: 40px;
@@ -340,7 +330,6 @@
             transition: 0.1s;
         }
         .mode-option:hover { background: #e5edff; }
-        .mode-option.active { background: var(--blue); color: white; }
 
         .caretaker-popup .detail-row {
             display: flex;
@@ -348,7 +337,6 @@
             padding: 12px 0;
             border-bottom: 1px solid #e9eef4;
         }
-        .caretaker-popup .detail-row:last-child { border: none; }
 
         .shutdown-overlay {
             display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
@@ -356,7 +344,6 @@
         }
         .shutdown-card { background:#0f172a; padding:24px; border-radius:40px; color:white; text-align:center; width:280px; }
 
-        /* control pad */
         #controlPad {
             margin-top: 16px;
             background: white;
@@ -387,9 +374,7 @@
             font-size:24px;
             font-weight:800;
         }
-        .ctrl-stop:active { background: #b91c1c; }
 
-        /* safety checkboxes */
         .safety-check-item {
             display: flex;
             align-items: center;
@@ -420,7 +405,6 @@
             font-size: 16px;
         }
         .patient-option-item:hover { background: #e5edff; }
-        .patient-option-item:active { background: var(--blue); color: white; }
         .patient-option-item span { font-size: 24px; }
 
         .form-group {
@@ -441,10 +425,6 @@
             background: #f9fcff;
             font-size: 15px;
             font-family: 'DM Sans', sans-serif;
-        }
-        .form-group textarea {
-            min-height: 80px;
-            resize: vertical;
         }
         .button-group {
             display: flex;
@@ -468,39 +448,48 @@
             background: #eef2ff;
             color: var(--text);
         }
-        .btn-danger {
-            background: #fee2e2;
-            color: var(--danger);
-        }
-        .datetime-row {
-            display: flex;
-            gap: 10px;
-        }
-        .datetime-row input {
-            flex: 1;
-        }
-        /* toast notification */
-        .toast-notification {
+        .toast {
             position: fixed;
             bottom: 30px;
             left: 20px;
             right: 20px;
-            background: #1f2937;
+            background: #1e293b;
             color: white;
-            padding: 14px 20px;
-            border-radius: 60px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 3000;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            animation: slideUp 0.3s ease;
-            max-width: 350px;
-            margin: 0 auto;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 13px;
             text-align: center;
+            z-index: 3000;
+            animation: slideUp 0.3s ease;
+            max-width: 320px;
+            margin: 0 auto;
+            pointer-events: none;
         }
         @keyframes slideUp {
             from { transform: translateY(100px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
+        }
+        .edit-fields-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .edit-field-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .edit-field-row label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .edit-field-row input {
+            padding: 10px 14px;
+            border-radius: 16px;
+            border: 1px solid #d0d5dd;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -508,9 +497,9 @@
 
 <div class="header-row">
     <div class="profile-card" id="caretakerProfileBtn">
-        <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver" id="caretakerImg">
+        <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver">
         <div class="profile-details">
-            <div class="profile-name" id="caretakerNameDisplay">John Doe</div>
+            <div class="profile-name">John Doe</div>
             <div class="profile-role">caretaker</div>
         </div>
     </div>
@@ -525,7 +514,7 @@
 </div>
 
 <div class="patient-full-card" id="patientCard">
-    <button class="edit-icon" id="editPatientBtn" title="Edit patient details">✎</button>
+    <button class="edit-icon" id="editPatientBtn">✎</button>
     <div class="patient-row">
         <img class="patient-photo" id="patientPhoto" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="patient" onclick="triggerPhotoUpload()">
         <div class="patient-name-id">
@@ -562,22 +551,22 @@
 
 <div id="controlPad">
     <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-        <button class="ctrl-btn" onclick="sendCommand('forward')">⬆️</button>
+        <button class="ctrl-btn" data-cmd="forward">⬆️</button>
         <div style="display: flex; gap: 20px;">
-            <button class="ctrl-btn" onclick="sendCommand('left')">⬅️</button>
-            <button class="ctrl-btn ctrl-stop" onclick="sendCommand('stop')">⏹️</button>
-            <button class="ctrl-btn" onclick="sendCommand('right')">➡️</button>
+            <button class="ctrl-btn" data-cmd="left">⬅️</button>
+            <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
+            <button class="ctrl-btn" data-cmd="right">➡️</button>
         </div>
-        <button class="ctrl-btn" onclick="sendCommand('back')">⬇️</button>
+        <button class="ctrl-btn" data-cmd="back">⬇️</button>
     </div>
     <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
 </div>
 
 <div id="modePopup" class="popup-panel">
     <div class="popup-header"><h3>⚙️ Select mode</h3><button class="close-popup" onclick="closeModePopup()">×</button></div>
-    <div class="mode-option" data-mode="Line Following" onclick="setMode('Line Following')">➖ Line Following</div>
-    <div class="mode-option" data-mode="Control" onclick="setMode('Control')">🎮 Control</div>
-    <div class="mode-option" data-mode="Self Drive" onclick="setMode('Self Drive')">🤖 Self Drive</div>
+    <div class="mode-option" data-mode="Line Following">➖ Line Following</div>
+    <div class="mode-option" data-mode="Control">🎮 Control</div>
+    <div class="mode-option" data-mode="Self Drive">🤖 Self Drive</div>
 </div>
 
 <div id="callPopup" class="popup-panel">
@@ -629,12 +618,21 @@
     <div class="popup-header"><h3>👤 Caretaker</h3><button class="close-popup" onclick="closeCaretakerPopup()">×</button></div>
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
-        <div><strong id="popupCaretakerName">John Doe</strong><br><span style="color:var(--muted);">ID: CT-2210</span></div>
+        <div><strong>John Doe</strong><br><span style="color:var(--muted);">ID: CT-2210</span></div>
     </div>
     <div class="detail-row"><span>📧 Email</span> <span>john.d@care.com</span></div>
     <div class="detail-row"><span>📞 Phone</span> <span>+1 555 7700</span></div>
     <div class="detail-row"><span>🏥 Facility</span> <span>HomeCare Plus</span></div>
     <div class="detail-row"><span>⏱️ Since</span> <span>2021</span></div>
+</div>
+
+<div id="editPatientPopup" class="popup-panel" style="max-width: 420px;">
+    <div class="popup-header"><h3>✏️ Edit Patient Details</h3><button class="close-popup" onclick="closeEditPatientPopup()">×</button></div>
+    <div id="editPatientForm" class="edit-fields-container"></div>
+    <div class="button-group" style="margin-top: 20px;">
+        <button class="btn-primary" id="savePatientEditBtn">💾 Save Changes</button>
+        <button class="btn-secondary" onclick="closeEditPatientPopup()">Cancel</button>
+    </div>
 </div>
 
 <div class="shutdown-overlay" id="shutdownOverlay">
@@ -647,86 +645,115 @@
 </div>
 
 <script type="module">
-    import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     
     const db = window.db;
     const PATIENT_ID = "patient_main";
-    const CARETAKER_ID = "caretaker_main";
     
     let patientData = {
-        name: 'Rebecca Rowe',
-        id: 'PT-10234',
+        fullName: 'Rebecca Rowe',
+        patientId: 'PT-10234',
         age: '67',
-        blood: 'A+',
+        bloodGroup: 'A+',
         doctor: 'Dr. Sarah Adams',
-        contact: '+1 555 0199',
+        contactNo: '+1 555 0199',
         photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
     
-    // Save patient data to Firestore
+    let currentMode = 'Line Following';
+    let pendingMode = null;
+    
+    const safetyChecks = {
+        'Line Following': [
+            'Ensure path is clear of obstacles',
+            'Check that line sensors are clean',
+            'Confirm maximum speed setting is safe',
+            'Verify emergency stop works'
+        ],
+        'Control': [
+            'Ensure joystick/control is responsive',
+            'Confirm user is ready to manual drive',
+            'Check area around wheelchair is clear',
+            'Verify speed limit is set to low'
+        ],
+        'Self Drive': [
+            'Ensure autonomy mode is enabled',
+            'Check map data is up-to-date',
+            'Confirm no passengers are in the way',
+            'Verify obstacle detection is active'
+        ]
+    };
+    
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
     async function syncPatientToFirestore() {
         const patientRef = doc(db, "patients", PATIENT_ID);
         await setDoc(patientRef, patientData, { merge: true });
-    }
-    
-    // Load patient data from Firestore
-    function listenPatientData() {
-        const patientRef = doc(db, "patients", PATIENT_ID);
-        onSnapshot(patientRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                Object.assign(patientData, data);
-                renderPatientDetails(false);
-                document.getElementById('patientNameDisplay').innerText = patientData.name;
-                document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.id} · ${patientData.age}y`;
-                document.getElementById('patientPhoto').src = patientData.photo;
-            }
-        });
+        showToast('✅ Patient data synced to Firebase');
     }
     
     function renderPatientDetails(editMode = false) {
         const grid = document.getElementById('patientDetailsGrid');
         const fields = [
-            { label: 'Blood', key: 'blood' },
+            { label: 'Blood Group', key: 'bloodGroup' },
             { label: 'Age', key: 'age' },
             { label: 'Doctor', key: 'doctor' },
-            { label: 'Contact', key: 'contact' }
+            { label: 'Contact', key: 'contactNo' }
         ];
         grid.innerHTML = '';
         fields.forEach(f => {
             const div = document.createElement('div');
             div.className = 'detail-item';
             div.innerHTML = `<span class="detail-label">${f.label}</span>
-                <div class="detail-value" id="field-${f.key}">
-                    ${editMode ? `<input type="text" value="${patientData[f.key]}" data-key="${f.key}" class="edit-input">` : patientData[f.key]}
-                </div>`;
+                <div class="detail-value">${patientData[f.key] || '—'}</div>`;
             grid.appendChild(div);
         });
+        document.getElementById('patientNameDisplay').innerText = patientData.fullName;
+        document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.patientId} · ${patientData.age}y`;
+        document.getElementById('patientPhoto').src = patientData.photo;
     }
     
-    renderPatientDetails(false);
-    listenPatientData();
+    function openEditPatientPopup() {
+        const formContainer = document.getElementById('editPatientForm');
+        formContainer.innerHTML = `
+            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${patientData.fullName.replace(/"/g, '&quot;')}"></div>
+            <div class="edit-field-row"><label>Patient ID</label><input type="text" id="editPatientId" value="${patientData.patientId}"></div>
+            <div class="edit-field-row"><label>Age</label><input type="text" id="editAge" value="${patientData.age}"></div>
+            <div class="edit-field-row"><label>Blood Group</label><input type="text" id="editBloodGroup" value="${patientData.bloodGroup}"></div>
+            <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${patientData.doctor.replace(/"/g, '&quot;')}"></div>
+            <div class="edit-field-row"><label>Contact Number</label><input type="text" id="editContactNo" value="${patientData.contactNo}"></div>
+            <div class="edit-field-row"><label>Photo URL (or upload below)</label><input type="text" id="editPhotoUrl" value="${patientData.photo}"></div>
+        `;
+        document.getElementById('editPatientPopup').style.display = 'block';
+    }
     
-    let editMode = false;
-    document.getElementById('editPatientBtn').onclick = async () => {
-        editMode = !editMode;
-        renderPatientDetails(editMode);
-        document.getElementById('editPatientBtn').innerHTML = editMode ? '💾' : '✎';
-        if (!editMode) {
-            const inputs = document.querySelectorAll('.edit-input');
-            inputs.forEach(inp => {
-                const key = inp.dataset.key;
-                if (key) patientData[key] = inp.value;
-            });
-            renderPatientDetails(false);
-            await syncPatientToFirestore();
-            alert('Patient details saved & synced');
-        }
-    };
+    async function savePatientEdits() {
+        const newData = {
+            fullName: document.getElementById('editFullName')?.value || patientData.fullName,
+            patientId: document.getElementById('editPatientId')?.value || patientData.patientId,
+            age: document.getElementById('editAge')?.value || patientData.age,
+            bloodGroup: document.getElementById('editBloodGroup')?.value || patientData.bloodGroup,
+            doctor: document.getElementById('editDoctor')?.value || patientData.doctor,
+            contactNo: document.getElementById('editContactNo')?.value || patientData.contactNo,
+            photo: document.getElementById('editPhotoUrl')?.value || patientData.photo
+        };
+        
+        Object.assign(patientData, newData);
+        renderPatientDetails(false);
+        await syncPatientToFirestore();
+        closeEditPatientPopup();
+        showToast('✅ Patient details updated successfully');
+    }
     
-    window.triggerPhotoUpload = () => {
-        document.getElementById('patientPhotoInput').click();
-    };
+    window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
+    
+    window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
     document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -735,36 +762,38 @@
                 patientData.photo = ev.target.result;
                 document.getElementById('patientPhoto').src = patientData.photo;
                 await syncPatientToFirestore();
+                showToast('📸 Patient photo updated');
             };
             reader.readAsDataURL(file);
         }
     });
     
-    // Save actions to Firestore (for patient page)
     async function saveActionToFirestore(type, data) {
         const actionsRef = doc(db, "patientActions", "feed");
-        await updateDoc(actionsRef, {
-            [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
-        }).catch(() => setDoc(actionsRef, { [type]: [data] }));
+        try {
+            await updateDoc(actionsRef, {
+                [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
+            });
+        } catch {
+            await setDoc(actionsRef, { [type]: [data] });
+        }
     }
     
-    // Submenu handlers with Firebase sync
     window.sendMessage = async () => {
         const msg = document.getElementById('messageText')?.value;
-        const action = { text: msg, time: new Date().toLocaleTimeString() };
-        await saveActionToFirestore("messages", action);
-        alert(`📨 Message sent: "${msg}"`);
-        addNotification(`Message sent to patient: ${msg}`);
+        if (!msg) return showToast('Please enter a message');
+        await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleTimeString() });
+        showToast(`💬 Message sent to patient`);
+        document.getElementById('messageText').value = '';
         closePatientSubmenu();
     };
     
     window.saveCalendar = async () => {
         const event = document.getElementById('calendarEvent')?.value;
         const dt = document.getElementById('calendarDateTime')?.value;
-        const action = { title: event || "Reminder", detail: dt || "No time set", time: dt };
-        await saveActionToFirestore("calendar", action);
-        alert(`📅 Calendar marked`);
-        addNotification(`Calendar event added: ${event}`);
+        if (!event) return showToast('Please enter an event');
+        await saveActionToFirestore("calendar", { title: event, detail: dt || "No time set", time: dt });
+        showToast(`📅 Calendar event added`);
         closePatientSubmenu();
     };
     
@@ -772,28 +801,24 @@
         const dr = document.getElementById('apptDoctor')?.value;
         const hosp = document.getElementById('apptHospital')?.value;
         const dt = document.getElementById('apptDateTime')?.value;
-        const action = { title: dr || "Appointment", detail: hosp || "Clinic", time: dt };
-        await saveActionToFirestore("appointments", action);
-        alert(`📋 Appointment booked`);
-        addNotification(`Appointment booked with ${dr}`);
+        if (!dr) return showToast('Please enter doctor name');
+        await saveActionToFirestore("appointments", { title: dr, detail: hosp || "Clinic visit", time: dt });
+        showToast(`📋 Appointment booked with ${dr}`);
         closePatientSubmenu();
     };
     
     window.playMedia = async () => {
-        const action = { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleTimeString() };
-        await saveActionToFirestore("media", action);
-        alert('🎵 Playing media');
-        addNotification('Media player started for patient');
+        await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleTimeString() });
+        showToast(`🎵 Media player started`);
         closePatientSubmenu();
     };
     
     window.setAlarm = async () => {
         const label = document.getElementById('alarmLabel')?.value;
         const dt = document.getElementById('alarmDateTime')?.value;
-        const action = { title: label || "Reminder", detail: dt || "Now", time: dt };
-        await saveActionToFirestore("alarms", action);
-        alert(`⏰ Alarm set`);
-        addNotification(`Alarm set: ${label}`);
+        if (!label) return showToast('Please enter alarm label');
+        await saveActionToFirestore("alarms", { title: label, detail: dt || "Now", time: dt });
+        showToast(`⏰ Alarm set: ${label}`);
         closePatientSubmenu();
     };
     
@@ -802,44 +827,117 @@
         let title = '', content = '';
         if (option === 'message') {
             title = '💬 Send message';
-            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..."></textarea></div>
-                <div class="button-group"><button class="btn-primary" onclick="sendMessage()">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
+                <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'calendar') {
             title = '📅 Mark calendar';
             content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker"></div>
-                <div class="button-group"><button class="btn-primary" onclick="saveCalendar()">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'appointment') {
             title = '📋 Book appointment';
-            content = `<div class="form-group"><label>Doctor</label><input type="text" id="apptDoctor" value="Dr. Sarah Adams"></div>
-                <div class="form-group"><label>Clinic</label><input type="text" id="apptHospital"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker"></div>
-                <div class="button-group"><button class="btn-primary" onclick="bookAppointment()">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
+                <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'media') {
             title = '🎵 Media & music';
-            content = `<div style="text-align:center;padding:20px;"><p>🎧 Play relaxing music?</p><div class="button-group"><button class="btn-primary" onclick="playMedia()">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
+            content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
         } else if (option === 'alarm') {
             title = '⏰ Set alarm';
-            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker"></div>
-                <div class="button-group"><button class="btn-primary" onclick="setAlarm()">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         }
         document.getElementById('submenuTitle').innerText = title;
         document.getElementById('submenuContent').innerHTML = content;
         document.getElementById('patientSubmenu').style.display = 'block';
-        if (option === 'calendar' || option === 'appointment' || option === 'alarm') {
-            flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-        }
+        
+        // Attach event listeners after content is added
+        setTimeout(() => {
+            if (option === 'message') document.getElementById('sendMsgBtn')?.addEventListener('click', window.sendMessage);
+            if (option === 'calendar') {
+                flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                document.getElementById('saveCalendarBtn')?.addEventListener('click', window.saveCalendar);
+            }
+            if (option === 'appointment') {
+                flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                document.getElementById('bookApptBtn')?.addEventListener('click', window.bookAppointment);
+            }
+            if (option === 'media') document.getElementById('playMediaBtn')?.addEventListener('click', window.playMedia);
+            if (option === 'alarm') {
+                flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                document.getElementById('setAlarmBtn')?.addEventListener('click', window.setAlarm);
+            }
+        }, 50);
     };
     
-    // Rest of UI handlers (popups, map, etc)
+    function confirmModeSwitch(mode) {
+        const checks = safetyChecks[mode];
+        if (!checks) return;
+        pendingMode = mode;
+        
+        const existingPopup = document.getElementById('safetyPopup');
+        if (existingPopup) existingPopup.remove();
+        
+        const modal = document.createElement('div');
+        modal.className = 'popup-panel';
+        modal.id = 'safetyPopup';
+        modal.innerHTML = `
+            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
+            <div style="margin: 16px 0;">
+                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
+                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+        
+        document.getElementById('confirmSwitchBtn').onclick = () => {
+            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
+            let allChecked = true;
+            checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
+            if (!allChecked) {
+                showToast('⚠️ Please tick all safety checkboxes');
+                return;
+            }
+            currentMode = pendingMode;
+            document.getElementById('modeDisplay').innerText = currentMode;
+            document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+            modal.remove();
+            showToast(`✅ Mode switched to ${currentMode}`);
+        };
+    }
+    
+    window.setMode = function(mode) {
+        closeModePopup();
+        confirmModeSwitch(mode);
+    };
+    
+    window.sendCommand = function(cmd) {
+        showToast(`🚦 Command: ${cmd.toUpperCase()}`);
+    };
+    
+    document.querySelectorAll('.ctrl-btn').forEach(btn => {
+        btn.onclick = () => sendCommand(btn.dataset.cmd);
+    });
+    
+    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
+    window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
+    document.querySelectorAll('.mode-option').forEach(opt => {
+        opt.onclick = () => setMode(opt.dataset.mode);
+    });
+    
     document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); document.getElementById('caretakerPopup').style.display = 'block'; };
     window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
-    window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
-    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
-    window.setMode = (mode) => { document.getElementById('modeDisplay').innerText = mode; closeModePopup(); document.getElementById('controlPad').style.display = (mode === 'Control') ? 'block' : 'none'; };
-    window.sendCommand = (cmd) => alert(`🚦 Command: ${cmd}`);
-    window.closePopup = (type) => { if(type==='call') document.getElementById('callPopup').style.display='none'; if(type==='health') document.getElementById('healthPopup').style.display='none'; if(type==='wheel') document.getElementById('wheelPopup').style.display='none'; };
+    window.closePopup = (type) => { 
+        if(type==='call') document.getElementById('callPopup').style.display='none';
+        if(type==='health') document.getElementById('healthPopup').style.display='none';
+        if(type==='wheel') document.getElementById('wheelPopup').style.display='none';
+    };
     document.getElementById('callIcon').onclick = () => { closeAllPopups(); document.getElementById('callPopup').style.display='block'; };
     document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display='block'; };
     document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display='block'; };
@@ -848,19 +946,37 @@
     window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display='none';
     document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('logPopup').style.display='block'; };
     window.closeLogPopup = () => document.getElementById('logPopup').style.display='none';
-    window.downloadLog = () => alert('PDF mock');
-    function closeAllPopups() { document.querySelectorAll('.popup-panel').forEach(p => p.style.display='none'); }
-    window.addNotification = (msg) => { console.log(msg); };
-    document.getElementById('notifBtn').onclick = () => alert('No new alerts');
+    window.downloadLog = () => showToast('📄 PDF report ready');
+    
+    document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
+    document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
+    
+    function closeAllPopups() {
+        document.querySelectorAll('.popup-panel').forEach(p => p.style.display='none');
+        document.getElementById('safetyPopup')?.remove();
+    }
     
     const map = L.map('map').setView([12.9716, 77.5946], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
     window.toggleGpsFullscreen = () => { const card = document.querySelector('.map-card'); if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen(); };
     document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
-    window.triggerEmergency = () => { document.body.classList.add('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display = 'flex'; };
-    window.closeShutdown = () => { document.body.classList.remove('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display = 'none'; };
-    window.onload = () => { document.getElementById('controlPad').style.display = 'none'; };
+    
+    window.triggerEmergency = () => {
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        showToast('⚠️ EMERGENCY STOP ACTIVATED');
+    };
+    window.closeShutdown = () => {
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    };
+    
+    renderPatientDetails(false);
+    
+    window.onload = () => {
+        document.getElementById('controlPad').style.display = 'none';
+    };
 </script>
 </body>
 </html>
