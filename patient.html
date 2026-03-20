@@ -11,6 +11,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+            authDomain: "nexus-org-6e7e9.firebaseapp.com",
+            projectId: "nexus-org-6e7e9",
+            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+            messagingSenderId: "989376914258",
+            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+            measurementId: "G-TP1CVNYHNE"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.db = db;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.collection = collection;
+        console.log("Patient page Firebase initialized");
+    </script>
     <style>
         * {
             margin: 0;
@@ -40,14 +65,12 @@
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
-        /* ===== TWO COLUMN LAYOUT ===== */
         .top-row {
             display: flex;
             gap: 12px;
             margin-bottom: 18px;
         }
         
-        /* Welcome Card */
         .welcome-card {
             background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
             border-radius: 28px;
@@ -134,7 +157,6 @@
             border: 1px solid rgba(255,255,255,0.25);
         }
         
-        /* Map Card */
         .map-card {
             background: white;
             border-radius: 28px;
@@ -157,7 +179,6 @@
             display: none !important;
         }
         
-        /* Patient details */
         .patient-details-section {
             background: white;
             border-radius: 28px;
@@ -196,14 +217,12 @@
             margin-top: 3px;
         }
 
-        /* ===== TWO COLUMN METRICS SECTION ===== */
         .metrics-two-column {
             display: flex;
             gap: 12px;
             margin-bottom: 18px;
         }
         
-        /* Telemetry Card - 2x2 grid */
         .telemetry-card {
             background: white;
             padding: 16px 12px;
@@ -259,7 +278,6 @@
         .obstacle-warn { color: var(--amber); }
         .obstacle-block { color: var(--danger); }
         
-        /* ===== SWIPEABLE CAROUSEL (replaces static health card) ===== */
         .carousel-container {
             background: white;
             border-radius: 28px;
@@ -288,7 +306,6 @@
             min-height: 180px;
         }
         
-        /* Vital Signs Slide */
         .vital-signs-slide {
             height: 100%;
         }
@@ -307,10 +324,6 @@
             font-size: 13px;
             font-weight: 700;
             color: var(--text);
-        }
-        
-        .health-header-compact span {
-            font-size: 20px;
         }
         
         .health-metrics-compact {
@@ -351,12 +364,6 @@
             margin-top: 3px;
         }
         
-        .health-metric-compact small {
-            font-size: 8px;
-            color: var(--muted);
-        }
-        
-        /* Content Slides (Messages, Alarms, etc) */
         .content-slide {
             height: 100%;
             display: flex;
@@ -413,7 +420,6 @@
             font-size: 13px;
         }
         
-        /* Carousel Dots */
         .carousel-dots {
             display: flex;
             justify-content: center;
@@ -438,7 +444,6 @@
             border-radius: 4px;
         }
         
-        /* Drive Mode */
         .drive-mode-row {
             display: flex;
             gap: 10px;
@@ -479,7 +484,6 @@
             color: var(--text);
         }
         
-        /* Direction Section */
         .direction-container {
             background: white;
             border-radius: 28px;
@@ -542,7 +546,6 @@
             margin-bottom: 16px;
         }
         
-        /* Popups */
         .popup-panel {
             position: fixed;
             top: 50%; left: 50%;
@@ -599,56 +602,40 @@
             width: 280px;
         }
         
-        @media screen and (max-width: 600px) {
-            .metrics-two-column {
-                gap: 10px;
-            }
-            .telemetry-card, .carousel-container {
-                border-radius: 24px;
-            }
-            .telemetry-grid {
-                gap: 14px 10px;
-            }
-            .tele-icon {
-                width: 48px;
-                height: 48px;
-                font-size: 22px;
-            }
-            .tele-value {
-                font-size: 14px;
-            }
-            .health-metrics-compact {
-                gap: 10px;
-            }
-            .health-metric-compact .metric-value-compact {
-                font-size: 18px;
-            }
-            .direction-icon-large {
-                font-size: 34px;
-            }
-            .direction-text-large {
-                font-size: 17px;
-            }
+        /* Toast notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 60px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 3000;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+            max-width: 350px;
+            margin: 0 auto;
+            text-align: center;
+            pointer-events: none;
         }
         
-        @media screen and (max-width: 480px) {
-            .tele-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 20px;
-            }
-            .tele-value {
-                font-size: 13px;
-            }
-            .metric-value-compact {
-                font-size: 17px;
-            }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @media screen and (max-width: 600px) {
+            .metrics-two-column { gap: 10px; }
+            .tele-icon { width: 48px; height: 48px; font-size: 22px; }
         }
     </style>
 </head>
 <body>
 
-<!-- Two Column Top Row: Welcome + Map -->
 <div class="top-row">
     <div class="welcome-card">
         <div>
@@ -676,7 +663,6 @@
     </div>
 </div>
 
-<!-- Patient Details -->
 <div id="patientDetailsSection" class="patient-details-section" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h3 style="font-size: 18px;">📋 Patient Information</h3>
@@ -685,9 +671,7 @@
     <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
 
-<!-- Two Column Metrics: Telemetry (2x2) + Swipeable Carousel -->
 <div class="metrics-two-column">
-    <!-- Telemetry Card -->
     <div class="telemetry-card">
         <div class="telemetry-grid">
             <div class="telemetry-item">
@@ -713,47 +697,14 @@
         </div>
     </div>
     
-    <!-- Swipeable Carousel Container -->
     <div class="carousel-container">
         <div class="carousel-wrapper">
-            <div class="carousel-slides" id="carouselSlides">
-                <!-- Slide 0: Vital Signs -->
-                <div class="carousel-slide vital-signs-slide" data-type="vitals">
-                    <div class="health-header-compact">
-                        <span>❤️</span>
-                        <h4>Vital Signs</h4>
-                    </div>
-                    <div class="health-metrics-compact">
-                        <div class="health-metric-compact" id="hrMetric">
-                            <div class="metric-value-compact" id="healthHeartRate">84</div>
-                            <div class="metric-label-compact">HR</div>
-                            <small>bpm</small>
-                        </div>
-                        <div class="health-metric-compact" id="bpMetric">
-                            <div class="metric-value-compact" id="healthBP">130/80</div>
-                            <div class="metric-label-compact">BP</div>
-                            <small>mmHg</small>
-                        </div>
-                        <div class="health-metric-compact" id="tempMetric">
-                            <div class="metric-value-compact" id="healthTemp">36.8</div>
-                            <div class="metric-label-compact">TEMP</div>
-                            <small>°C</small>
-                        </div>
-                        <div class="health-metric-compact" id="o2Metric">
-                            <div class="metric-value-compact" id="healthO2">98</div>
-                            <div class="metric-label-compact">SpO₂</div>
-                            <small>%</small>
-                        </div>
-                    </div>
-                </div>
-                <!-- Additional slides will be added dynamically -->
-            </div>
+            <div class="carousel-slides" id="carouselSlides"></div>
         </div>
         <div class="carousel-dots" id="carouselDots"></div>
     </div>
 </div>
 
-<!-- Drive Mode Row -->
 <div class="drive-mode-row">
     <div class="mode-btn active" data-mode="Line Following">
         <span class="mode-emoji">➖</span>
@@ -769,7 +720,6 @@
     </div>
 </div>
 
-<!-- Direction Section -->
 <div class="direction-container">
     <div class="direction-header">
         <h4>🔄 CURRENT MOVEMENT</h4>
@@ -780,10 +730,8 @@
     </div>
 </div>
 
-<!-- Emergency Button -->
 <button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
 
-<!-- Popups -->
 <div id="callPopup" class="popup-panel">
     <div class="popup-header"><h3>📞 Quick call</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
     <div class="contact-item">🚑 Emergency <span style="float:right;">108</span></div>
@@ -805,9 +753,13 @@
     </div>
 </div>
 
-<script>
-    // Patient data
-    let patient = {
+<script type="module">
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    
+    const db = window.db;
+    const PATIENT_ID = "patient_main";
+    
+    let patientData = {
         firstName: 'Rebecca',
         fullName: 'Rebecca Rowe',
         id: 'PT-10234',
@@ -819,48 +771,106 @@
         nextAppointment: 'May 15, 10:30 AM',
         photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
     };
-
-    // Data from caretaker page (messages, alarms, appointments, media, calendar)
-    let caretakerData = {
-        messages: [
-            { title: "Reminder", detail: "Take medication at 6pm", time: "2 hours ago" },
-            { title: "Family note", detail: "Call Michael tonight", time: "Yesterday" }
-        ],
-        alarms: [
-            { title: "Medication", detail: "Lisinopril 10mg", time: "6:00 PM" },
-            { title: "Check BP", detail: "Evening reading", time: "8:00 PM" }
-        ],
-        appointments: [
-            { title: "Dr. Adams", detail: "Cardiology follow-up", time: "May 15, 10:30 AM" },
-            { title: "Physical Therapy", detail: "Rehab session", time: "May 18, 2:00 PM" }
-        ],
-        media: [
-            { title: "Relaxing Piano", detail: "Playlist for calm", type: "music" },
-            { title: "Guided Meditation", detail: "10 min session", type: "audio" }
-        ],
-        calendar: [
-            { title: "Blood test", detail: "Fasting required", time: "May 20, 9:00 AM" },
-            { title: "Family visit", detail: "Michael visiting", time: "May 22, 3:00 PM" }
-        ]
+    
+    // Data stores for carousel
+    let dataStore = {
+        messages: [],
+        alarms: [],
+        appointments: [],
+        media: [],
+        calendar: []
     };
-
+    
     let carouselIndex = 0;
     let slides = [];
     let autoSlideInterval = null;
     let isVitalsAbnormal = false;
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    // Build carousel slides
-    function buildCarousel() {
+    let touchStartX = 0, touchEndX = 0;
+    
+    // Show toast notification
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+    
+    // Render patient details from Firebase
+    function renderPatientDetails() {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Full name', value: patientData.fullName },
+            { label: 'Blood type', value: patientData.blood },
+            { label: 'Age', value: patientData.age + ' years' },
+            { label: 'Doctor', value: patientData.doctor },
+            { label: 'Contact', value: patientData.contact },
+            { label: 'Emergency', value: 'Michael (son)' },
+            { label: 'Medications', value: patientData.medications },
+            { label: 'Next appt', value: patientData.nextAppointment }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
+            grid.appendChild(div);
+        });
+        document.getElementById('patientFirstName').innerText = patientData.firstName;
+        document.getElementById('profileImage').src = patientData.photo;
+        document.getElementById('patientBadge').innerHTML = `${patientData.id} · ${patientData.blood}`;
+        document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    }
+    
+    // Listen for patient data changes from caretaker
+    function listenPatientData() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        onSnapshot(patientRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                Object.assign(patientData, data);
+                renderPatientDetails();
+            }
+        });
+    }
+    
+    // Listen for caretaker actions
+    function listenCaretakerActions() {
+        const actionsRef = doc(db, "patientActions", "feed");
+        onSnapshot(actionsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                let hasUpdate = false;
+                
+                // Check each type for new items
+                const types = ['messages', 'alarms', 'appointments', 'media', 'calendar'];
+                types.forEach(type => {
+                    if (data[type] && Array.isArray(data[type])) {
+                        const newItems = data[type].slice(dataStore[type].length);
+                        newItems.forEach(item => {
+                            hasUpdate = true;
+                            showToast(`📢 New ${type.slice(0,-1)}: ${item.title || item.text || 'Update'}`, 'action');
+                            dataStore[type].push(item);
+                        });
+                    }
+                });
+                
+                if (hasUpdate) {
+                    rebuildCarousel();
+                }
+            }
+        });
+    }
+    
+    // Build carousel with current data
+    function rebuildCarousel() {
         const container = document.getElementById('carouselSlides');
         container.innerHTML = '';
         slides = [];
         
-        // Add vital signs slide (index 0)
+        // Vital signs slide
         const vitalsSlide = document.createElement('div');
         vitalsSlide.className = 'carousel-slide vital-signs-slide';
-        vitalsSlide.setAttribute('data-type', 'vitals');
         vitalsSlide.innerHTML = `
             <div class="health-header-compact">
                 <span>❤️</span>
@@ -892,8 +902,8 @@
         container.appendChild(vitalsSlide);
         slides.push({ type: 'vitals', element: vitalsSlide });
         
-        // Add content slides
-        const contentTypes = [
+        // Content slides from Firebase data
+        const contentConfigs = [
             { key: 'messages', icon: '💬', title: 'Messages' },
             { key: 'alarms', icon: '⏰', title: 'Alarms' },
             { key: 'appointments', icon: '📋', title: 'Appointments' },
@@ -901,27 +911,26 @@
             { key: 'calendar', icon: '📅', title: 'Calendar' }
         ];
         
-        contentTypes.forEach(type => {
-            const items = caretakerData[type.key] || [];
+        contentConfigs.forEach(config => {
+            const items = dataStore[config.key] || [];
             const slide = document.createElement('div');
             slide.className = 'carousel-slide content-slide';
-            slide.setAttribute('data-type', type.key);
             slide.innerHTML = `
                 <div class="content-slide-header">
-                    <span>${type.icon}</span>
-                    <h4>${type.title}</h4>
+                    <span>${config.icon}</span>
+                    <h4>${config.title}</h4>
                 </div>
                 <div class="content-list">
-                    ${items.length > 0 ? items.map(item => `
+                    ${items.length > 0 ? items.slice().reverse().map(item => `
                         <div class="content-item">
-                            <div class="title">${item.title}</div>
-                            <div class="detail">${item.detail} • ${item.time || ''}</div>
+                            <div class="title">${item.title || item.text || 'Update'}</div>
+                            <div class="detail">${item.detail || ''} ${item.time ? '• ' + item.time : ''}</div>
                         </div>
                     `).join('') : '<div class="empty-message">No items yet</div>'}
                 </div>
             `;
             container.appendChild(slide);
-            slides.push({ type: type.key, element: slide });
+            slides.push({ type: config.key, element: slide });
         });
         
         updateDots();
@@ -954,7 +963,7 @@
     }
     
     function nextSlide() {
-        if (isVitalsAbnormal) return; // Don't auto-slide if vitals abnormal
+        if (isVitalsAbnormal) return;
         let next = carouselIndex + 1;
         if (next >= slides.length) next = 0;
         carouselIndex = next;
@@ -968,182 +977,75 @@
         }
     }
     
-    // Check vitals and force return to vitals if abnormal
-    let lastAbnormalState = false;
-    
-    function checkVitalsAndForceReturn() {
-        let hr = parseInt(document.getElementById('healthHeartRate').innerText) || 84;
-        let temp = parseFloat(document.getElementById('healthTemp').innerText) || 36.8;
-        let o2 = parseInt(document.getElementById('healthO2').innerText) || 98;
-        let systolic = parseInt(document.getElementById('healthBP').innerText.split('/')[0]) || 130;
-        let diastolic = parseInt(document.getElementById('healthBP').innerText.split('/')[1]) || 80;
-        
-        const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95) || (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90);
-        
-        if (abnormal && !isVitalsAbnormal) {
-            // Vitals just became abnormal - alert caretaker and force to vitals slide
-            isVitalsAbnormal = true;
-            if (autoSlideInterval) clearInterval(autoSlideInterval);
-            autoSlideInterval = null;
-            
-            // Force slide to vitals (index 0)
-            if (carouselIndex !== 0) {
-                carouselIndex = 0;
+    function initTouchEvents() {
+        const wrapper = document.querySelector('.carousel-wrapper');
+        wrapper.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+        wrapper.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const threshold = 50;
+            if (touchEndX < touchStartX - threshold && carouselIndex < slides.length - 1) {
+                carouselIndex++;
                 updateCarouselPosition();
+                resetAutoSlideTimer();
+            } else if (touchEndX > touchStartX + threshold && carouselIndex > 0) {
+                carouselIndex--;
+                updateCarouselPosition();
+                resetAutoSlideTimer();
             }
-            
-            // Alert caretaker
-            alert("⚠️ ALERT: Patient vitals are abnormal! Returning to vital signs monitor.");
-            
-            // Add notification to log
-            addTrip(`⚠️ VITAL ALERT: HR=${hr}, Temp=${temp.toFixed(1)}, SpO2=${o2} at ${new Date().toLocaleTimeString()}`);
-        } else if (!abnormal && isVitalsAbnormal) {
-            // Vitals returned to normal - resume auto-slide
-            isVitalsAbnormal = false;
-            resetAutoSlideTimer();
-            addTrip(`✅ Vitals normalized at ${new Date().toLocaleTimeString()}`);
-        }
-        
-        // Update UI for both slide and main metrics
-        updateVitalsDisplay();
-    }
-    
-    function updateVitalsDisplay() {
-        let hr = parseInt(document.getElementById('healthHeartRate').innerText) || 84;
-        let temp = parseFloat(document.getElementById('healthTemp').innerText) || 36.8;
-        let o2 = parseInt(document.getElementById('healthO2').innerText) || 98;
-        let bp = document.getElementById('healthBP').innerText || '130/80';
-        
-        // Update slide vitals
-        document.getElementById('healthHeartRateSlide').innerText = hr;
-        document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
-        document.getElementById('healthO2Slide').innerText = o2;
-        document.getElementById('healthBPSlide').innerText = bp;
-        
-        // Update borders for abnormal values in slide
-        const hrMetric = document.getElementById('hrMetricSlide');
-        const tempMetric = document.getElementById('tempMetricSlide');
-        const o2Metric = document.getElementById('o2MetricSlide');
-        const bpMetric = document.getElementById('bpMetricSlide');
-        
-        if (hr < 60 || hr > 100) hrMetric.classList.add('unstable');
-        else hrMetric.classList.remove('unstable');
-        
-        if (temp < 36.1 || temp > 37.2) tempMetric.classList.add('unstable');
-        else tempMetric.classList.remove('unstable');
-        
-        if (o2 < 95) o2Metric.classList.add('unstable');
-        else o2Metric.classList.remove('unstable');
-        
-        let systolic = parseInt(bp.split('/')[0]) || 130;
-        let diastolic = parseInt(bp.split('/')[1]) || 80;
-        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) bpMetric.classList.add('unstable');
-        else bpMetric.classList.remove('unstable');
+        });
     }
     
     // Health metrics simulation
     function updateHealthMetrics() {
-        let hr = parseInt(document.getElementById('healthHeartRate').innerText) || 84;
-        let change = Math.random() > 0.5 ? 1 : -1;
-        hr = Math.min(110, Math.max(65, hr + change));
-        document.getElementById('healthHeartRate').innerText = hr;
+        let hr = parseInt(document.getElementById('healthHeartRateSlide')?.innerText) || 84;
+        hr = Math.min(110, Math.max(65, hr + (Math.random() > 0.5 ? 1 : -1)));
+        let temp = 36.8 + (Math.random() - 0.5) * 0.2;
+        let o2 = Math.min(100, Math.max(92, 98 + (Math.random() > 0.8 ? -1 : 0)));
+        let systolic = 130 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0);
+        let diastolic = 80 + (systolic - 130) * 0.6;
         
-        let temp = parseFloat(document.getElementById('healthTemp').innerText) || 36.8;
-        let tempChange = (Math.random() - 0.5) * 0.2;
-        temp = Math.min(38.5, Math.max(35.5, temp + tempChange));
-        document.getElementById('healthTemp').innerText = temp.toFixed(1);
+        document.getElementById('healthHeartRateSlide').innerText = hr;
+        document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
+        document.getElementById('healthO2Slide').innerText = o2;
+        document.getElementById('healthBPSlide').innerText = `${Math.min(160, Math.max(85, systolic))}/${Math.min(100, Math.max(55, diastolic))}`;
         
-        let o2 = parseInt(document.getElementById('healthO2').innerText) || 98;
-        let o2Change = Math.random() > 0.8 ? -1 : (Math.random() > 0.9 ? 1 : 0);
-        o2 = Math.min(100, Math.max(92, o2 + o2Change));
-        document.getElementById('healthO2').innerText = o2;
-        
-        let systolic = 130;
-        let diastolic = 80;
-        let bpChange = Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0;
-        systolic = Math.min(160, Math.max(85, 130 + bpChange));
-        diastolic = Math.min(100, Math.max(55, 80 + (bpChange * 0.6)));
-        document.getElementById('healthBP').innerText = `${systolic}/${diastolic}`;
-        
-        // Update main metrics borders
-        const hrMetric = document.getElementById('hrMetric');
-        const tempMetric = document.getElementById('tempMetric');
-        const o2Metric = document.getElementById('o2Metric');
-        const bpMetric = document.getElementById('bpMetric');
-        
-        if (hr < 60 || hr > 100) hrMetric.classList.add('unstable');
-        else hrMetric.classList.remove('unstable');
-        
-        if (temp < 36.1 || temp > 37.2) tempMetric.classList.add('unstable');
-        else tempMetric.classList.remove('unstable');
-        
-        if (o2 < 95) o2Metric.classList.add('unstable');
-        else o2Metric.classList.remove('unstable');
-        
-        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) bpMetric.classList.add('unstable');
-        else bpMetric.classList.remove('unstable');
-        
-        checkVitalsAndForceReturn();
-    }
-    
-    // Telemetry updates
-    function updateTelemetry() {
-        let battery = Math.floor(Math.random() * 25) + 70;
-        let speed = (Math.random() * 1.2 + 0.8).toFixed(1);
-        let range = (Math.random() * 8 + 2).toFixed(1);
-        let r = Math.random();
-        let obs = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
-        
-        document.getElementById('speedValue').innerText = speed + ' m/s';
-        document.getElementById('batteryValue').innerText = battery + '%';
-        document.getElementById('rangeValue').innerText = range + ' km';
-        
-        const obsSpan = document.getElementById('obstacleValue');
-        obsSpan.innerText = obs;
-        obsSpan.className = 'tele-value';
-        if (obs === 'Clear') obsSpan.classList.add('obstacle-clear');
-        else if (obs === 'Nearby') obsSpan.classList.add('obstacle-warn');
-        else obsSpan.classList.add('obstacle-block');
-    }
-    
-    // Direction simulation
-    let directionIndex = 0;
-    const directions = ['forward', 'right', 'forward', 'left', 'forward', 'stop', 'backward', 'forward'];
-    
-    function updateDirectionUI(direction) {
-        const badge = document.getElementById('directionBadge');
-        const iconLarge = document.getElementById('dirIconLarge');
-        const textLarge = document.getElementById('dirTextLarge');
-        badge.className = 'direction-status-badge';
-        if (direction === 'forward') {
-            badge.classList.add('forward');
-            iconLarge.innerHTML = '⬆️';
-            textLarge.innerHTML = 'Moving forward';
-        } else if (direction === 'backward') {
-            badge.classList.add('backward');
-            iconLarge.innerHTML = '⬇️';
-            textLarge.innerHTML = 'Moving backward';
-        } else if (direction === 'left') {
-            badge.classList.add('left');
-            iconLarge.innerHTML = '⬅️';
-            textLarge.innerHTML = 'Turning left';
-        } else if (direction === 'right') {
-            badge.classList.add('right');
-            iconLarge.innerHTML = '➡️';
-            textLarge.innerHTML = 'Turning right';
-        } else if (direction === 'stop') {
-            badge.classList.add('stop');
-            iconLarge.innerHTML = '⏹️';
-            textLarge.innerHTML = 'STOPPED';
+        const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95);
+        if (abnormal && !isVitalsAbnormal) {
+            isVitalsAbnormal = true;
+            if (autoSlideInterval) clearInterval(autoSlideInterval);
+            if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
+            showToast("⚠️ Vitals abnormal! Check your health metrics", "warning");
+        } else if (!abnormal && isVitalsAbnormal) {
+            isVitalsAbnormal = false;
+            resetAutoSlideTimer();
         }
     }
     
-    function simulateDirectionChange() {
-        directionIndex = (directionIndex + 1) % directions.length;
-        updateDirectionUI(directions[directionIndex]);
+    function updateTelemetry() {
+        document.getElementById('speedValue').innerText = (Math.random() * 1.2 + 0.8).toFixed(1) + ' m/s';
+        document.getElementById('batteryValue').innerText = Math.floor(Math.random() * 25) + 70 + '%';
+        document.getElementById('rangeValue').innerText = (Math.random() * 8 + 2).toFixed(1) + ' km';
+        const obs = Math.random() < 0.6 ? 'Clear' : (Math.random() < 0.8 ? 'Nearby' : 'Blocked');
+        const obsSpan = document.getElementById('obstacleValue');
+        obsSpan.innerText = obs;
+        obsSpan.className = 'tele-value ' + (obs === 'Clear' ? 'obstacle-clear' : obs === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
     }
     
-    // Mode switching
+    let dirIndex = 0;
+    const directions = ['forward', 'right', 'forward', 'left', 'forward', 'stop', 'backward', 'forward'];
+    function updateDirection() {
+        const dir = directions[dirIndex % directions.length];
+        dirIndex++;
+        const badge = document.getElementById('directionBadge');
+        const icon = document.getElementById('dirIconLarge');
+        const text = document.getElementById('dirTextLarge');
+        badge.className = 'direction-status-badge ' + dir;
+        const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
+        const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
+        icon.innerHTML = icons[dir];
+        text.innerHTML = texts[dir];
+    }
+    
     function setMode(mode) {
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -1151,154 +1053,55 @@
         });
     }
     
-    // Touch events for swipe
-    function initTouchEvents() {
-        const wrapper = document.querySelector('.carousel-wrapper');
-        wrapper.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-        wrapper.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        });
-    }
-    
-    function handleSwipe() {
-        const swipeThreshold = 50;
-        if (touchEndX < touchStartX - swipeThreshold) {
-            // Swipe left - next slide
-            if (!isVitalsAbnormal || carouselIndex === 0) {
-                let next = carouselIndex + 1;
-                if (next < slides.length) {
-                    carouselIndex = next;
-                    updateCarouselPosition();
-                    resetAutoSlideTimer();
-                }
-            }
-        } else if (touchEndX > touchStartX + swipeThreshold) {
-            // Swipe right - previous slide
-            if (carouselIndex > 0) {
-                carouselIndex--;
-                updateCarouselPosition();
-                resetAutoSlideTimer();
-            }
-        }
-    }
-    
-    // Render patient details
-    function renderPatientDetails() {
-        const grid = document.getElementById('patientDetailsGrid');
-        const fields = [
-            { label: 'Full name', value: patient.fullName },
-            { label: 'Blood type', value: patient.blood },
-            { label: 'Age', value: patient.age + ' years' },
-            { label: 'Doctor', value: patient.doctor },
-            { label: 'Contact', value: patient.contact },
-            { label: 'Emergency', value: 'Michael (son)' },
-            { label: 'Medications', value: patient.medications },
-            { label: 'Next appt', value: patient.nextAppointment }
-        ];
-        grid.innerHTML = '';
-        fields.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'detail-item';
-            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
-            grid.appendChild(div);
-        });
-        document.getElementById('patientFirstName').innerText = patient.firstName;
-        document.getElementById('profileImage').src = patient.photo;
-        document.getElementById('patientBadge').innerText = `${patient.id} · ${patient.blood}`;
-        document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-    }
-    
-    renderPatientDetails();
-    
-    // Profile popup
-    const patientSection = document.getElementById('patientDetailsSection');
-    const detailsGrid = document.getElementById('patientDetailsGrid');
-    document.getElementById('profileIconBtn').onclick = () => {
-        if (patientSection.style.display === 'none' || patientSection.style.display === '') {
-            patientSection.style.display = 'block';
-            detailsGrid.classList.add('visible');
-            patientSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } else {
-            patientSection.style.display = 'none';
-            detailsGrid.classList.remove('visible');
-        }
-    };
+    // UI Handlers
     window.closePatientDetails = () => {
-        patientSection.style.display = 'none';
-        detailsGrid.classList.remove('visible');
+        document.getElementById('patientDetailsSection').style.display = 'none';
+        document.getElementById('patientDetailsGrid').classList.remove('visible');
     };
-    
-    // Map
-    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([12.9716, 77.5946], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
-    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('You are here');
-    
-    // Popup handlers
-    const logPopup = document.getElementById('logPopup');
-    const callPopup = document.getElementById('callPopup');
-    
-    document.getElementById('welcomeNotifBtn').onclick = () => alert('✨ No new alerts');
-    document.getElementById('welcomeLogBtn').onclick = () => { closeAllPopups(); logPopup.style.display = 'block'; };
-    
-    function closeAllPopups() {
-        callPopup.style.display = 'none';
-        logPopup.style.display = 'none';
-    }
-    window.closePopup = (type) => {
-        if (type === 'call') callPopup.style.display = 'none';
-    };
-    window.closeLogPopup = () => logPopup.style.display = 'none';
-    
-    // Mode selector
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.addEventListener('click', () => setMode(btn.dataset.mode));
-    });
-    
-    // Trip log
-    const tripLog = document.getElementById('tripLog');
-    function addTrip(text) {
-        let d = document.createElement('div');
-        d.style.background = '#f1f5f9';
-        d.style.borderRadius = '16px';
-        d.style.padding = '10px 14px';
-        d.style.marginBottom = '8px';
-        d.style.fontSize = '12px';
-        d.innerText = text;
-        tripLog.appendChild(d);
-    }
-    if (tripLog.children.length === 0) {
-        addTrip('Today 09:05 → 09:42 · 37 min');
-        addTrip('Today 11:18 → 11:40 · 22 min');
-    }
+    window.closePopup = (type) => { if(type==='call') document.getElementById('callPopup').style.display='none'; };
+    window.closeLogPopup = () => document.getElementById('logPopup').style.display = 'none';
     window.downloadLog = () => alert('📄 Report downloaded');
-    
-    // Emergency
     window.triggerEmergency = () => {
         document.body.classList.add('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'flex';
-        addTrip('⚠️ Emergency at ' + new Date().toLocaleTimeString());
-        updateDirectionUI('stop');
+        showToast("⚠️ EMERGENCY STOP ACTIVATED", "danger");
+        updateDirection();
     };
     window.closeShutdown = () => {
         document.body.classList.remove('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'none';
-        updateDirectionUI('forward');
     };
     
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([12.9716, 77.5946], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
+    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('You are here');
+    
+    document.getElementById('profileIconBtn').onclick = () => {
+        const section = document.getElementById('patientDetailsSection');
+        const grid = document.getElementById('patientDetailsGrid');
+        if (section.style.display === 'none' || section.style.display === '') {
+            section.style.display = 'block';
+            grid.classList.add('visible');
+        } else {
+            section.style.display = 'none';
+            grid.classList.remove('visible');
+        }
+    };
+    document.getElementById('welcomeNotifBtn').onclick = () => showToast("✨ No new alerts", "info");
+    document.getElementById('welcomeLogBtn').onclick = () => document.getElementById('logPopup').style.display = 'block';
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+    
     // Initialize
-    buildCarousel();
+    listenPatientData();
+    listenCaretakerActions();
+    rebuildCarousel();
     initTouchEvents();
     setMode('Line Following');
-    updateDirectionUI('forward');
-    updateTelemetry();
-    updateHealthMetrics();
     resetAutoSlideTimer();
-    setInterval(simulateDirectionChange, 4500);
+    setInterval(updateDirection, 4500);
     setInterval(updateTelemetry, 4000);
     setInterval(updateHealthMetrics, 8000);
+    renderPatientDetails();
 </script>
 </body>
 </html>
