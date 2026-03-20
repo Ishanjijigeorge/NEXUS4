@@ -100,16 +100,34 @@
             background: #cbd5e1;
         }
         
+        .greeting-text {
+            flex: 1;
+        }
+        
         .greeting-text .hello {
             font-size: 13px;
             font-weight: 500;
             opacity: 0.9;
+            display: block;
         }
         
         .greeting-text .name-large {
             font-size: 22px;
             font-weight: 700;
             line-height: 1.2;
+            display: block;
+            margin-top: 2px;
+        }
+        
+        .patient-id-small {
+            font-size: 11px;
+            font-weight: 500;
+            opacity: 0.85;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 4px;
         }
         
         .patient-badge {
@@ -119,7 +137,7 @@
             font-size: 10px;
             font-weight: 500;
             display: inline-block;
-            margin-top: 4px;
+            margin-top: 6px;
         }
         
         .welcome-date {
@@ -552,27 +570,54 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            border-radius: 36px;
-            padding: 24px;
-            width: calc(100% - 32px);
-            max-width: 320px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            border-radius: 28px;
+            padding: 28px 24px;
+            width: calc(100% - 48px);
+            max-width: 340px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             z-index: 1000;
             display: none;
+            text-align: center;
+        }
+        
+        .popup-panel.square {
+            border-radius: 28px;
         }
         
         .popup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 16px;
         }
         
-        .close-popup {
-            background: none;
+        .popup-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+        
+        .popup-message {
+            font-size: 16px;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 24px;
+            padding: 0 8px;
+        }
+        
+        .popup-close-btn {
+            background: var(--blue);
+            color: white;
             border: none;
-            font-size: 32px;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        
+        .popup-close-btn:hover {
+            background: #1e40af;
+            transform: scale(0.98);
         }
         
         .contact-item {
@@ -603,34 +648,47 @@
             width: 280px;
         }
         
-        .toast-notification {
+        .action-toast {
             position: fixed;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            background: #1f2937;
-            color: white;
-            padding: 14px 20px;
-            border-radius: 60px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 3000;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            animation: slideUp 0.3s ease;
-            max-width: 350px;
-            margin: 0 auto;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 28px;
+            padding: 24px 28px;
+            min-width: 260px;
+            max-width: 320px;
             text-align: center;
-            pointer-events: none;
+            z-index: 3000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            animation: fadeInOut 5s ease forwards;
+            border: 1px solid #e2e8f0;
         }
         
-        @keyframes slideUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        .action-toast .toast-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        
+        .action-toast .toast-message {
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); visibility: hidden; }
         }
         
         @media screen and (max-width: 600px) {
             .metrics-two-column { gap: 10px; }
             .tele-icon { width: 48px; height: 48px; font-size: 22px; }
+            .action-toast { width: calc(100% - 48px); }
         }
     </style>
 </head>
@@ -642,9 +700,9 @@
             <div class="welcome-top">
                 <img class="profile-image" id="profileImage" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile">
                 <div class="greeting-text">
-                    <span class="hello">Welcome back</span>
+                    <span class="hello">Welcome back,</span>
                     <span class="name-large" id="patientFirstName">Loading...</span>
-                    <div class="patient-badge" id="patientBadge"></div>
+                    <span class="patient-id-small" id="patientIdSmall"></span>
                 </div>
             </div>
             <div class="welcome-date">
@@ -666,7 +724,7 @@
 <div id="patientDetailsSection" class="patient-details-section" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h3 style="font-size: 18px;">📋 Patient Information</h3>
-        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px;">×</button>
+        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px; background: none; border: none; cursor: pointer;">×</button>
     </div>
     <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
@@ -732,17 +790,27 @@
 
 <button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
 
-<div id="callPopup" class="popup-panel">
-    <div class="popup-header"><h3>📞 Quick call</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
-    <div class="contact-item">🚑 Emergency <span style="float:right;">108</span></div>
-    <div class="contact-item">👨‍⚕️ Dr. Adams <span style="float:right;">+1 555 1234</span></div>
-    <div class="contact-item">🏠 Family <span style="float:right;">+1 555 8723</span></div>
+<div id="callPopup" class="popup-panel square">
+    <div class="popup-header">
+        <h3>📞 Quick Call</h3>
+    </div>
+    <div class="popup-message">
+        Emergency contacts available
+    </div>
+    <div style="margin-bottom: 16px;">
+        <div class="contact-item">🚑 Emergency <span style="float:right;">108</span></div>
+        <div class="contact-item">👨‍⚕️ Dr. Adams <span style="float:right;">+1 555 1234</span></div>
+        <div class="contact-item">🏠 Family <span style="float:right;">+1 555 8723</span></div>
+    </div>
+    <button class="popup-close-btn" onclick="closePopup('call')">Close</button>
 </div>
 
-<div id="logPopup" class="popup-panel">
-    <div class="popup-header"><h3>📋 Trip log</h3><button class="close-popup" onclick="closeLogPopup()">×</button></div>
-    <div id="tripLog" style="max-height:170px; overflow-y:auto;"></div>
-    <button style="margin-top:12px; background:#eef2ff; border:none; padding:10px; border-radius:40px; width:100%;" onclick="downloadLog()">📥 Download</button>
+<div id="logPopup" class="popup-panel square">
+    <div class="popup-header">
+        <h3>📋 Trip Log</h3>
+    </div>
+    <div id="tripLog" style="max-height:200px; overflow-y:auto; margin-bottom: 16px;"></div>
+    <button class="popup-close-btn" onclick="closeLogPopup()">Close</button>
 </div>
 
 <div class="shutdown-overlay" id="shutdownOverlay">
@@ -785,10 +853,16 @@
     let isVitalsAbnormal = false;
     let touchStartX = 0, touchEndX = 0;
     
-    function showToast(message) {
+    function showSquareToast(title, message) {
+        const existingToast = document.querySelector('.action-toast');
+        if (existingToast) existingToast.remove();
+        
         const toast = document.createElement('div');
-        toast.className = 'toast-notification';
-        toast.innerHTML = message;
+        toast.className = 'action-toast';
+        toast.innerHTML = `
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        `;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
     }
@@ -813,7 +887,7 @@
             if (docSnap.exists() && docSnap.data().mode) {
                 currentMode = docSnap.data().mode;
                 updateModeUI(currentMode);
-                showToast(`🔄 Drive mode changed to: ${currentMode}`);
+                showSquareToast("🔄 Drive Mode", `Mode changed to: ${currentMode}`);
             }
         });
     }
@@ -825,7 +899,7 @@
         const modeRef = doc(db, "settings", MODE_ID);
         await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
         updateModeUI(mode);
-        showToast(`✅ Mode switched to: ${mode}`);
+        showSquareToast("✅ Mode Changed", `Switched to: ${mode}`);
     }
     
     function updateModeUI(mode) {
@@ -836,9 +910,9 @@
     }
     
     function updatePatientDisplay() {
-        document.getElementById('patientFirstName').innerText = patientData.fullName.split(' ')[0];
+        document.getElementById('patientFirstName').innerText = patientData.fullName;
+        document.getElementById('patientIdSmall').innerHTML = `ID: ${patientData.patientId} · ${patientData.age}y`;
         document.getElementById('profileImage').src = patientData.photo;
-        document.getElementById('patientBadge').innerHTML = `${patientData.patientId} · ${patientData.bloodGroup}`;
         document.getElementById('dateText').innerText = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
     
@@ -870,12 +944,22 @@
                 let hasUpdate = false;
                 
                 const types = ['messages', 'alarms', 'appointments', 'media', 'calendar'];
+                const titles = {
+                    messages: '💬 New Message',
+                    alarms: '⏰ New Alarm',
+                    appointments: '📋 New Appointment',
+                    media: '🎵 New Media',
+                    calendar: '📅 New Calendar Event'
+                };
+                
                 types.forEach(type => {
                     if (data[type] && Array.isArray(data[type])) {
                         const newItems = data[type].slice(dataStore[type].length);
                         newItems.forEach(item => {
                             hasUpdate = true;
-                            showToast(`📢 New ${type.slice(0,-1)}: ${item.title || item.text || 'Update'}`);
+                            const displayText = item.title || item.text || 'Update';
+                            const detailText = item.detail || '';
+                            showSquareToast(titles[type], `${displayText} ${detailText ? '• ' + detailText : ''}`);
                             dataStore[type].push(item);
                         });
                     }
@@ -963,7 +1047,7 @@
     
     function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
+        return String(str).replace(/[&<>]/g, function(m) {
             if (m === '&') return '&amp;';
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
@@ -1050,10 +1134,11 @@
             isVitalsAbnormal = true;
             if (autoSlideInterval) clearInterval(autoSlideInterval);
             if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
-            showToast("⚠️ Vitals abnormal! Check your health metrics");
+            showSquareToast("⚠️ Health Alert", "Vitals are abnormal! Check your health metrics.");
         } else if (!abnormal && isVitalsAbnormal) {
             isVitalsAbnormal = false;
             resetAutoSlideTimer();
+            showSquareToast("✅ Health Normal", "Vitals have returned to normal range.");
         }
     }
     
@@ -1086,13 +1171,15 @@
     window.closePatientDetails = () => {
         document.getElementById('patientDetailsSection').style.display = 'none';
     };
-    window.closePopup = (type) => { if(type==='call') document.getElementById('callPopup').style.display='none'; };
+    window.closePopup = (type) => { 
+        if(type==='call') document.getElementById('callPopup').style.display='none';
+    };
     window.closeLogPopup = () => document.getElementById('logPopup').style.display = 'none';
-    window.downloadLog = () => showToast('📄 Report downloaded');
+    window.downloadLog = () => showSquareToast("📄 Report", "Log downloaded successfully");
     window.triggerEmergency = () => {
         document.body.classList.add('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'flex';
-        showToast("⚠️ EMERGENCY STOP ACTIVATED");
+        showSquareToast("⚠️ EMERGENCY", "Emergency stop activated");
     };
     window.closeShutdown = () => {
         document.body.classList.remove('emergency-shutdown');
@@ -1111,11 +1198,26 @@
             section.style.display = 'none';
         }
     };
-    document.getElementById('welcomeNotifBtn').onclick = () => showToast("✨ No new alerts");
+    document.getElementById('welcomeNotifBtn').onclick = () => showSquareToast("🔔 Notifications", "No new alerts at this time");
     document.getElementById('welcomeLogBtn').onclick = () => document.getElementById('logPopup').style.display = 'block';
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => setMode(btn.dataset.mode));
     });
+    
+    // Add trip log entries
+    const tripLog = document.getElementById('tripLog');
+    function addTrip(text) {
+        let d = document.createElement('div');
+        d.style.background = '#f1f5f9';
+        d.style.borderRadius = '16px';
+        d.style.padding = '10px 14px';
+        d.style.marginBottom = '8px';
+        d.style.fontSize = '12px';
+        d.innerText = text;
+        tripLog.appendChild(d);
+    }
+    addTrip('Today 09:05 → 09:42 · 37 min');
+    addTrip('Today 11:18 → 11:40 · 22 min');
     
     // Initialize
     listenPatientData();
