@@ -66,108 +66,79 @@
             font-size: 14px;
         }
         
-        /* Health popup grid */
-.health-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 8px;
-}
+        .health-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
 
-.health-item {
-    background: #f8fafc;
-    border-radius: 20px;
-    padding: 16px 12px;
-    text-align: center;
-    transition: all 0.2s ease;
-    border: 1px solid #eef2ff;
-}
+        .health-item {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid #eef2ff;
+        }
 
-.health-item span {
-    font-size: 12px;
-    color: var(--muted);
-    font-weight: 500;
-    display: block;
-    margin-bottom: 8px;
-}
+        .health-item span {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 8px;
+        }
 
-.health-item .value {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--blue);
-}
+        .health-item .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
 
-/* Wheelchair popup details */
-.wheel-detail {
-    background: #f8fafc;
-    border-radius: 20px;
-    padding: 14px 18px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    border: 1px solid #eef2ff;
-}
+        .wheel-detail {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border: 1px solid #eef2ff;
+        }
 
-.wheel-detail span {
-    color: var(--muted);
-    font-weight: 500;
-}
+        .wheel-detail span {
+            color: var(--muted);
+            font-weight: 500;
+        }
 
-.wheel-detail strong {
-    color: var(--text);
-    font-size: 16px;
-    font-weight: 700;
-}
+        .wheel-detail strong {
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 700;
+        }
 
-/* Make sure popups have proper spacing */
-#healthPopup .popup-header,
-#wheelPopup .popup-header {
-    margin-bottom: 16px;
-}
+        .contact-item {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #e2e8f0;
+        }
 
-#healthPopup .popup-header h3,
-#wheelPopup .popup-header h3 {
-    font-size: 20px;
-    font-weight: 700;
-}
+        .contact-item:hover {
+            background: #e5edff;
+            border-color: var(--blue);
+        }
 
-#healthPopup .close-popup,
-#wheelPopup .close-popup {
-    font-size: 28px;
-    color: var(--muted);
-}
-
-/* Contact items for call popup */
-.contact-item {
-    background: #f1f5f9;
-    border-radius: 40px;
-    padding: 14px 18px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: 0.2s;
-    border: 1px solid #e2e8f0;
-}
-
-.contact-item:hover {
-    background: #e5edff;
-    border-color: var(--blue);
-}
-
-.contact-item span:first-child {
-    font-weight: 600;
-}
-
-.contact-item span:last-child {
-    color: var(--blue);
-    font-weight: 600;
-}
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
         .header-row {
@@ -399,7 +370,6 @@
         .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
         .popup-header h3 { font-size: 20px; }
         .close-popup { background: none; border: none; font-size: 28px; cursor: pointer; }
-        .contact-item { background: #f1f5f9; border-radius: 30px; padding: 12px 16px; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; }
 
         .mode-option {
             background: #f1f5f9;
@@ -568,11 +538,6 @@
             border: 1px solid #d0d5dd;
             font-size: 14px;
         }
-        .loading-spinner {
-            text-align: center;
-            padding: 20px;
-            color: var(--muted);
-        }
     </style>
 </head>
 <body>
@@ -656,7 +621,7 @@
 
 <div id="healthPopup" class="popup-panel">
     <div class="popup-header"><h3>❤️ Health</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
-    <div class="health-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+    <div class="health-grid">
         <div class="health-item"><span>Heart</span><div class="value" id="hrValue">84</div></div>
         <div class="health-item"><span>BP</span><div class="value">130/80</div></div>
         <div class="health-item"><span>Temp</span><div class="value">36.8°C</div></div>
@@ -722,10 +687,11 @@
 </div>
 
 <script type="module">
-    import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     
     const db = window.db;
     const PATIENT_ID = "patient_main";
+    const MODE_ID = "drive_mode";
     
     let patientData = {
         fullName: 'Rebecca Rowe',
@@ -767,6 +733,28 @@
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // Listen for drive mode changes from Firebase (sync from patient)
+    function listenDriveMode() {
+        const modeRef = doc(db, "settings", MODE_ID);
+        onSnapshot(modeRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().mode) {
+                const newMode = docSnap.data().mode;
+                if (newMode !== currentMode) {
+                    currentMode = newMode;
+                    document.getElementById('modeDisplay').innerText = currentMode;
+                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                    showToast(`🔄 Drive mode changed to: ${currentMode} (from patient)`);
+                }
+            }
+        });
+    }
+    
+    // Save mode to Firebase when caretaker changes it
+    async function saveModeToFirestore(mode) {
+        const modeRef = doc(db, "settings", MODE_ID);
+        await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
     }
     
     async function loadPatientFromFirestore() {
@@ -823,7 +811,8 @@
     }
     
     function escapeHtml(str) {
-        return str.replace(/[&<>]/g, function(m) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
             if (m === '&') return '&amp;';
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
@@ -1000,7 +989,7 @@
         document.body.appendChild(modal);
         modal.style.display = 'block';
         
-        document.getElementById('confirmSwitchBtn').onclick = () => {
+        document.getElementById('confirmSwitchBtn').onclick = async () => {
             const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
             let allChecked = true;
             checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
@@ -1012,6 +1001,7 @@
             document.getElementById('modeDisplay').innerText = currentMode;
             document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
             modal.remove();
+            await saveModeToFirestore(currentMode);
             showToast(`✅ Mode switched to ${currentMode}`);
         };
     }
@@ -1076,7 +1066,9 @@
         document.getElementById('shutdownOverlay').style.display = 'none';
     };
     
+    // Initialize listeners
     await loadPatientFromFirestore();
+    listenDriveMode();
     
     window.onload = () => {
         document.getElementById('controlPad').style.display = 'none';
