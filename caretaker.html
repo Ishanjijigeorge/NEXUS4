@@ -17,7 +17,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
@@ -38,6 +38,7 @@
         window.updateDoc = updateDoc;
         window.arrayUnion = arrayUnion;
         window.onSnapshot = onSnapshot;
+        window.getDoc = getDoc;
         console.log("Firebase initialized");
     </script>
     <style>
@@ -64,6 +65,109 @@
             color: var(--text);
             font-size: 14px;
         }
+        
+        /* Health popup grid */
+.health-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.health-item {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.2s ease;
+    border: 1px solid #eef2ff;
+}
+
+.health-item span {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.health-item .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--blue);
+}
+
+/* Wheelchair popup details */
+.wheel-detail {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    border: 1px solid #eef2ff;
+}
+
+.wheel-detail span {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.wheel-detail strong {
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* Make sure popups have proper spacing */
+#healthPopup .popup-header,
+#wheelPopup .popup-header {
+    margin-bottom: 16px;
+}
+
+#healthPopup .popup-header h3,
+#wheelPopup .popup-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+#healthPopup .close-popup,
+#wheelPopup .close-popup {
+    font-size: 28px;
+    color: var(--muted);
+}
+
+/* Contact items for call popup */
+.contact-item {
+    background: #f1f5f9;
+    border-radius: 40px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid #e2e8f0;
+}
+
+.contact-item:hover {
+    background: #e5edff;
+    border-color: var(--blue);
+}
+
+.contact-item span:first-child {
+    font-weight: 600;
+}
+
+.contact-item span:last-child {
+    color: var(--blue);
+    font-weight: 600;
+}
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
         .header-row {
@@ -115,12 +219,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .notif-wrap { position: relative; }
-        .notif-dot {
-            position: absolute; top: 2px; right: 2px;
-            width: 8px; height: 8px;
-            background: var(--danger); border-radius: 50%; display: none;
         }
 
         .patient-full-card {
@@ -193,16 +291,6 @@
             font-weight: 600;
             font-size: 15px;
             margin-top: 2px;
-        }
-        .detail-value input, .detail-value select {
-            font-weight: 600;
-            font-size: 14px;
-            border: 1px solid var(--blue);
-            border-radius: 12px;
-            padding: 8px 10px;
-            width: 100%;
-            background: #fafcff;
-            font-family: 'DM Sans', sans-serif;
         }
 
         .round-row {
@@ -312,10 +400,6 @@
         .popup-header h3 { font-size: 20px; }
         .close-popup { background: none; border: none; font-size: 28px; cursor: pointer; }
         .contact-item { background: #f1f5f9; border-radius: 30px; padding: 12px 16px; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; }
-        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .health-item { background: #f8fafc; border-radius: 24px; padding: 14px; text-align: center; }
-        .health-item .value { font-size: 20px; font-weight: 700; color: var(--blue); }
-        .wheel-detail { background: #f1f5f9; border-radius: 24px; padding: 14px; margin: 8px 0; display: flex; justify-content: space-between; font-size: 14px; }
 
         .mode-option {
             background: #f1f5f9;
@@ -330,13 +414,6 @@
             transition: 0.1s;
         }
         .mode-option:hover { background: #e5edff; }
-
-        .caretaker-popup .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #e9eef4;
-        }
 
         .shutdown-overlay {
             display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
@@ -491,6 +568,11 @@
             border: 1px solid #d0d5dd;
             font-size: 14px;
         }
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+        }
     </style>
 </head>
 <body>
@@ -504,10 +586,6 @@
         </div>
     </div>
     <div class="icon-group">
-        <div class="notif-wrap">
-            <button class="icon-btn" id="notifBtn">🔔</button>
-            <span id="notifDot" class="notif-dot"></span>
-        </div>
         <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
         <button class="icon-btn" id="openLogBtn">📋</button>
     </div>
@@ -516,10 +594,10 @@
 <div class="patient-full-card" id="patientCard">
     <button class="edit-icon" id="editPatientBtn">✎</button>
     <div class="patient-row">
-        <img class="patient-photo" id="patientPhoto" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="patient" onclick="triggerPhotoUpload()">
+        <img class="patient-photo" id="patientPhoto" src="" alt="patient" onclick="triggerPhotoUpload()">
         <div class="patient-name-id">
-            <h2 id="patientNameDisplay">Rebecca Rowe</h2>
-            <span class="light" id="patientIdDisplay">ID PT-10234 · 67y</span>
+            <h2 id="patientNameDisplay">Loading...</h2>
+            <span class="light" id="patientIdDisplay"></span>
         </div>
     </div>
     <div class="details-grid" id="patientDetailsGrid"></div>
@@ -578,7 +656,7 @@
 
 <div id="healthPopup" class="popup-panel">
     <div class="popup-header"><h3>❤️ Health</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
-    <div class="health-grid">
+    <div class="health-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div class="health-item"><span>Heart</span><div class="value" id="hrValue">84</div></div>
         <div class="health-item"><span>BP</span><div class="value">130/80</div></div>
         <div class="health-item"><span>Temp</span><div class="value">36.8°C</div></div>
@@ -623,7 +701,6 @@
     <div class="detail-row"><span>📧 Email</span> <span>john.d@care.com</span></div>
     <div class="detail-row"><span>📞 Phone</span> <span>+1 555 7700</span></div>
     <div class="detail-row"><span>🏥 Facility</span> <span>HomeCare Plus</span></div>
-    <div class="detail-row"><span>⏱️ Since</span> <span>2021</span></div>
 </div>
 
 <div id="editPatientPopup" class="popup-panel" style="max-width: 420px;">
@@ -645,7 +722,7 @@
 </div>
 
 <script type="module">
-    import { getFirestore, doc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     
     const db = window.db;
     const PATIENT_ID = "patient_main";
@@ -692,13 +769,25 @@
         setTimeout(() => toast.remove(), 3000);
     }
     
+    async function loadPatientFromFirestore() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        const docSnap = await getDoc(patientRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            Object.assign(patientData, data);
+        } else {
+            await setDoc(patientRef, patientData);
+        }
+        renderPatientDetails();
+    }
+    
     async function syncPatientToFirestore() {
         const patientRef = doc(db, "patients", PATIENT_ID);
         await setDoc(patientRef, patientData, { merge: true });
-        showToast('✅ Patient data synced to Firebase');
+        showToast('✅ Patient data saved permanently');
     }
     
-    function renderPatientDetails(editMode = false) {
+    function renderPatientDetails() {
         const grid = document.getElementById('patientDetailsGrid');
         const fields = [
             { label: 'Blood Group', key: 'bloodGroup' },
@@ -722,15 +811,24 @@
     function openEditPatientPopup() {
         const formContainer = document.getElementById('editPatientForm');
         formContainer.innerHTML = `
-            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${patientData.fullName.replace(/"/g, '&quot;')}"></div>
+            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${escapeHtml(patientData.fullName)}"></div>
             <div class="edit-field-row"><label>Patient ID</label><input type="text" id="editPatientId" value="${patientData.patientId}"></div>
             <div class="edit-field-row"><label>Age</label><input type="text" id="editAge" value="${patientData.age}"></div>
             <div class="edit-field-row"><label>Blood Group</label><input type="text" id="editBloodGroup" value="${patientData.bloodGroup}"></div>
-            <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${patientData.doctor.replace(/"/g, '&quot;')}"></div>
+            <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${escapeHtml(patientData.doctor)}"></div>
             <div class="edit-field-row"><label>Contact Number</label><input type="text" id="editContactNo" value="${patientData.contactNo}"></div>
-            <div class="edit-field-row"><label>Photo URL (or upload below)</label><input type="text" id="editPhotoUrl" value="${patientData.photo}"></div>
+            <div class="edit-field-row"><label>Photo URL</label><input type="text" id="editPhotoUrl" value="${patientData.photo}"></div>
         `;
         document.getElementById('editPatientPopup').style.display = 'block';
+    }
+    
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
     
     async function savePatientEdits() {
@@ -745,10 +843,10 @@
         };
         
         Object.assign(patientData, newData);
-        renderPatientDetails(false);
+        renderPatientDetails();
         await syncPatientToFirestore();
         closeEditPatientPopup();
-        showToast('✅ Patient details updated successfully');
+        showToast('✅ Patient details saved permanently');
     }
     
     window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
@@ -762,7 +860,7 @@
                 patientData.photo = ev.target.result;
                 document.getElementById('patientPhoto').src = patientData.photo;
                 await syncPatientToFirestore();
-                showToast('📸 Patient photo updated');
+                showToast('📸 Patient photo updated permanently');
             };
             reader.readAsDataURL(file);
         }
@@ -771,18 +869,25 @@
     async function saveActionToFirestore(type, data) {
         const actionsRef = doc(db, "patientActions", "feed");
         try {
-            await updateDoc(actionsRef, {
-                [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
-            });
-        } catch {
+            const docSnap = await getDoc(actionsRef);
+            if (docSnap.exists()) {
+                await updateDoc(actionsRef, {
+                    [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
+                });
+            } else {
+                await setDoc(actionsRef, { [type]: [data] });
+            }
+        } catch (error) {
+            console.error("Error saving action:", error);
             await setDoc(actionsRef, { [type]: [data] });
         }
+        showToast(`✅ Action saved to patient dashboard`);
     }
     
     window.sendMessage = async () => {
         const msg = document.getElementById('messageText')?.value;
         if (!msg) return showToast('Please enter a message');
-        await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleTimeString() });
+        await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleString() });
         showToast(`💬 Message sent to patient`);
         document.getElementById('messageText').value = '';
         closePatientSubmenu();
@@ -808,7 +913,7 @@
     };
     
     window.playMedia = async () => {
-        await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleTimeString() });
+        await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
         showToast(`🎵 Media player started`);
         closePatientSubmenu();
     };
@@ -853,7 +958,6 @@
         document.getElementById('submenuContent').innerHTML = content;
         document.getElementById('patientSubmenu').style.display = 'block';
         
-        // Attach event listeners after content is added
         setTimeout(() => {
             if (option === 'message') document.getElementById('sendMsgBtn')?.addEventListener('click', window.sendMessage);
             if (option === 'calendar') {
@@ -972,7 +1076,7 @@
         document.getElementById('shutdownOverlay').style.display = 'none';
     };
     
-    renderPatientDetails(false);
+    await loadPatientFromFirestore();
     
     window.onload = () => {
         document.getElementById('controlPad').style.display = 'none';
