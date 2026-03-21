@@ -66,6 +66,37 @@
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #dc2626;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        .connection-status.connected { background: #10b981; }
+        .connection-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .top-row {
             display: flex;
             gap: 12px;
@@ -813,22 +844,22 @@
             <div class="telemetry-item">
                 <div class="tele-icon">⚡</div>
                 <span class="tele-label">SPEED</span>
-                <span class="tele-value" id="speedValue">1.2 m/s</span>
+                <span class="tele-value" id="speedValue">0.0 m/s</span>
             </div>
             <div class="telemetry-item">
                 <div class="tele-icon">🔋</div>
                 <span class="tele-label">BATTERY</span>
-                <span class="tele-value" id="batteryValue">82%</span>
+                <span class="tele-value" id="batteryValue">--%</span>
             </div>
             <div class="telemetry-item">
                 <div class="tele-icon">🚧</div>
                 <span class="tele-label">OBSTACLE</span>
-                <span class="tele-value" id="obstacleValue">Clear</span>
+                <span class="tele-value" id="obstacleValue">--</span>
             </div>
             <div class="telemetry-item">
                 <div class="tele-icon">📍</div>
                 <span class="tele-label">RANGE</span>
-                <span class="tele-value" id="rangeValue">5.2 km</span>
+                <span class="tele-value" id="rangeValue">-- km</span>
             </div>
         </div>
     </div>
@@ -860,9 +891,9 @@
     <div class="direction-header">
         <h4>🔄 CURRENT MOVEMENT</h4>
     </div>
-    <div class="direction-status-badge forward" id="directionBadge">
-        <span class="direction-icon-large" id="dirIconLarge">⬆️</span>
-        <span class="direction-text-large" id="dirTextLarge">Moving forward</span>
+    <div class="direction-status-badge stop" id="directionBadge">
+        <span class="direction-icon-large" id="dirIconLarge">⏹️</span>
+        <span class="direction-text-large" id="dirTextLarge">Stopped</span>
     </div>
 </div>
 
@@ -894,6 +925,11 @@
     </div>
 </div>
 
+<div class="connection-status disconnected" id="connectionStatus">
+    <span class="status-dot"></span>
+    <span id="connectionText">Disconnected</span>
+</div>
+
 <script type="module">
     import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     
@@ -913,6 +949,16 @@
     };
     
     let currentMode = 'Line Following';
+    let currentDirection = 'stop';
+    
+    // WebSocket connection to ESP32
+    let ws = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 10;
+    let isConnected = false;
+    
+    const ESP32_HOSTNAME = "wheelchair.local";
+    const ESP32_PORT = 81;
     
     // Track processed items by ID to prevent duplicates
     let processedItems = {
@@ -945,7 +991,170 @@
     let emergencyActive = false;
     let lastHealthState = { hr: 84, temp: 36.8, o2: 98, bp: '130/80' };
     
-    // Update live date and time
+    // =============== WEBSOCKET CONNECTION ===============
+    function connectToESP32() {
+        const wsUrl = `ws://${ESP32_HOSTNAME}:${ESP32_PORT}`;
+        console.log(`Connecting to ESP32 at ${wsUrl}...`);
+        
+        try {
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log("✅ Connected to ESP32 bridge");
+                isConnected = true;
+                reconnectAttempts = 0;
+                updateConnectionStatus(true);
+                showToast("Connected to wheelchair controller");
+                
+                // Request status
+                setTimeout(() => {
+                    ws.send("PING");
+                }, 500);
+            };
+            
+            ws.onmessage = function(event) {
+                handleArduinoMessage(event.data);
+            };
+            
+            ws.onclose = function() {
+                console.log("❌ Disconnected from ESP32");
+                isConnected = false;
+                updateConnectionStatus(false);
+                showToast("Connection lost - reconnecting...");
+                
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(3000 * reconnectAttempts, 30000);
+                    setTimeout(connectToESP32, delay);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error("WebSocket error:", error);
+                updateConnectionStatus(false);
+            };
+        } catch (error) {
+            console.error("Failed to create WebSocket:", error);
+            updateConnectionStatus(false);
+        }
+    }
+    
+    function updateConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionText');
+        
+        if (connected) {
+            statusDiv.className = 'connection-status connected';
+            statusText.innerText = 'Connected';
+        } else {
+            statusDiv.className = 'connection-status disconnected';
+            statusText.innerText = 'Disconnected';
+        }
+    }
+    
+    function handleArduinoMessage(data) {
+        console.log("From Arduino:", data);
+        
+        try {
+            const jsonData = JSON.parse(data);
+            switch(jsonData.type) {
+                case "mode_change":
+                    updateModeUIFromArduino(jsonData.mode);
+                    break;
+                case "tilt_alert":
+                    showTiltWarning(jsonData.angle);
+                    break;
+                case "direction":
+                    updateDirectionFromArduino(jsonData.direction);
+                    break;
+                case "wheelchair_status":
+                    updateWheelchairStatus(jsonData);
+                    break;
+                default:
+                    handlePlainTextMessage(data);
+            }
+        } catch(e) {
+            handlePlainTextMessage(data);
+        }
+    }
+    
+    function handlePlainTextMessage(message) {
+        if (message.startsWith("MODE:")) {
+            updateModeUIFromArduino(message.substring(5));
+        }
+        else if (message.startsWith("DIR:")) {
+            updateDirectionFromArduino(message.substring(4));
+        }
+        else if (message.startsWith("BATTERY:")) {
+            const battery = message.substring(8);
+            document.getElementById('batteryValue').innerText = battery + '%';
+        }
+        else if (message.startsWith("SPEED:")) {
+            const speed = message.substring(6);
+            document.getElementById('speedValue').innerText = speed + ' m/s';
+        }
+        else if (message === "PONG") {
+            console.log("Arduino is alive");
+        }
+    }
+    
+    function updateDirectionFromArduino(direction) {
+        currentDirection = direction;
+        const badge = document.getElementById('directionBadge');
+        const icon = document.getElementById('dirIconLarge');
+        const text = document.getElementById('dirTextLarge');
+        
+        badge.className = 'direction-status-badge ' + direction;
+        
+        const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
+        const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
+        
+        icon.innerHTML = icons[direction] || '⏹️';
+        text.innerHTML = texts[direction] || 'Stopped';
+    }
+    
+    function updateWheelchairStatus(status) {
+        if (status.battery) document.getElementById('batteryValue').innerText = status.battery + '%';
+        if (status.speed) document.getElementById('speedValue').innerText = status.speed + ' m/s';
+        if (status.obstacle) {
+            const obsSpan = document.getElementById('obstacleValue');
+            obsSpan.innerText = status.obstacle;
+            obsSpan.className = 'tele-value ' + 
+                (status.obstacle === 'Clear' ? 'obstacle-clear' : 
+                 status.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+        }
+        if (status.range) document.getElementById('rangeValue').innerText = status.range + ' km';
+    }
+    
+    function showTiltWarning(angle) {
+        const uniqueId = `tilt_alert_${angle}_${Date.now()}`;
+        if (!processedItems.healthAlerts.has(uniqueId)) {
+            processedItems.healthAlerts.add(uniqueId);
+            addToNotificationLog('⚠️ Tilt Detected', `Wheelchair tilted at ${angle}°`, new Date().toLocaleString(), true, uniqueId);
+        }
+    }
+    
+    function updateModeUIFromArduino(mode) {
+        if (mode === currentMode) return;
+        currentMode = mode;
+        updateModeUI(currentMode);
+        
+        const uniqueId = `drivemode_${mode}_${Date.now()}`;
+        if (!processedItems.driveModeChanges.has(uniqueId)) {
+            processedItems.driveModeChanges.add(uniqueId);
+            addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${currentMode}`, new Date().toLocaleString(), false, uniqueId);
+        }
+    }
+    
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position: fixed; bottom: 80px; left: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 50px; font-size: 13px; text-align: center; z-index: 3000; animation: slideUp 0.3s ease; max-width: 320px; margin: 0 auto;';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    // =============== EXISTING PATIENT FUNCTIONS ===============
     function updateDateTime() {
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -954,9 +1163,7 @@
         document.getElementById('timeText').innerText = timeStr;
     }
     
-    // Show alert popup with duplicate prevention
     function showAlertPopup(title, message, time, uniqueId) {
-        // Check if this alert was already shown
         if (processedItems.healthAlerts.has(uniqueId)) return;
         processedItems.healthAlerts.add(uniqueId);
         
@@ -981,11 +1188,8 @@
         addToNotificationLog(title, message, time, true, uniqueId);
     }
     
-    // Add to notification log with duplicate prevention
     function addToNotificationLog(title, message, time, isWarning = false, uniqueId = null) {
         const id = uniqueId || `${title}_${message}_${time || Date.now()}`;
-        
-        // Check for duplicate notification
         if (processedItems.healthAlerts.has(id)) return;
         processedItems.healthAlerts.add(id);
         
@@ -1036,12 +1240,7 @@
         notificationCount = 0;
         updateNotificationBadge();
         updateNotificationLogDisplay();
-        
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position: fixed; bottom: 30px; left: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 50px; font-size: 13px; text-align: center; z-index: 3000; animation: slideUp 0.3s ease; max-width: 320px; margin: 0 auto;';
-        toast.textContent = '✅ All notifications cleared';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
+        showToast('✅ All notifications cleared');
     }
     
     function escapeHtml(str) {
@@ -1054,7 +1253,6 @@
         });
     }
     
-    // Check and trigger time-based alerts with duplicate prevention
     function checkTimeBasedAlerts() {
         const now = new Date();
         
@@ -1115,7 +1313,6 @@
         }
     }
     
-    // Listen for caretaker actions with duplicate prevention
     function listenCaretakerActions() {
         const actionsRef = doc(db, "patientActions", "feed");
         onSnapshot(actionsRef, (docSnap) => {
@@ -1154,7 +1351,6 @@
         });
     }
     
-    // Listen for emergency from caretaker
     function listenEmergency() {
         const emergencyRef = doc(db, "settings", EMERGENCY_ID);
         onSnapshot(emergencyRef, (docSnap) => {
@@ -1168,6 +1364,10 @@
                 document.getElementById('shutdownOverlay').style.display = 'flex';
                 addToNotificationLog('🚨 EMERGENCY', 'Caretaker has activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
                 showAlertPopup('🚨 EMERGENCY STOP', 'Caretaker has activated emergency stop! Please wait for assistance.', 'Now', uniqueId);
+                
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send("CMD_STOP");
+                }
             } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
                 emergencyActive = false;
                 document.body.classList.remove('emergency-shutdown');
@@ -1178,13 +1378,17 @@
         });
     }
     
-    // Trigger emergency from patient
     async function triggerEmergency() {
         const uniqueId = `patient_emergency_${Date.now()}`;
         if (processedItems.emergencyEvents.has(uniqueId)) return;
         processedItems.emergencyEvents.add(uniqueId);
         
         emergencyActive = true;
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send("CMD_STOP");
+        }
+        
         const emergencyRef = doc(db, "settings", EMERGENCY_ID);
         await setDoc(emergencyRef, { active: true, triggeredBy: 'patient', timestamp: new Date().toISOString() });
         document.body.classList.add('emergency-shutdown');
@@ -1353,11 +1557,6 @@
                 if (newMode !== currentMode) {
                     currentMode = newMode;
                     updateModeUI(currentMode);
-                    const uniqueId = `drivemode_${newMode}_${docSnap.data().timestamp}`;
-                    if (!processedItems.driveModeChanges.has(uniqueId)) {
-                        processedItems.driveModeChanges.add(uniqueId);
-                        addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${currentMode}`, new Date().toLocaleString(), false, uniqueId);
-                    }
                 }
             }
         });
@@ -1369,6 +1568,11 @@
         const modeRef = doc(db, "settings", MODE_ID);
         await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
         updateModeUI(mode);
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(`MODE_${mode.toUpperCase().replace(' ', '_')}`);
+        }
+        
         const uniqueId = `drivemode_${mode}_${Date.now()}`;
         addToNotificationLog('🔄 Drive Mode', `You changed mode to: ${mode}`, new Date().toLocaleString(), false, uniqueId);
     }
@@ -1415,40 +1619,6 @@
             div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
             grid.appendChild(div);
         });
-    }
-    
-    function updateTelemetry() {
-        document.getElementById('speedValue').innerText = (Math.random() * 1.2 + 0.8).toFixed(1) + ' m/s';
-        const battery = Math.floor(Math.random() * 25) + 70;
-        document.getElementById('batteryValue').innerText = battery + '%';
-        document.getElementById('rangeValue').innerText = (Math.random() * 8 + 2).toFixed(1) + ' km';
-        const obs = Math.random() < 0.6 ? 'Clear' : (Math.random() < 0.8 ? 'Nearby' : 'Blocked');
-        const obsSpan = document.getElementById('obstacleValue');
-        obsSpan.innerText = obs;
-        obsSpan.className = 'tele-value ' + (obs === 'Clear' ? 'obstacle-clear' : obs === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
-        
-        if (battery < 20) {
-            const uniqueId = `battery_low_${battery}_${Date.now()}`;
-            if (!processedItems.healthAlerts.has(uniqueId)) {
-                processedItems.healthAlerts.add(uniqueId);
-                addToNotificationLog('⚠️ Low Battery', `Battery level is ${battery}% - Please charge soon`, new Date().toLocaleString(), true, uniqueId);
-            }
-        }
-    }
-    
-    let dirIndex = 0;
-    const directions = ['forward', 'right', 'forward', 'left', 'forward', 'stop', 'backward', 'forward'];
-    function updateDirection() {
-        const dir = directions[dirIndex % directions.length];
-        dirIndex++;
-        const badge = document.getElementById('directionBadge');
-        const icon = document.getElementById('dirIconLarge');
-        const text = document.getElementById('dirTextLarge');
-        badge.className = 'direction-status-badge ' + dir;
-        const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
-        const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
-        icon.innerHTML = icons[dir];
-        text.innerHTML = texts[dir];
     }
     
     function updateHealthMetrics() {
@@ -1501,6 +1671,7 @@
     window.closeLogPopup = () => {
         document.getElementById('logPopup').style.display = 'none';
     };
+    window.closeShutdown = closeShutdown;
     
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([12.9716, 77.5946], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
@@ -1534,11 +1705,12 @@
     rebuildCarousel();
     initTouchEvents();
     resetAutoSlideTimer();
-    setInterval(updateDirection, 4500);
-    setInterval(updateTelemetry, 4000);
     setInterval(updateHealthMetrics, 8000);
     setInterval(checkTimeBasedAlerts, 30000);
     updatePatientDisplay();
+    
+    // Connect to ESP32
+    connectToESP32();
 </script>
 </body>
 </html>
