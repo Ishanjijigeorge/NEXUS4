@@ -705,7 +705,7 @@
     <button class="round-item" id="patientIcon"><div class="round-icon">👤</div><span>Patient</span></button>
 </div>
 
-<button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
+<button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
 
 <div class="drive-mode-card">
     <span class="mode-label">Drive mode</span>
@@ -783,11 +783,11 @@
         <span>⚡ Speed</span>
         <strong id="speedValue">1.2 m/s</strong>
     </div>
-    <div class="wheel-detail" id="obstacleDetail">
+    <div class="wheel-detail">
         <span>🚧 Obstacle</span>
         <strong id="obstacleValue">Clear</strong>
     </div>
-    <div class="wheel-detail" id="rangeDetail">
+    <div class="wheel-detail">
         <span>📍 Range</span>
         <strong id="rangeValue">5.2 km</strong>
     </div>
@@ -836,8 +836,8 @@
 <div class="shutdown-overlay" id="shutdownOverlay">
     <div class="shutdown-card">
         <div style="font-size:40px;">⚠️</div>
-        <div style="font-size:22px; font-weight:700;">HALT</div>
-        <p style="margin:12px 0;">Emergency stop</p>
+        <div style="font-size:22px; font-weight:700;">EMERGENCY HALT</div>
+        <p style="margin:12px 0;">Emergency stop activated</p>
         <button onclick="closeShutdown()" style="background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
     </div>
 </div>
@@ -848,6 +848,7 @@
     const db = window.db;
     const PATIENT_ID = "patient_main";
     const MODE_ID = "drive_mode";
+    const EMERGENCY_ID = "emergency_status";
     
     let patientData = {
         fullName: 'Rebecca Rowe',
@@ -863,6 +864,7 @@
     let pendingMode = null;
     let notifications = [];
     let notificationCount = 0;
+    let emergencyActive = false;
     
     // Health monitoring state
     let lastHealthState = {
@@ -874,9 +876,7 @@
     
     let lastWheelState = {
         battery: 82,
-        speed: 1.2,
-        obstacle: 'Clear',
-        range: 5.2
+        speed: 1.2
     };
     
     const safetyChecks = {
@@ -994,9 +994,51 @@
         showToast('All notifications cleared');
     }
     
-    // Simulate health monitoring with alerts
+    // Listen for emergency from patient
+    function listenEmergencyFromPatient() {
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                emergencyActive = true;
+                document.body.classList.add('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'flex';
+                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
+            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
+                emergencyActive = false;
+                document.body.classList.remove('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'none';
+            }
+        });
+    }
+    
+    // Send emergency to patient
+    async function triggerEmergency() {
+        emergencyActive = true;
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
+        
+        // Auto reset after 5 seconds (for demo)
+        setTimeout(async () => {
+            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }, 5000);
+    }
+    
+    function closeShutdown() {
+        if (emergencyActive) {
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    }
+    
+    // Health monitoring with alerts
     function simulateHealthMonitoring() {
-        // Random health changes
         let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
         hr = Math.min(120, Math.max(55, hr));
         
@@ -1012,43 +1054,45 @@
         diastolic = Math.min(100, Math.max(60, diastolic));
         const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
         
-        // Update UI
         document.getElementById('hrValue').innerText = hr;
         document.getElementById('tempValue').innerText = temp.toFixed(1);
         document.getElementById('o2Value').innerText = o2;
         document.getElementById('bpValue').innerText = bp;
         
-        // Check for abnormal values and notify
+        // Heart rate alerts
         if (hr < 60 || hr > 100) {
             if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
-                addNotification('⚠️ Abnormal Heart Rate', `Heart rate is ${hr} bpm (normal: 60-100)`, true);
+                addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
                 document.getElementById('healthHeartItem').classList.add('warning');
             }
         } else {
             document.getElementById('healthHeartItem').classList.remove('warning');
         }
         
+        // Temperature alerts
         if (temp < 36.1 || temp > 37.2) {
             if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
-                addNotification('⚠️ Abnormal Temperature', `Temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
+                addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
                 document.getElementById('healthTempItem').classList.add('warning');
             }
         } else {
             document.getElementById('healthTempItem').classList.remove('warning');
         }
         
+        // Oxygen alerts
         if (o2 < 95) {
             if (lastHealthState.o2 >= 95) {
-                addNotification('⚠️ Low Oxygen Level', `SpO₂ is ${o2}% (normal: 95-100)`, true);
+                addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
                 document.getElementById('healthO2Item').classList.add('warning');
             }
         } else {
             document.getElementById('healthO2Item').classList.remove('warning');
         }
         
+        // Blood pressure alerts
         if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
             if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
-                addNotification('⚠️ Abnormal Blood Pressure', `BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
+                addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
                 document.getElementById('healthBPItem').classList.add('warning');
             }
         } else {
@@ -1058,49 +1102,41 @@
         lastHealthState = { hr, temp, o2, bp };
     }
     
-    // Simulate wheelchair monitoring
+    // Wheelchair monitoring - only battery and speed alerts
     function simulateWheelchairMonitoring() {
-        let battery = lastWheelState.battery - (Math.random() * 2);
+        let battery = lastWheelState.battery - (Math.random() * 1.5);
         battery = Math.max(10, Math.min(100, battery));
         
-        let speed = (Math.random() * 1.2 + 0.8).toFixed(1);
-        let range = (Math.random() * 8 + 2).toFixed(1);
-        let r = Math.random();
-        let obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
+        let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
         
-        // Update UI
         document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
         document.getElementById('speedValue').innerText = speed + ' m/s';
+        
+        // Random obstacle and range for display only (no alerts)
+        const r = Math.random();
+        const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
+        const range = (Math.random() * 8 + 2).toFixed(1);
+        document.getElementById('obstacleValue').innerText = obstacle;
         document.getElementById('rangeValue').innerText = range + ' km';
         
-        const obstacleSpan = document.getElementById('obstacleValue');
-        obstacleSpan.innerText = obstacle;
-        
-        if (obstacle === 'Blocked') {
-            obstacleSpan.style.color = 'var(--danger)';
-        } else if (obstacle === 'Nearby') {
-            obstacleSpan.style.color = 'var(--amber)';
-        } else {
-            obstacleSpan.style.color = 'var(--green)';
-        }
-        
-        // Check for alerts
+        // Battery low alert
         if (battery < 20 && lastWheelState.battery >= 20) {
-            addNotification('⚠️ Low Battery', `Battery level is ${Math.round(battery)}% - Please charge soon`, true);
+            addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
             document.getElementById('batteryDetail').classList.add('warning');
         } else if (battery >= 20) {
             document.getElementById('batteryDetail').classList.remove('warning');
         }
         
-        if (obstacle === 'Blocked' && lastWheelState.obstacle !== 'Blocked') {
-            addNotification('⚠️ Obstacle Detected', 'Path is blocked! Please check immediately', true);
+        // Speed alert (if too fast)
+        const speedNum = parseFloat(speed);
+        if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
+            addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
+            document.getElementById('speedDetail').classList.add('warning');
+        } else if (speedNum <= 2.0) {
+            document.getElementById('speedDetail').classList.remove('warning');
         }
         
-        if (obstacle === 'Nearby' && lastWheelState.obstacle !== 'Nearby') {
-            addNotification('⚠️ Obstacle Nearby', 'Obstacle detected nearby - please proceed with caution', true);
-        }
-        
-        lastWheelState = { battery, speed, obstacle, range };
+        lastWheelState = { battery, speed: speedNum };
     }
     
     function listenDriveMode() {
@@ -1399,6 +1435,8 @@
     window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
     window.clearAllNotifications = clearAllNotifications;
     document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
+    document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
+    window.closeShutdown = closeShutdown;
     
     document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
     document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
@@ -1414,20 +1452,10 @@
     window.toggleGpsFullscreen = () => { const card = document.querySelector('.map-card'); if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen(); };
     document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
     
-    window.triggerEmergency = () => {
-        document.body.classList.add('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'flex';
-        addNotification('⚠️ EMERGENCY STOP', 'Emergency stop has been activated', true);
-    };
-    window.closeShutdown = () => {
-        document.body.classList.remove('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'none';
-    };
-    
     await loadPatientFromFirestore();
     listenDriveMode();
+    listenEmergencyFromPatient();
     
-    // Start monitoring intervals
     setInterval(simulateHealthMonitoring, 8000);
     setInterval(simulateWheelchairMonitoring, 5000);
     
