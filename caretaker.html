@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>CareTaker · full patient actions + alarm</title>
+    <title>CareTaker · Wheelchair Control System</title>
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -66,6 +66,44 @@
             padding: 12px;
             color: var(--text);
             font-size: 14px;
+        }
+        
+        /* Connection Status Indicator */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #dc2626;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .connection-status.connected {
+            background: #10b981;
+        }
+        .connection-status.disconnected {
+            background: #dc2626;
+        }
+        .connection-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
         
         .health-grid {
@@ -451,14 +489,12 @@
             justify-content: center;
             transition: 0.1s;
         }
-        .ctrl-btn:active { background: #d0dbff; }
+        .ctrl-btn:active { background: #d0dbff; transform: scale(0.95); }
         .ctrl-stop {
             background:#dc2626;
             color:white;
-            border:none;
-            font-size:24px;
-            font-weight:800;
         }
+        .ctrl-stop:active { background: #b91c1c; }
 
         .safety-check-item {
             display: flex;
@@ -662,6 +698,27 @@
             font-size: 10px;
             color: var(--muted);
         }
+        
+        .command-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: fadeOut 2s ease forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            70% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
     </style>
 </head>
 <body>
@@ -842,6 +899,11 @@
     </div>
 </div>
 
+<div class="connection-status disconnected" id="connectionStatus">
+    <span class="status-dot"></span>
+    <span id="connectionText">Disconnected</span>
+</div>
+
 <script type="module">
     import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     
@@ -865,6 +927,17 @@
     let notifications = [];
     let notificationCount = 0;
     let emergencyActive = false;
+    
+    // WebSocket connection to ESP32
+    let ws = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 10;
+    let isConnected = false;
+    
+    // ESP32 connection settings
+    const ESP32_HOSTNAME = "wheelchair.local";  // mDNS hostname
+    const ESP32_PORT = 81;
+    let esp32IP = null;
     
     // Health monitoring state
     let lastHealthState = {
@@ -900,6 +973,172 @@
         ]
     };
     
+    // =============== WEBSOCKET CONNECTION FUNCTIONS ===============
+    function connectToESP32() {
+        const wsUrl = `ws://${ESP32_HOSTNAME}:${ESP32_PORT}`;
+        console.log(`Connecting to ESP32 at ${wsUrl}...`);
+        
+        try {
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log("✅ Connected to ESP32 bridge");
+                isConnected = true;
+                reconnectAttempts = 0;
+                updateConnectionStatus(true);
+                showToast("Connected to wheelchair controller");
+                addNotification("🔌 Connection", "Connected to wheelchair controller", false);
+                
+                // Request status
+                setTimeout(() => {
+                    sendCommand("PING");
+                }, 500);
+            };
+            
+            ws.onmessage = function(event) {
+                handleArduinoMessage(event.data);
+            };
+            
+            ws.onclose = function() {
+                console.log("❌ Disconnected from ESP32");
+                isConnected = false;
+                updateConnectionStatus(false);
+                showToast("Connection lost - reconnecting...");
+                addNotification("🔌 Connection Lost", "Attempting to reconnect...", true);
+                
+                // Attempt to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(3000 * reconnectAttempts, 30000);
+                    setTimeout(connectToESP32, delay);
+                } else {
+                    showToast("Failed to connect. Check ESP32 power and network.");
+                    addNotification("⚠️ Connection Failed", "Unable to connect to wheelchair controller", true);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error("WebSocket error:", error);
+                updateConnectionStatus(false);
+            };
+        } catch (error) {
+            console.error("Failed to create WebSocket:", error);
+            updateConnectionStatus(false);
+        }
+    }
+    
+    function updateConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionText');
+        
+        if (connected) {
+            statusDiv.className = 'connection-status connected';
+            statusText.innerText = 'Connected';
+        } else {
+            statusDiv.className = 'connection-status disconnected';
+            statusText.innerText = 'Disconnected';
+        }
+    }
+    
+    function handleArduinoMessage(data) {
+        console.log("From Arduino:", data);
+        
+        try {
+            // Try to parse as JSON
+            const jsonData = JSON.parse(data);
+            
+            switch(jsonData.type) {
+                case "mode_change":
+                    updateModeDisplay(jsonData.mode);
+                    break;
+                case "tilt_alert":
+                    showTiltWarning(jsonData.angle);
+                    break;
+                case "blink_detected":
+                    showBlinkNotification(jsonData.command);
+                    break;
+                case "bridge_status":
+                    updateBridgeStatus(jsonData);
+                    break;
+                case "ack":
+                    showCommandFeedback(jsonData.command);
+                    break;
+                default:
+                    // Handle plain text
+                    handlePlainTextMessage(data);
+            }
+        } catch(e) {
+            // Handle plain text messages
+            handlePlainTextMessage(data);
+        }
+    }
+    
+    function handlePlainTextMessage(message) {
+        if (message.startsWith("MODE:")) {
+            updateModeDisplay(message.substring(5));
+        }
+        else if (message.startsWith("TILT:")) {
+            showTiltWarning(message.substring(5));
+        }
+        else if (message.startsWith("BLINK:")) {
+            showBlinkNotification(message.substring(6));
+        }
+        else if (message === "PONG") {
+            console.log("Arduino is alive");
+        }
+    }
+    
+    function sendCommand(command) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(command);
+            console.log("Sent:", command);
+            showCommandFeedback(command);
+            return true;
+        } else {
+            showToast("⚠️ Not connected to wheelchair");
+            return false;
+        }
+    }
+    
+    function showCommandFeedback(command) {
+        const feedback = document.createElement('div');
+        feedback.className = 'command-feedback';
+        let displayCmd = command.replace('CMD_', '').replace('MODE_', 'Mode: ');
+        feedback.textContent = `📡 ${displayCmd}`;
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 2000);
+    }
+    
+    function showTiltWarning(angle) {
+        addNotification('⚠️ Tilt Detected', `Wheelchair tilted at ${angle}°`, true);
+        document.getElementById('wheelPopup').style.display = 'block';
+        setTimeout(() => {
+            if (document.getElementById('wheelPopup').style.display === 'block') {
+                document.getElementById('wheelPopup').style.display = 'none';
+            }
+        }, 5000);
+    }
+    
+    function showBlinkNotification(command) {
+        addNotification('👁️ Blink Command', `User blinked: ${command}`, false);
+    }
+    
+    function updateBridgeStatus(status) {
+        if (!status.arduino_connected) {
+            showToast("⚠️ Arduino not responding");
+            addNotification("⚠️ Arduino Error", "Wheelchair controller not responding", true);
+        }
+    }
+    
+    function updateModeDisplay(mode) {
+        currentMode = mode;
+        document.getElementById('modeDisplay').innerText = mode;
+        document.getElementById('controlPad').style.display = (mode === 'Control') ? 'block' : 'none';
+        addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
+        showToast(`Mode changed to: ${mode}`);
+    }
+    
+    // =============== UI FUNCTIONS ===============
     function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
@@ -942,10 +1181,8 @@
         
         if (isWarning) {
             showAlertPopup(title, message);
-            showToast(`⚠️ ${title}: ${message}`);
-        } else {
-            showToast(`📢 ${title}`);
         }
+        showToast(`📢 ${title}`);
     }
     
     function updateNotificationBadge() {
@@ -963,7 +1200,7 @@
         if (!container) return;
         
         if (notifications.length === 0) {
-            container.innerHTML = '<div class="empty-message">No notifications yet</div>';
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No notifications yet</div>';
             return;
         }
         
@@ -994,164 +1231,50 @@
         showToast('All notifications cleared');
     }
     
-    // Listen for emergency from patient
-    function listenEmergencyFromPatient() {
-        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-        onSnapshot(emergencyRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
-                emergencyActive = true;
-                document.body.classList.add('emergency-shutdown');
-                document.getElementById('shutdownOverlay').style.display = 'flex';
-                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
-            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
-                emergencyActive = false;
-                document.body.classList.remove('emergency-shutdown');
-                document.getElementById('shutdownOverlay').style.display = 'none';
+    // =============== MODE CONTROL ===============
+    function confirmModeSwitch(mode) {
+        const checks = safetyChecks[mode];
+        if (!checks) return;
+        pendingMode = mode;
+        
+        const existingPopup = document.getElementById('safetyPopup');
+        if (existingPopup) existingPopup.remove();
+        
+        const modal = document.createElement('div');
+        modal.className = 'popup-panel';
+        modal.id = 'safetyPopup';
+        modal.innerHTML = `
+            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
+            <div style="margin: 16px 0;">
+                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
+                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+        
+        document.getElementById('confirmSwitchBtn').onclick = async () => {
+            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
+            let allChecked = true;
+            checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
+            if (!allChecked) {
+                showToast('⚠️ Please tick all safety checkboxes');
+                return;
             }
-        });
-    }
-    
-    // Send emergency to patient
-    async function triggerEmergency() {
-        emergencyActive = true;
-        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-        await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
-        document.body.classList.add('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'flex';
-        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
-        
-        // Auto reset after 5 seconds (for demo)
-        setTimeout(async () => {
-            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
-            emergencyActive = false;
-        }, 5000);
-    }
-    
-    function closeShutdown() {
-        if (emergencyActive) {
-            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
-            emergencyActive = false;
-        }
-        document.body.classList.remove('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'none';
-    }
-    
-    // Health monitoring with alerts
-    function simulateHealthMonitoring() {
-        let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
-        hr = Math.min(120, Math.max(55, hr));
-        
-        let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
-        temp = Math.min(39, Math.max(35, temp));
-        
-        let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
-        o2 = Math.min(100, Math.max(90, o2));
-        
-        let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
-        let diastolic = 80 + (systolic - 120) * 0.6;
-        systolic = Math.min(160, Math.max(90, systolic));
-        diastolic = Math.min(100, Math.max(60, diastolic));
-        const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
-        
-        document.getElementById('hrValue').innerText = hr;
-        document.getElementById('tempValue').innerText = temp.toFixed(1);
-        document.getElementById('o2Value').innerText = o2;
-        document.getElementById('bpValue').innerText = bp;
-        
-        // Heart rate alerts
-        if (hr < 60 || hr > 100) {
-            if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
-                addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
-                document.getElementById('healthHeartItem').classList.add('warning');
+            
+            // Send mode change to Arduino via ESP32
+            const modeCommand = `MODE_${mode.toUpperCase().replace(' ', '_')}`;
+            if (sendCommand(modeCommand)) {
+                currentMode = mode;
+                document.getElementById('modeDisplay').innerText = currentMode;
+                document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                modal.remove();
+                await saveModeToFirestore(currentMode);
             }
-        } else {
-            document.getElementById('healthHeartItem').classList.remove('warning');
-        }
-        
-        // Temperature alerts
-        if (temp < 36.1 || temp > 37.2) {
-            if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
-                addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
-                document.getElementById('healthTempItem').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthTempItem').classList.remove('warning');
-        }
-        
-        // Oxygen alerts
-        if (o2 < 95) {
-            if (lastHealthState.o2 >= 95) {
-                addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
-                document.getElementById('healthO2Item').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthO2Item').classList.remove('warning');
-        }
-        
-        // Blood pressure alerts
-        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
-            if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
-                addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
-                document.getElementById('healthBPItem').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthBPItem').classList.remove('warning');
-        }
-        
-        lastHealthState = { hr, temp, o2, bp };
-    }
-    
-    // Wheelchair monitoring - only battery and speed alerts
-    function simulateWheelchairMonitoring() {
-        let battery = lastWheelState.battery - (Math.random() * 1.5);
-        battery = Math.max(10, Math.min(100, battery));
-        
-        let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
-        
-        document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
-        document.getElementById('speedValue').innerText = speed + ' m/s';
-        
-        // Random obstacle and range for display only (no alerts)
-        const r = Math.random();
-        const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
-        const range = (Math.random() * 8 + 2).toFixed(1);
-        document.getElementById('obstacleValue').innerText = obstacle;
-        document.getElementById('rangeValue').innerText = range + ' km';
-        
-        // Battery low alert
-        if (battery < 20 && lastWheelState.battery >= 20) {
-            addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
-            document.getElementById('batteryDetail').classList.add('warning');
-        } else if (battery >= 20) {
-            document.getElementById('batteryDetail').classList.remove('warning');
-        }
-        
-        // Speed alert (if too fast)
-        const speedNum = parseFloat(speed);
-        if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
-            addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
-            document.getElementById('speedDetail').classList.add('warning');
-        } else if (speedNum <= 2.0) {
-            document.getElementById('speedDetail').classList.remove('warning');
-        }
-        
-        lastWheelState = { battery, speed: speedNum };
-    }
-    
-    function listenDriveMode() {
-        const modeRef = doc(db, "settings", MODE_ID);
-        onSnapshot(modeRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().mode) {
-                const newMode = docSnap.data().mode;
-                if (newMode !== currentMode) {
-                    currentMode = newMode;
-                    document.getElementById('modeDisplay').innerText = currentMode;
-                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-                    addNotification('🔄 Drive Mode Changed', `Mode changed to: ${currentMode} (by patient)`, false);
-                }
-            }
-        });
+        };
     }
     
     async function saveModeToFirestore(mode) {
@@ -1159,6 +1282,16 @@
         await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
     }
     
+    // =============== CONTROL COMMANDS ===============
+    function sendControlCommand(cmd) {
+        if (currentMode !== 'Control') {
+            showToast(`⚠️ Switch to Control mode first (current: ${currentMode})`);
+            return;
+        }
+        sendCommand(`CMD_${cmd.toUpperCase()}`);
+    }
+    
+    // =============== PATIENT MANAGEMENT ===============
     async function loadPatientFromFirestore() {
         const patientRef = doc(db, "patients", PATIENT_ID);
         const docSnap = await getDoc(patientRef);
@@ -1230,23 +1363,7 @@
         addNotification('✅ Patient Updated', 'Patient details have been updated successfully', false);
     }
     
-    window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
-    
-    window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
-    document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                patientData.photo = ev.target.result;
-                document.getElementById('patientPhoto').src = patientData.photo;
-                await syncPatientToFirestore();
-                addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
+    // =============== PATIENT ACTIONS ===============
     async function saveActionToFirestore(type, data) {
         const actionsRef = doc(db, "patientActions", "feed");
         try {
@@ -1357,46 +1474,147 @@
         }, 50);
     };
     
-    function confirmModeSwitch(mode) {
-        const checks = safetyChecks[mode];
-        if (!checks) return;
-        pendingMode = mode;
+    // =============== EMERGENCY FUNCTIONS ===============
+    async function triggerEmergency() {
+        emergencyActive = true;
+        sendCommand("CMD_STOP");
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
         
-        const existingPopup = document.getElementById('safetyPopup');
-        if (existingPopup) existingPopup.remove();
-        
-        const modal = document.createElement('div');
-        modal.className = 'popup-panel';
-        modal.id = 'safetyPopup';
-        modal.innerHTML = `
-            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
-            <div style="margin: 16px 0;">
-                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
-                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.style.display = 'block';
-        
-        document.getElementById('confirmSwitchBtn').onclick = async () => {
-            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
-            let allChecked = true;
-            checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
-            if (!allChecked) {
-                showToast('⚠️ Please tick all safety checkboxes');
-                return;
+        setTimeout(async () => {
+            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }, 5000);
+    }
+    
+    function closeShutdown() {
+        if (emergencyActive) {
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    }
+    
+    function listenEmergencyFromPatient() {
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                emergencyActive = true;
+                sendCommand("CMD_STOP");
+                document.body.classList.add('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'flex';
+                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
+            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
+                emergencyActive = false;
+                document.body.classList.remove('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'none';
             }
-            currentMode = pendingMode;
-            document.getElementById('modeDisplay').innerText = currentMode;
-            document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-            modal.remove();
-            await saveModeToFirestore(currentMode);
-            addNotification('🔄 Mode Changed', `Mode switched to: ${currentMode}`, false);
-            showToast(`✅ Mode switched to ${currentMode}`);
-        };
+        });
+    }
+    
+    // =============== HEALTH MONITORING ===============
+    function simulateHealthMonitoring() {
+        let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
+        hr = Math.min(120, Math.max(55, hr));
+        
+        let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
+        temp = Math.min(39, Math.max(35, temp));
+        
+        let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
+        o2 = Math.min(100, Math.max(90, o2));
+        
+        let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
+        let diastolic = 80 + (systolic - 120) * 0.6;
+        systolic = Math.min(160, Math.max(90, systolic));
+        diastolic = Math.min(100, Math.max(60, diastolic));
+        const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
+        
+        document.getElementById('hrValue').innerText = hr;
+        document.getElementById('tempValue').innerText = temp.toFixed(1);
+        document.getElementById('o2Value').innerText = o2;
+        document.getElementById('bpValue').innerText = bp;
+        
+        if (hr < 60 || hr > 100) {
+            if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
+                addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
+                document.getElementById('healthHeartItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthHeartItem').classList.remove('warning');
+        }
+        
+        if (temp < 36.1 || temp > 37.2) {
+            if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
+                addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
+                document.getElementById('healthTempItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthTempItem').classList.remove('warning');
+        }
+        
+        if (o2 < 95) {
+            if (lastHealthState.o2 >= 95) {
+                addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
+                document.getElementById('healthO2Item').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthO2Item').classList.remove('warning');
+        }
+        
+        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
+            if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
+                addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
+                document.getElementById('healthBPItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthBPItem').classList.remove('warning');
+        }
+        
+        lastHealthState = { hr, temp, o2, bp };
+    }
+    
+    function simulateWheelchairMonitoring() {
+        let battery = lastWheelState.battery - (Math.random() * 1.5);
+        battery = Math.max(10, Math.min(100, battery));
+        
+        let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
+        
+        document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
+        document.getElementById('speedValue').innerText = speed + ' m/s';
+        
+        const r = Math.random();
+        const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
+        const range = (Math.random() * 8 + 2).toFixed(1);
+        document.getElementById('obstacleValue').innerText = obstacle;
+        document.getElementById('rangeValue').innerText = range + ' km';
+        
+        if (battery < 20 && lastWheelState.battery >= 20) {
+            addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
+            document.getElementById('batteryDetail').classList.add('warning');
+        } else if (battery >= 20) {
+            document.getElementById('batteryDetail').classList.remove('warning');
+        }
+        
+        const speedNum = parseFloat(speed);
+        if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
+            addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
+            document.getElementById('speedDetail').classList.add('warning');
+        } else if (speedNum <= 2.0) {
+            document.getElementById('speedDetail').classList.remove('warning');
+        }
+        
+        lastWheelState = { battery, speed: speedNum };
+    }
+    
+    // =============== POPUP FUNCTIONS ===============
+    function closeAllPopups() {
+        document.querySelectorAll('.popup-panel').forEach(p => p.style.display='none');
+        document.getElementById('safetyPopup')?.remove();
     }
     
     window.setMode = function(mode) {
@@ -1404,60 +1622,87 @@
         confirmModeSwitch(mode);
     };
     
-    window.sendCommand = function(cmd) {
-        showToast(`🚦 Command: ${cmd.toUpperCase()}`);
-    };
-    
-    document.querySelectorAll('.ctrl-btn').forEach(btn => {
-        btn.onclick = () => sendCommand(btn.dataset.cmd);
-    });
-    
-    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
     window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
-    document.querySelectorAll('.mode-option').forEach(opt => {
-        opt.onclick = () => setMode(opt.dataset.mode);
-    });
-    
-    document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); document.getElementById('caretakerPopup').style.display = 'block'; };
-    window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
     window.closePopup = (type) => { 
         if(type==='call') document.getElementById('callPopup').style.display='none';
         if(type==='health') document.getElementById('healthPopup').style.display='none';
         if(type==='wheel') document.getElementById('wheelPopup').style.display='none';
     };
+    window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display='none';
+    window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display='none';
+    window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
+    window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
+    window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
+    window.closeShutdown = closeShutdown;
+    window.clearAllNotifications = clearAllNotifications;
+    window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
+    
+    // =============== INITIALIZATION ===============
+    document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                patientData.photo = ev.target.result;
+                document.getElementById('patientPhoto').src = patientData.photo;
+                await syncPatientToFirestore();
+                addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
+    document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
+    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
+    document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); document.getElementById('caretakerPopup').style.display = 'block'; };
     document.getElementById('callIcon').onclick = () => { closeAllPopups(); document.getElementById('callPopup').style.display='block'; };
     document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display='block'; };
     document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display='block'; };
     document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display='block'; };
-    window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display='none';
-    window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display='none';
     document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
-    window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
-    window.clearAllNotifications = clearAllNotifications;
     document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
     document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
-    window.closeShutdown = closeShutdown;
     
-    document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
-    document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
+    // Override control buttons to use WebSocket
+    document.querySelectorAll('.ctrl-btn').forEach(btn => {
+        btn.onclick = () => sendControlCommand(btn.dataset.cmd);
+    });
     
-    function closeAllPopups() {
-        document.querySelectorAll('.popup-panel').forEach(p => p.style.display='none');
-        document.getElementById('safetyPopup')?.remove();
-    }
+    document.querySelectorAll('.mode-option').forEach(opt => {
+        opt.onclick = () => setMode(opt.dataset.mode);
+    });
     
+    // Map initialization
     const map = L.map('map').setView([12.9716, 77.5946], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
     window.toggleGpsFullscreen = () => { const card = document.querySelector('.map-card'); if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen(); };
     document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
     
+    // Start everything
     await loadPatientFromFirestore();
     listenDriveMode();
     listenEmergencyFromPatient();
+    connectToESP32();
     
     setInterval(simulateHealthMonitoring, 8000);
     setInterval(simulateWheelchairMonitoring, 5000);
+    
+    function listenDriveMode() {
+        const modeRef = doc(db, "settings", MODE_ID);
+        onSnapshot(modeRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().mode) {
+                const newMode = docSnap.data().mode;
+                if (newMode !== currentMode) {
+                    currentMode = newMode;
+                    document.getElementById('modeDisplay').innerText = currentMode;
+                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                    addNotification('🔄 Drive Mode Changed', `Mode changed to: ${currentMode} (by patient)`, false);
+                }
+            }
+        });
+    }
     
     window.onload = () => {
         document.getElementById('controlPad').style.display = 'none';
