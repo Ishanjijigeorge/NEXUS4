@@ -569,7 +569,7 @@
             border-radius: 28px;
             padding: 28px 24px;
             width: calc(100% - 48px);
-            max-width: 340px;
+            max-width: 380px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             z-index: 1000;
             display: none;
@@ -609,6 +609,12 @@
             cursor: pointer;
             width: 100%;
             transition: 0.2s;
+        }
+        
+        .popup-close-btn.secondary {
+            background: #eef2ff;
+            color: var(--text);
+            margin-top: 10px;
         }
         
         .contact-item {
@@ -721,6 +727,37 @@
             justify-content: center;
         }
         
+        .notification-log-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--blue);
+            text-align: left;
+        }
+        
+        .notification-log-item.warning {
+            border-left-color: var(--danger);
+            background: #fff5f5;
+        }
+        
+        .notification-log-item .log-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .notification-log-item .log-message {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        
+        .notification-log-item .log-time {
+            font-size: 10px;
+            color: var(--muted);
+        }
+        
         @media screen and (max-width: 600px) {
             .metrics-two-column { gap: 10px; }
             .tele-icon { width: 48px; height: 48px; font-size: 22px; }
@@ -829,7 +866,7 @@
     </div>
 </div>
 
-<button class="emergency-btn" onclick="triggerEmergency()">⛔ EMERGENCY STOP</button>
+<button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
 
 <div id="callPopup" class="popup-panel square">
     <div class="popup-header"><h3>📞 Quick Call</h3></div>
@@ -845,7 +882,8 @@
 <div id="logPopup" class="popup-panel square">
     <div class="popup-header"><h3>📋 Notifications Log</h3></div>
     <div id="notificationLog" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;"></div>
-    <button class="popup-close-btn" onclick="closeLogPopup()">Close</button>
+    <button class="popup-close-btn" id="clearAllNotificationsBtn">🗑️ Clear All Notifications</button>
+    <button class="popup-close-btn secondary" onclick="closeLogPopup()" style="margin-top: 10px;">Close</button>
 </div>
 
 <div class="shutdown-overlay" id="shutdownOverlay">
@@ -862,6 +900,7 @@
     const db = window.db;
     const PATIENT_ID = "patient_main";
     const MODE_ID = "drive_mode";
+    const EMERGENCY_ID = "emergency_status";
     
     let patientData = {
         fullName: 'Rebecca Rowe',
@@ -894,13 +933,13 @@
     
     let notifications = []; // Store notifications for log
     let notificationCount = 0;
-    let scheduledAlerts = [];
     
     let carouselIndex = 0;
     let slides = [];
     let autoSlideInterval = null;
     let isVitalsAbnormal = false;
     let touchStartX = 0, touchEndX = 0;
+    let emergencyActive = false;
     
     // Update live date and time
     function updateDateTime() {
@@ -920,41 +959,34 @@
         popup.className = 'alert-popup';
         popup.innerHTML = `
             <div class="alert-icon">⏰</div>
-            <div class="alert-title">${title}</div>
-            <div class="alert-message">${message}</div>
+            <div class="alert-title">${escapeHtml(title)}</div>
+            <div class="alert-message">${escapeHtml(message)}</div>
             <div class="alert-time">📅 ${time || 'Now'}</div>
             <button onclick="this.parentElement.remove()">Dismiss</button>
         `;
         document.body.appendChild(popup);
         
-        // Auto remove after 10 seconds
         setTimeout(() => {
             if (popup.parentElement) popup.remove();
         }, 10000);
         
-        // Add to notification log
         addToNotificationLog(title, message, time);
     }
     
     // Add to notification log
-    function addToNotificationLog(title, message, time) {
+    function addToNotificationLog(title, message, time, isWarning = false) {
         const logEntry = {
             id: Date.now() + Math.random(),
             title: title,
             message: message,
             time: time || new Date().toLocaleString(),
-            timestamp: new Date()
+            timestamp: new Date(),
+            isWarning: isWarning
         };
         notifications.unshift(logEntry);
         notificationCount++;
         updateNotificationBadge();
         updateNotificationLogDisplay();
-        
-        // Play sound effect (optional - using beep)
-        try {
-            const audio = new Audio('data:audio/wav;base64,U3RlYWx0aCBzb3VuZA==');
-            audio.play().catch(() => {});
-        } catch(e) {}
     }
     
     function updateNotificationBadge() {
@@ -976,13 +1008,28 @@
             return;
         }
         
-        logContainer.innerHTML = notifications.slice(0, 20).map(n => `
-            <div class="content-item" style="background: #f1f5f9; margin-bottom: 8px;">
-                <div class="title">${escapeHtml(n.title)}</div>
-                <div class="detail">${escapeHtml(n.message)}</div>
-                <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${n.time}</div>
+        logContainer.innerHTML = notifications.slice(0, 50).map(n => `
+            <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
+                <div class="log-title">${escapeHtml(n.title)}</div>
+                <div class="log-message">${escapeHtml(n.message)}</div>
+                <div class="log-time">${n.time}</div>
             </div>
         `).join('');
+    }
+    
+    function clearAllNotifications() {
+        notifications = [];
+        notificationCount = 0;
+        updateNotificationBadge();
+        updateNotificationLogDisplay();
+        
+        // Show a small toast notification
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = '✅ All notifications cleared';
+        toast.style.cssText = 'position: fixed; bottom: 30px; left: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 50px; font-size: 13px; text-align: center; z-index: 3000; animation: slideUp 0.3s ease; max-width: 320px; margin: 0 auto;';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
     }
     
     function escapeHtml(str) {
@@ -998,7 +1045,6 @@
     // Check and trigger time-based alerts
     function checkTimeBasedAlerts() {
         const now = new Date();
-        const nowStr = now.toLocaleString();
         
         // Check alarms
         dataStore.alarms.forEach(alarm => {
@@ -1032,7 +1078,6 @@
         if (!alertTime) return false;
         
         try {
-            // Parse different date formats
             let alertDate;
             if (alertTime.includes(' - ')) {
                 alertDate = new Date(alertTime.split(' - ')[0]);
@@ -1041,47 +1086,40 @@
             } else if (alertTime.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
                 alertDate = new Date(alertTime);
             } else if (alertTime.match(/\d{1,2}:\d{2}/)) {
-                // Time-only alert - check if that time is within the next minute
                 const [hours, minutes] = alertTime.split(':').map(Number);
                 const alertToday = new Date();
                 alertToday.setHours(hours, minutes, 0, 0);
                 const diff = Math.abs(alertToday - currentTime);
-                return diff < 60000; // Within 1 minute
+                return diff < 60000;
             } else {
                 alertDate = new Date(alertTime);
             }
             
             if (isNaN(alertDate.getTime())) return false;
-            
             const diff = Math.abs(alertDate - currentTime);
-            return diff < 60000; // Within 1 minute
+            return diff < 60000;
         } catch(e) {
             return false;
         }
     }
     
-    // Listen for caretaker actions with duplicate prevention
+    // Listen for caretaker actions
     function listenCaretakerActions() {
         const actionsRef = doc(db, "patientActions", "feed");
         onSnapshot(actionsRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                
                 const types = ['messages', 'alarms', 'appointments', 'media', 'calendar'];
                 
                 types.forEach(type => {
                     if (data[type] && Array.isArray(data[type])) {
                         data[type].forEach(item => {
-                            // Create unique ID for item
                             const itemId = `${item.timestamp || item.time || Date.now()}_${item.title || item.text || ''}`;
                             
                             if (!processedItems[type].has(itemId)) {
                                 processedItems[type].add(itemId);
-                                
-                                // Add to store
                                 dataStore[type].push({ ...item, triggered: false });
                                 
-                                // Show alert for time-based items
                                 if (type === 'alarms' && item.time) {
                                     showAlertPopup('⏰ New Alarm', item.title, item.time);
                                 } else if (type === 'appointments' && item.time) {
@@ -1097,10 +1135,56 @@
                         });
                     }
                 });
-                
                 rebuildCarousel();
             }
         });
+    }
+    
+    // Listen for emergency from caretaker
+    function listenEmergency() {
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                emergencyActive = true;
+                document.body.classList.add('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'flex';
+                addToNotificationLog('🚨 EMERGENCY', 'Caretaker has activated emergency stop!', new Date().toLocaleString(), true);
+                showAlertPopup('🚨 EMERGENCY STOP', 'Caretaker has activated emergency stop! Please wait for assistance.', 'Now');
+            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
+                emergencyActive = false;
+                document.body.classList.remove('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'none';
+                addToNotificationLog('✅ Emergency Resolved', 'Emergency stop has been deactivated', new Date().toLocaleString());
+            }
+        });
+    }
+    
+    // Trigger emergency from patient
+    async function triggerEmergency() {
+        emergencyActive = true;
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        await setDoc(emergencyRef, { active: true, triggeredBy: 'patient', timestamp: new Date().toISOString() });
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addToNotificationLog('🚨 EMERGENCY', 'You have activated emergency stop!', new Date().toLocaleString(), true);
+        showAlertPopup('🚨 EMERGENCY STOP', 'Emergency stop activated. Help is on the way!', 'Now');
+        
+        setTimeout(async () => {
+            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+            document.body.classList.remove('emergency-shutdown');
+            document.getElementById('shutdownOverlay').style.display = 'none';
+        }, 5000);
+    }
+    
+    function closeShutdown() {
+        if (emergencyActive) {
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
     }
     
     function rebuildCarousel() {
@@ -1109,7 +1193,6 @@
         container.innerHTML = '';
         slides = [];
         
-        // Vital signs slide
         const vitalsSlide = document.createElement('div');
         vitalsSlide.className = 'carousel-slide vital-signs-slide';
         vitalsSlide.innerHTML = `
@@ -1239,13 +1322,13 @@
         });
     }
     
-    // Listen for drive mode
     function listenDriveMode() {
         const modeRef = doc(db, "settings", MODE_ID);
         onSnapshot(modeRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().mode) {
                 currentMode = docSnap.data().mode;
                 updateModeUI(currentMode);
+                addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${currentMode}`, new Date().toLocaleString());
             }
         });
     }
@@ -1256,6 +1339,7 @@
         const modeRef = doc(db, "settings", MODE_ID);
         await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
         updateModeUI(mode);
+        addToNotificationLog('🔄 Drive Mode', `You changed mode to: ${mode}`, new Date().toLocaleString());
     }
     
     function updateModeUI(mode) {
@@ -1265,7 +1349,6 @@
         });
     }
     
-    // Listen for patient data
     function listenPatientData() {
         const patientRef = doc(db, "patients", PATIENT_ID);
         onSnapshot(patientRef, (docSnap) => {
@@ -1303,7 +1386,6 @@
         });
     }
     
-    // Telemetry and direction simulation
     function updateTelemetry() {
         document.getElementById('speedValue').innerText = (Math.random() * 1.2 + 0.8).toFixed(1) + ' m/s';
         document.getElementById('batteryValue').innerText = Math.floor(Math.random() * 25) + 70 + '%';
@@ -1312,6 +1394,12 @@
         const obsSpan = document.getElementById('obstacleValue');
         obsSpan.innerText = obs;
         obsSpan.className = 'tele-value ' + (obs === 'Clear' ? 'obstacle-clear' : obs === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+        
+        // Battery low alert
+        const battery = parseInt(document.getElementById('batteryValue').innerText);
+        if (battery < 20) {
+            addToNotificationLog('⚠️ Low Battery', `Battery level is ${battery}% - Please charge soon`, new Date().toLocaleString(), true);
+        }
     }
     
     let dirIndex = 0;
@@ -1349,7 +1437,7 @@
             isVitalsAbnormal = true;
             if (autoSlideInterval) clearInterval(autoSlideInterval);
             if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
-            addToNotificationLog('⚠️ Health Alert', 'Vitals are abnormal! Please check your health metrics.', new Date().toLocaleString());
+            addToNotificationLog('⚠️ Health Alert', 'Vitals are abnormal! Please check your health metrics.', new Date().toLocaleString(), true);
         } else if (!abnormal && isVitalsAbnormal) {
             isVitalsAbnormal = false;
             resetAutoSlideTimer();
@@ -1366,18 +1454,6 @@
     };
     window.closeLogPopup = () => {
         document.getElementById('logPopup').style.display = 'none';
-        notificationCount = 0;
-        updateNotificationBadge();
-    };
-    
-    window.triggerEmergency = () => {
-        document.body.classList.add('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'flex';
-        addToNotificationLog('⚠️ EMERGENCY', 'Emergency stop activated', new Date().toLocaleString());
-    };
-    window.closeShutdown = () => {
-        document.body.classList.remove('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'none';
     };
     
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([12.9716, 77.5946], 15);
@@ -1390,12 +1466,13 @@
     };
     document.getElementById('welcomeNotifBtn').onclick = () => {
         document.getElementById('logPopup').style.display = 'block';
-        notificationCount = 0;
-        updateNotificationBadge();
     };
     document.getElementById('welcomeLogBtn').onclick = () => {
         document.getElementById('logPopup').style.display = 'block';
     };
+    document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
+    document.getElementById('clearAllNotificationsBtn').onclick = clearAllNotifications;
+    
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => setMode(btn.dataset.mode));
     });
@@ -1407,13 +1484,14 @@
     listenPatientData();
     listenDriveMode();
     listenCaretakerActions();
+    listenEmergency();
     rebuildCarousel();
     initTouchEvents();
     resetAutoSlideTimer();
     setInterval(updateDirection, 4500);
     setInterval(updateTelemetry, 4000);
     setInterval(updateHealthMetrics, 8000);
-    setInterval(checkTimeBasedAlerts, 30000); // Check for time-based alerts every 30 seconds
+    setInterval(checkTimeBasedAlerts, 30000);
     updatePatientDisplay();
 </script>
 </body>
