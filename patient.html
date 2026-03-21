@@ -920,7 +920,10 @@
         alarms: new Set(),
         appointments: new Set(),
         media: new Set(),
-        calendar: new Set()
+        calendar: new Set(),
+        healthAlerts: new Set(),
+        driveModeChanges: new Set(),
+        emergencyEvents: new Set()
     };
     
     let dataStore = {
@@ -931,7 +934,7 @@
         calendar: []
     };
     
-    let notifications = []; // Store notifications for log
+    let notifications = [];
     let notificationCount = 0;
     
     let carouselIndex = 0;
@@ -940,6 +943,7 @@
     let isVitalsAbnormal = false;
     let touchStartX = 0, touchEndX = 0;
     let emergencyActive = false;
+    let lastHealthState = { hr: 84, temp: 36.8, o2: 98, bp: '130/80' };
     
     // Update live date and time
     function updateDateTime() {
@@ -950,8 +954,12 @@
         document.getElementById('timeText').innerText = timeStr;
     }
     
-    // Show alert popup
-    function showAlertPopup(title, message, time) {
+    // Show alert popup with duplicate prevention
+    function showAlertPopup(title, message, time, uniqueId) {
+        // Check if this alert was already shown
+        if (processedItems.healthAlerts.has(uniqueId)) return;
+        processedItems.healthAlerts.add(uniqueId);
+        
         const existingPopup = document.querySelector('.alert-popup');
         if (existingPopup) existingPopup.remove();
         
@@ -970,13 +978,19 @@
             if (popup.parentElement) popup.remove();
         }, 10000);
         
-        addToNotificationLog(title, message, time);
+        addToNotificationLog(title, message, time, true, uniqueId);
     }
     
-    // Add to notification log
-    function addToNotificationLog(title, message, time, isWarning = false) {
+    // Add to notification log with duplicate prevention
+    function addToNotificationLog(title, message, time, isWarning = false, uniqueId = null) {
+        const id = uniqueId || `${title}_${message}_${time || Date.now()}`;
+        
+        // Check for duplicate notification
+        if (processedItems.healthAlerts.has(id)) return;
+        processedItems.healthAlerts.add(id);
+        
         const logEntry = {
-            id: Date.now() + Math.random(),
+            id: id,
             title: title,
             message: message,
             time: time || new Date().toLocaleString(),
@@ -1023,11 +1037,9 @@
         updateNotificationBadge();
         updateNotificationLogDisplay();
         
-        // Show a small toast notification
         const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = '✅ All notifications cleared';
         toast.style.cssText = 'position: fixed; bottom: 30px; left: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 50px; font-size: 13px; text-align: center; z-index: 3000; animation: slideUp 0.3s ease; max-width: 320px; margin: 0 auto;';
+        toast.textContent = '✅ All notifications cleared';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2000);
     }
@@ -1042,34 +1054,34 @@
         });
     }
     
-    // Check and trigger time-based alerts
+    // Check and trigger time-based alerts with duplicate prevention
     function checkTimeBasedAlerts() {
         const now = new Date();
         
-        // Check alarms
         dataStore.alarms.forEach(alarm => {
             if (alarm.triggered) return;
             if (alarm.time && shouldTriggerAlert(alarm.time, now)) {
                 alarm.triggered = true;
-                showAlertPopup('⏰ Alarm', alarm.title, alarm.time);
+                const uniqueId = `alarm_${alarm.title}_${alarm.time}`;
+                showAlertPopup('⏰ Alarm', alarm.title, alarm.time, uniqueId);
             }
         });
         
-        // Check appointments
         dataStore.appointments.forEach(appt => {
             if (appt.triggered) return;
             if (appt.time && shouldTriggerAlert(appt.time, now)) {
                 appt.triggered = true;
-                showAlertPopup('📋 Appointment Reminder', `${appt.title} at ${appt.detail || ''}`, appt.time);
+                const uniqueId = `appointment_${appt.title}_${appt.time}`;
+                showAlertPopup('📋 Appointment Reminder', `${appt.title} at ${appt.detail || ''}`, appt.time, uniqueId);
             }
         });
         
-        // Check calendar events
         dataStore.calendar.forEach(event => {
             if (event.triggered) return;
             if (event.time && shouldTriggerAlert(event.time, now)) {
                 event.triggered = true;
-                showAlertPopup('📅 Calendar Event', event.title, event.time);
+                const uniqueId = `calendar_${event.title}_${event.time}`;
+                showAlertPopup('📅 Calendar Event', event.title, event.time, uniqueId);
             }
         });
     }
@@ -1103,7 +1115,7 @@
         }
     }
     
-    // Listen for caretaker actions
+    // Listen for caretaker actions with duplicate prevention
     function listenCaretakerActions() {
         const actionsRef = doc(db, "patientActions", "feed");
         onSnapshot(actionsRef, (docSnap) => {
@@ -1120,16 +1132,18 @@
                                 processedItems[type].add(itemId);
                                 dataStore[type].push({ ...item, triggered: false });
                                 
+                                const uniqueId = `${type}_${item.title || item.text}_${item.time || Date.now()}`;
+                                
                                 if (type === 'alarms' && item.time) {
-                                    showAlertPopup('⏰ New Alarm', item.title, item.time);
+                                    addToNotificationLog('⏰ New Alarm', item.title, item.time, true, uniqueId);
                                 } else if (type === 'appointments' && item.time) {
-                                    showAlertPopup('📋 New Appointment', `${item.title} - ${item.detail || ''}`, item.time);
+                                    addToNotificationLog('📋 New Appointment', `${item.title} - ${item.detail || ''}`, item.time, false, uniqueId);
                                 } else if (type === 'calendar' && item.time) {
-                                    showAlertPopup('📅 New Calendar Event', item.title, item.time);
+                                    addToNotificationLog('📅 New Calendar Event', item.title, item.time, false, uniqueId);
                                 } else if (type === 'messages') {
-                                    addToNotificationLog('💬 New Message', item.text, item.time);
+                                    addToNotificationLog('💬 New Message', item.text, item.time, false, uniqueId);
                                 } else if (type === 'media') {
-                                    addToNotificationLog('🎵 Media', item.title, item.time);
+                                    addToNotificationLog('🎵 Media', item.title, item.time, false, uniqueId);
                                 }
                             }
                         });
@@ -1145,29 +1159,38 @@
         const emergencyRef = doc(db, "settings", EMERGENCY_ID);
         onSnapshot(emergencyRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                const uniqueId = `emergency_${docSnap.data().timestamp}`;
+                if (processedItems.emergencyEvents.has(uniqueId)) return;
+                processedItems.emergencyEvents.add(uniqueId);
+                
                 emergencyActive = true;
                 document.body.classList.add('emergency-shutdown');
                 document.getElementById('shutdownOverlay').style.display = 'flex';
-                addToNotificationLog('🚨 EMERGENCY', 'Caretaker has activated emergency stop!', new Date().toLocaleString(), true);
-                showAlertPopup('🚨 EMERGENCY STOP', 'Caretaker has activated emergency stop! Please wait for assistance.', 'Now');
+                addToNotificationLog('🚨 EMERGENCY', 'Caretaker has activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
+                showAlertPopup('🚨 EMERGENCY STOP', 'Caretaker has activated emergency stop! Please wait for assistance.', 'Now', uniqueId);
             } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
                 emergencyActive = false;
                 document.body.classList.remove('emergency-shutdown');
                 document.getElementById('shutdownOverlay').style.display = 'none';
-                addToNotificationLog('✅ Emergency Resolved', 'Emergency stop has been deactivated', new Date().toLocaleString());
+                const uniqueId = `emergency_resolved_${docSnap.data().timestamp}`;
+                addToNotificationLog('✅ Emergency Resolved', 'Emergency stop has been deactivated', new Date().toLocaleString(), false, uniqueId);
             }
         });
     }
     
     // Trigger emergency from patient
     async function triggerEmergency() {
+        const uniqueId = `patient_emergency_${Date.now()}`;
+        if (processedItems.emergencyEvents.has(uniqueId)) return;
+        processedItems.emergencyEvents.add(uniqueId);
+        
         emergencyActive = true;
         const emergencyRef = doc(db, "settings", EMERGENCY_ID);
         await setDoc(emergencyRef, { active: true, triggeredBy: 'patient', timestamp: new Date().toISOString() });
         document.body.classList.add('emergency-shutdown');
         document.getElementById('shutdownOverlay').style.display = 'flex';
-        addToNotificationLog('🚨 EMERGENCY', 'You have activated emergency stop!', new Date().toLocaleString(), true);
-        showAlertPopup('🚨 EMERGENCY STOP', 'Emergency stop activated. Help is on the way!', 'Now');
+        addToNotificationLog('🚨 EMERGENCY', 'You have activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
+        showAlertPopup('🚨 EMERGENCY STOP', 'Emergency stop activated. Help is on the way!', 'Now', uniqueId);
         
         setTimeout(async () => {
             await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
@@ -1326,9 +1349,16 @@
         const modeRef = doc(db, "settings", MODE_ID);
         onSnapshot(modeRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().mode) {
-                currentMode = docSnap.data().mode;
-                updateModeUI(currentMode);
-                addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${currentMode}`, new Date().toLocaleString());
+                const newMode = docSnap.data().mode;
+                if (newMode !== currentMode) {
+                    currentMode = newMode;
+                    updateModeUI(currentMode);
+                    const uniqueId = `drivemode_${newMode}_${docSnap.data().timestamp}`;
+                    if (!processedItems.driveModeChanges.has(uniqueId)) {
+                        processedItems.driveModeChanges.add(uniqueId);
+                        addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${currentMode}`, new Date().toLocaleString(), false, uniqueId);
+                    }
+                }
             }
         });
     }
@@ -1339,7 +1369,8 @@
         const modeRef = doc(db, "settings", MODE_ID);
         await setDoc(modeRef, { mode: currentMode, timestamp: new Date().toISOString() });
         updateModeUI(mode);
-        addToNotificationLog('🔄 Drive Mode', `You changed mode to: ${mode}`, new Date().toLocaleString());
+        const uniqueId = `drivemode_${mode}_${Date.now()}`;
+        addToNotificationLog('🔄 Drive Mode', `You changed mode to: ${mode}`, new Date().toLocaleString(), false, uniqueId);
     }
     
     function updateModeUI(mode) {
@@ -1388,17 +1419,20 @@
     
     function updateTelemetry() {
         document.getElementById('speedValue').innerText = (Math.random() * 1.2 + 0.8).toFixed(1) + ' m/s';
-        document.getElementById('batteryValue').innerText = Math.floor(Math.random() * 25) + 70 + '%';
+        const battery = Math.floor(Math.random() * 25) + 70;
+        document.getElementById('batteryValue').innerText = battery + '%';
         document.getElementById('rangeValue').innerText = (Math.random() * 8 + 2).toFixed(1) + ' km';
         const obs = Math.random() < 0.6 ? 'Clear' : (Math.random() < 0.8 ? 'Nearby' : 'Blocked');
         const obsSpan = document.getElementById('obstacleValue');
         obsSpan.innerText = obs;
         obsSpan.className = 'tele-value ' + (obs === 'Clear' ? 'obstacle-clear' : obs === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
         
-        // Battery low alert
-        const battery = parseInt(document.getElementById('batteryValue').innerText);
         if (battery < 20) {
-            addToNotificationLog('⚠️ Low Battery', `Battery level is ${battery}% - Please charge soon`, new Date().toLocaleString(), true);
+            const uniqueId = `battery_low_${battery}_${Date.now()}`;
+            if (!processedItems.healthAlerts.has(uniqueId)) {
+                processedItems.healthAlerts.add(uniqueId);
+                addToNotificationLog('⚠️ Low Battery', `Battery level is ${battery}% - Please charge soon`, new Date().toLocaleString(), true, uniqueId);
+            }
         }
     }
     
@@ -1433,15 +1467,27 @@
         }
         
         const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95);
+        
         if (abnormal && !isVitalsAbnormal) {
             isVitalsAbnormal = true;
             if (autoSlideInterval) clearInterval(autoSlideInterval);
             if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
-            addToNotificationLog('⚠️ Health Alert', 'Vitals are abnormal! Please check your health metrics.', new Date().toLocaleString(), true);
+            
+            let alertMsg = '';
+            if (hr < 60 || hr > 100) alertMsg += `Heart rate: ${hr} bpm. `;
+            if (temp < 36.1 || temp > 37.2) alertMsg += `Temperature: ${temp.toFixed(1)}°C. `;
+            if (o2 < 95) alertMsg += `Oxygen: ${o2}%. `;
+            
+            const uniqueId = `health_alert_${hr}_${temp.toFixed(1)}_${o2}_${Date.now()}`;
+            if (!processedItems.healthAlerts.has(uniqueId)) {
+                processedItems.healthAlerts.add(uniqueId);
+                addToNotificationLog('⚠️ Health Alert', alertMsg || 'Vitals are abnormal!', new Date().toLocaleString(), true, uniqueId);
+            }
         } else if (!abnormal && isVitalsAbnormal) {
             isVitalsAbnormal = false;
             resetAutoSlideTimer();
-            addToNotificationLog('✅ Health Normal', 'Vitals have returned to normal range.', new Date().toLocaleString());
+            const uniqueId = `health_normal_${Date.now()}`;
+            addToNotificationLog('✅ Health Normal', 'Vitals have returned to normal range.', new Date().toLocaleString(), false, uniqueId);
         }
     }
     
