@@ -68,7 +68,6 @@
             font-size: 14px;
         }
         
-        /* Connection Status */
         .connection-status {
             position: fixed;
             bottom: 20px;
@@ -87,12 +86,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .connection-status.connected {
-            background: #10b981;
-        }
-        .connection-status.disconnected {
-            background: #dc2626;
-        }
+        .connection-status.connected { background: #10b981; }
+        .connection-status.disconnected { background: #dc2626; }
         .connection-status .status-dot {
             width: 8px;
             height: 8px;
@@ -719,9 +714,22 @@
             70% { opacity: 1; transform: translateY(0); }
             100% { opacity: 0; transform: translateY(-20px); }
         }
+        
+        .wss-info {
+            background: #e5edff;
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+
+<div class="wss-info" id="wssInfo">
+    🔌 Connecting to ESP32...
+</div>
 
 <div class="header-row">
     <div class="profile-card" id="caretakerProfileBtn">
@@ -923,20 +931,23 @@
     };
     
     let currentMode = 'Line Following';
-    let pendingMode = null;
     let notifications = [];
     let notificationCount = 0;
     let emergencyActive = false;
     
-    // WebSocket connection to ESP32
+    // WebSocket connection - AUTO-DETECTS HTTP/HTTPS
     let ws = null;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 10;
     let isConnected = false;
     
-    // ESP32 connection settings - CHANGE THIS TO YOUR ESP32 IP
-    const ESP32_IP = "192.168.234.126";  // Updated to your ESP32's IP
-    const ESP32_PORT = 81;
+    // Auto-detect protocol (ws:// or wss://)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const wsUrl = `${protocol}//${host}:81`;
+    
+    // Update WSS info display
+    document.getElementById('wssInfo').innerHTML = `🔌 Connecting to ESP32 via ${protocol.toUpperCase()}://${host}:81`;
     
     // Health monitoring state
     let lastHealthState = {
@@ -974,8 +985,8 @@
     
     // =============== WEBSOCKET CONNECTION FUNCTIONS ===============
     function connectToESP32() {
-        const wsUrl = `ws://${ESP32_IP}:${ESP32_PORT}`;
         console.log(`Connecting to ESP32 at ${wsUrl}...`);
+        document.getElementById('wssInfo').innerHTML = `🔄 Connecting to ESP32 via ${protocol.toUpperCase()}...`;
         
         try {
             ws = new WebSocket(wsUrl);
@@ -987,6 +998,9 @@
                 updateConnectionStatus(true);
                 showToast("Connected to wheelchair controller");
                 addNotification("🔌 Connection", "Connected to wheelchair controller", false);
+                document.getElementById('wssInfo').innerHTML = `✅ Connected to ESP32 via ${protocol.toUpperCase()}`;
+                document.getElementById('wssInfo').style.background = '#d4edda';
+                document.getElementById('wssInfo').style.color = '#155724';
                 
                 // Request status
                 setTimeout(() => {
@@ -1004,6 +1018,9 @@
                 updateConnectionStatus(false);
                 showToast("Connection lost - reconnecting...");
                 addNotification("🔌 Connection Lost", "Attempting to reconnect...", true);
+                document.getElementById('wssInfo').innerHTML = `❌ Disconnected - Reconnecting...`;
+                document.getElementById('wssInfo').style.background = '#f8d7da';
+                document.getElementById('wssInfo').style.color = '#721c24';
                 
                 // Attempt to reconnect
                 if (reconnectAttempts < maxReconnectAttempts) {
@@ -1013,12 +1030,16 @@
                 } else {
                     showToast("Failed to connect. Check ESP32 power and network.");
                     addNotification("⚠️ Connection Failed", "Unable to connect to wheelchair controller", true);
+                    document.getElementById('wssInfo').innerHTML = `❌ Connection Failed - Check ESP32`;
                 }
             };
             
             ws.onerror = function(error) {
                 console.error("WebSocket error:", error);
                 updateConnectionStatus(false);
+                document.getElementById('wssInfo').innerHTML = `⚠️ Connection Error - Check ESP32`;
+                document.getElementById('wssInfo').style.background = '#f8d7da';
+                document.getElementById('wssInfo').style.color = '#721c24';
             };
         } catch (error) {
             console.error("Failed to create WebSocket:", error);
@@ -1043,7 +1064,6 @@
         console.log("From Arduino:", data);
         
         try {
-            // Try to parse as JSON
             const jsonData = JSON.parse(data);
             
             switch(jsonData.type) {
@@ -1069,7 +1089,6 @@
                     handlePlainTextMessage(data);
             }
         } catch(e) {
-            // Handle plain text messages
             handlePlainTextMessage(data);
         }
     }
@@ -1098,24 +1117,13 @@
         if (data.range) {
             document.getElementById('rangeValue').innerText = data.range + ' km';
         }
-        if (data.angle !== undefined) {
-            // Update angle display if needed
-        }
     }
     
     function updateHealthUI(data) {
-        if (data.heartRate) {
-            document.getElementById('hrValue').innerText = data.heartRate;
-        }
-        if (data.temperature) {
-            document.getElementById('tempValue').innerText = data.temperature.toFixed(1);
-        }
-        if (data.oxygen) {
-            document.getElementById('o2Value').innerText = data.oxygen;
-        }
-        if (data.bloodPressure) {
-            document.getElementById('bpValue').innerText = data.bloodPressure;
-        }
+        if (data.heartRate) document.getElementById('hrValue').innerText = data.heartRate;
+        if (data.temperature) document.getElementById('tempValue').innerText = data.temperature.toFixed(1);
+        if (data.oxygen) document.getElementById('o2Value').innerText = data.oxygen;
+        if (data.bloodPressure) document.getElementById('bpValue').innerText = data.bloodPressure;
     }
     
     function handlePlainTextMessage(message) {
@@ -1131,9 +1139,6 @@
         else if (message.startsWith("BATTERY:")) {
             const battery = message.substring(8);
             document.getElementById('batteryValue').innerText = battery + '%';
-            if (parseInt(battery) < 20) {
-                document.getElementById('batteryDetail').classList.add('warning');
-            }
         }
         else if (message.startsWith("SPEED:")) {
             const speed = parseFloat(message.substring(6));
@@ -1285,7 +1290,6 @@
     function confirmModeSwitch(mode) {
         const checks = safetyChecks[mode];
         if (!checks) return;
-        pendingMode = mode;
         
         const existingPopup = document.getElementById('safetyPopup');
         if (existingPopup) existingPopup.remove();
@@ -1315,7 +1319,6 @@
                 return;
             }
             
-            // Send mode change to Arduino via ESP32
             const modeCommand = `MODE_${mode.toUpperCase().replace(' ', '_')}`;
             if (sendCommand(modeCommand)) {
                 currentMode = mode;
@@ -1714,7 +1717,6 @@
     document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
     document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
     
-    // Override control buttons to use WebSocket
     document.querySelectorAll('.ctrl-btn').forEach(btn => {
         btn.onclick = () => sendControlCommand(btn.dataset.cmd);
     });
