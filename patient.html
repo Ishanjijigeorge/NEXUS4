@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>My Companion · health + wheelchair dashboard</title>
+    <title>My Companion · Health + Wheelchair Dashboard</title>
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -95,6 +95,15 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
+        }
+
+        .wss-info {
+            background: #e5edff;
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            text-align: center;
         }
 
         .top-row {
@@ -789,6 +798,27 @@
             color: var(--muted);
         }
         
+        .command-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: fadeOut 2s ease forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            70% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        
         @media screen and (max-width: 600px) {
             .metrics-two-column { gap: 10px; }
             .tele-icon { width: 48px; height: 48px; font-size: 22px; }
@@ -796,6 +826,10 @@
     </style>
 </head>
 <body>
+
+<div class="wss-info" id="wssInfo">
+    🔌 Connecting to ESP32...
+</div>
 
 <div class="top-row">
     <div class="welcome-card">
@@ -951,14 +985,19 @@
     let currentMode = 'Line Following';
     let currentDirection = 'stop';
     
-    // WebSocket connection to ESP32 - CHANGE THIS TO YOUR ESP32 IP
+    // WebSocket connection - AUTO-DETECTS HTTP/HTTPS
     let ws = null;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 10;
     let isConnected = false;
-
-    const ESP32_IP = "192.168.234.126";  // Updated to your ESP32's IP
-    const ESP32_PORT = 81;
+    
+    // Auto-detect protocol (ws:// or wss://)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const wsUrl = `${protocol}//${host}:81`;
+    
+    // Update WSS info display
+    document.getElementById('wssInfo').innerHTML = `🔌 Connecting to ESP32 via ${protocol.toUpperCase()}://${host}:81`;
     
     // Track processed items by ID to prevent duplicates
     let processedItems = {
@@ -993,8 +1032,8 @@
     
     // =============== WEBSOCKET CONNECTION ===============
     function connectToESP32() {
-        const wsUrl = `ws://${ESP32_IP}:${ESP32_PORT}`;
         console.log(`Connecting to ESP32 at ${wsUrl}...`);
+        document.getElementById('wssInfo').innerHTML = `🔄 Connecting to ESP32 via ${protocol.toUpperCase()}...`;
         
         try {
             ws = new WebSocket(wsUrl);
@@ -1005,6 +1044,9 @@
                 reconnectAttempts = 0;
                 updateConnectionStatus(true);
                 showToast("Connected to wheelchair controller");
+                document.getElementById('wssInfo').innerHTML = `✅ Connected to ESP32 via ${protocol.toUpperCase()}`;
+                document.getElementById('wssInfo').style.background = '#d4edda';
+                document.getElementById('wssInfo').style.color = '#155724';
                 
                 // Request status
                 setTimeout(() => {
@@ -1021,6 +1063,9 @@
                 isConnected = false;
                 updateConnectionStatus(false);
                 showToast("Connection lost - reconnecting...");
+                document.getElementById('wssInfo').innerHTML = `❌ Disconnected - Reconnecting...`;
+                document.getElementById('wssInfo').style.background = '#f8d7da';
+                document.getElementById('wssInfo').style.color = '#721c24';
                 
                 if (reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++;
@@ -1032,6 +1077,9 @@
             ws.onerror = function(error) {
                 console.error("WebSocket error:", error);
                 updateConnectionStatus(false);
+                document.getElementById('wssInfo').innerHTML = `⚠️ Connection Error - Check ESP32`;
+                document.getElementById('wssInfo').style.background = '#f8d7da';
+                document.getElementById('wssInfo').style.color = '#721c24';
             };
         } catch (error) {
             console.error("Failed to create WebSocket:", error);
@@ -1070,11 +1118,29 @@
                 case "wheelchair_status":
                     updateWheelchairStatus(jsonData);
                     break;
+                case "health":
+                    updateHealthUI(jsonData);
+                    break;
                 default:
                     handlePlainTextMessage(data);
             }
         } catch(e) {
             handlePlainTextMessage(data);
+        }
+    }
+    
+    function updateHealthUI(data) {
+        if (data.heartRate && document.getElementById('healthHeartRateSlide')) {
+            document.getElementById('healthHeartRateSlide').innerText = data.heartRate;
+        }
+        if (data.temperature && document.getElementById('healthTempSlide')) {
+            document.getElementById('healthTempSlide').innerText = data.temperature.toFixed(1);
+        }
+        if (data.oxygen && document.getElementById('healthO2Slide')) {
+            document.getElementById('healthO2Slide').innerText = data.oxygen;
+        }
+        if (data.bloodPressure && document.getElementById('healthBPSlide')) {
+            document.getElementById('healthBPSlide').innerText = data.bloodPressure;
         }
     }
     
@@ -1117,9 +1183,6 @@
         else if (message.startsWith("BATTERY:")) {
             const battery = message.substring(8);
             document.getElementById('batteryValue').innerText = battery + '%';
-            if (parseInt(battery) < 20) {
-                addToNotificationLog('⚠️ Low Battery', `Battery at ${battery}%`, new Date().toLocaleString(), true);
-            }
         }
         else if (message.startsWith("SPEED:")) {
             const speed = parseFloat(message.substring(6));
