@@ -68,7 +68,7 @@
             font-size: 14px;
         }
         
-        /* Connection Status Indicator */
+        /* Connection Status */
         .connection-status {
             position: fixed;
             bottom: 20px;
@@ -934,10 +934,9 @@
     const maxReconnectAttempts = 10;
     let isConnected = false;
     
-    // ESP32 connection settings
-    const ESP32_HOSTNAME = "wheelchair.local";  // mDNS hostname
+    // ESP32 connection settings - CHANGE THIS TO YOUR ESP32 IP
+    const ESP32_IP = "192.168.1.100";  // <-- CHANGE THIS to your ESP32's IP address
     const ESP32_PORT = 81;
-    let esp32IP = null;
     
     // Health monitoring state
     let lastHealthState = {
@@ -975,7 +974,7 @@
     
     // =============== WEBSOCKET CONNECTION FUNCTIONS ===============
     function connectToESP32() {
-        const wsUrl = `ws://${ESP32_HOSTNAME}:${ESP32_PORT}`;
+        const wsUrl = `ws://${ESP32_IP}:${ESP32_PORT}`;
         console.log(`Connecting to ESP32 at ${wsUrl}...`);
         
         try {
@@ -1057,19 +1056,65 @@
                 case "blink_detected":
                     showBlinkNotification(jsonData.command);
                     break;
-                case "bridge_status":
-                    updateBridgeStatus(jsonData);
+                case "wheelchair_status":
+                    updateWheelchairUI(jsonData);
+                    break;
+                case "health":
+                    updateHealthUI(jsonData);
                     break;
                 case "ack":
                     showCommandFeedback(jsonData.command);
                     break;
                 default:
-                    // Handle plain text
                     handlePlainTextMessage(data);
             }
         } catch(e) {
             // Handle plain text messages
             handlePlainTextMessage(data);
+        }
+    }
+    
+    function updateWheelchairUI(data) {
+        if (data.battery) {
+            document.getElementById('batteryValue').innerText = data.battery + '%';
+            if (data.battery < 20) {
+                document.getElementById('batteryDetail').classList.add('warning');
+            } else {
+                document.getElementById('batteryDetail').classList.remove('warning');
+            }
+        }
+        if (data.speed) {
+            const speedVal = parseFloat(data.speed);
+            document.getElementById('speedValue').innerText = speedVal.toFixed(1) + ' m/s';
+            if (speedVal > 2.0) {
+                document.getElementById('speedDetail').classList.add('warning');
+            } else {
+                document.getElementById('speedDetail').classList.remove('warning');
+            }
+        }
+        if (data.obstacle) {
+            document.getElementById('obstacleValue').innerText = data.obstacle;
+        }
+        if (data.range) {
+            document.getElementById('rangeValue').innerText = data.range + ' km';
+        }
+        if (data.angle !== undefined) {
+            // Update angle display if needed
+        }
+    }
+    
+    function updateHealthUI(data) {
+        if (data.heartRate) {
+            document.getElementById('hrValue').innerText = data.heartRate;
+        }
+        if (data.temperature) {
+            document.getElementById('tempValue').innerText = data.temperature.toFixed(1);
+        }
+        if (data.oxygen) {
+            document.getElementById('o2Value').innerText = data.oxygen;
+        }
+        if (data.bloodPressure) {
+            document.getElementById('bpValue').innerText = data.bloodPressure;
         }
     }
     
@@ -1083,6 +1128,17 @@
         else if (message.startsWith("BLINK:")) {
             showBlinkNotification(message.substring(6));
         }
+        else if (message.startsWith("BATTERY:")) {
+            const battery = message.substring(8);
+            document.getElementById('batteryValue').innerText = battery + '%';
+            if (parseInt(battery) < 20) {
+                document.getElementById('batteryDetail').classList.add('warning');
+            }
+        }
+        else if (message.startsWith("SPEED:")) {
+            const speed = parseFloat(message.substring(6));
+            document.getElementById('speedValue').innerText = speed.toFixed(1) + ' m/s';
+        }
         else if (message === "PONG") {
             console.log("Arduino is alive");
         }
@@ -1090,8 +1146,9 @@
     
     function sendCommand(command) {
         if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(command);
-            console.log("Sent:", command);
+            const msg = JSON.stringify({type: 'command', command: command});
+            ws.send(msg);
+            console.log("Sent:", msg);
             showCommandFeedback(command);
             return true;
         } else {
@@ -1121,13 +1178,6 @@
     
     function showBlinkNotification(command) {
         addNotification('👁️ Blink Command', `User blinked: ${command}`, false);
-    }
-    
-    function updateBridgeStatus(status) {
-        if (!status.arduino_connected) {
-            showToast("⚠️ Arduino not responding");
-            addNotification("⚠️ Arduino Error", "Wheelchair controller not responding", true);
-        }
     }
     
     function updateModeDisplay(mode) {
