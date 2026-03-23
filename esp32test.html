@@ -78,6 +78,9 @@
         .message.error {
             color: #dc3545;
         }
+        .message.warning {
+            color: #856404;
+        }
         input {
             padding: 10px;
             width: 70%;
@@ -85,10 +88,26 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        .protocol-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .btn-group {
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <h1>🔌 ESP32 Wheelchair Bridge Connection Test</h1>
+    
+    <div id="protocolWarning" class="protocol-warning" style="display: none;">
+        ⚠️ <strong>HTTPS detected!</strong> WebSocket connections to insecure (ws://) endpoints are blocked in secure contexts.<br>
+        📌 <strong>Solution:</strong> Open this page over HTTP instead of HTTPS, or use the ESP32's IP directly.
+    </div>
     
     <div id="status" class="status disconnected">
         ⚠️ Disconnected
@@ -103,6 +122,11 @@
         <button class="success" onclick="sendForward()">⬆️ Send FORWARD</button>
     </div>
     
+    <div class="btn-group">
+        <button onclick="copyIP()">📋 Copy IP to Clipboard</button>
+        <button onclick="openESP32Web()">🌐 Open ESP32 Web Interface</button>
+    </div>
+    
     <div>
         <input type="text" id="customCommand" placeholder="Enter custom command (e.g., CMD_LEFT)">
         <button onclick="sendCustom()">Send</button>
@@ -114,8 +138,12 @@
     
     <script>
         let ws = null;
+        let reconnectAttempts = 0;
         const ESP32_IP = "192.168.234.126";
         const ESP32_PORT = 81;
+        
+        // Check if page is loaded over HTTPS
+        const isHTTPS = window.location.protocol === 'https:';
         
         function addMessage(text, type = 'info') {
             const messagesDiv = document.getElementById('messages');
@@ -133,7 +161,24 @@
             statusDiv.className = isConnected ? 'status connected' : 'status disconnected';
         }
         
+        function copyIP() {
+            navigator.clipboard.writeText(ESP32_IP);
+            addMessage(`📋 IP ${ESP32_IP} copied to clipboard!`, 'sent');
+        }
+        
+        function openESP32Web() {
+            window.open(`http://${ESP32_IP}`, '_blank');
+        }
+        
         function connect() {
+            // Show warning if HTTPS
+            if (isHTTPS) {
+                document.getElementById('protocolWarning').style.display = 'block';
+                addMessage('⚠️ HTTPS detected! WebSocket connections to ws:// are blocked. Please open this page over HTTP.', 'warning');
+                addMessage('💡 Try: Open a new tab with http://localhost:8000/test_connection.html', 'warning');
+                return;
+            }
+            
             if (ws && ws.readyState === WebSocket.OPEN) {
                 addMessage('Already connected!', 'error');
                 return;
@@ -149,12 +194,20 @@
                     updateStatus('✅ Connected to ESP32!', true);
                     addMessage('✅ WebSocket connection established!', 'received');
                     addMessage('ESP32 is ready to receive commands', 'received');
+                    reconnectAttempts = 0;
                 };
                 
                 ws.onclose = function() {
                     updateStatus('❌ Disconnected from ESP32', false);
                     addMessage('❌ Connection closed', 'error');
                     ws = null;
+                    
+                    // Auto reconnect
+                    if (reconnectAttempts < 5) {
+                        reconnectAttempts++;
+                        addMessage(`🔄 Reconnecting in ${reconnectAttempts * 2} seconds...`, 'info');
+                        setTimeout(connect, reconnectAttempts * 2000);
+                    }
                 };
                 
                 ws.onerror = function(error) {
@@ -175,7 +228,7 @@
                 };
                 
             } catch(error) {
-                addMessage(`❌ Failed to connect: ${error}`, 'error');
+                addMessage(`❌ Failed to connect: ${error.message}`, 'error');
                 updateStatus('❌ Connection Failed', false);
             }
         }
@@ -222,10 +275,14 @@
             }
         }
         
-        // Auto-connect on page load
-        setTimeout(() => {
-            connect();
-        }, 1000);
+        // Auto-connect on page load (if not HTTPS)
+        if (!isHTTPS) {
+            setTimeout(() => {
+                connect();
+            }, 1000);
+        } else {
+            addMessage('⚠️ Auto-connect disabled due to HTTPS. Please open this page over HTTP.', 'warning');
+        }
         
         // Keep connection alive with ping every 30 seconds
         setInterval(() => {
