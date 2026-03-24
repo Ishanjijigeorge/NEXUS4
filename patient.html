@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>CareTaker · Wheelchair Control System</title>
+    <title>My Companion · Health + Wheelchair Dashboard</title>
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,13 +11,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- flatpickr for calendar & time -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, onValue, set, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
@@ -31,15 +29,20 @@
         
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const dbRealtime = getDatabase(app);
         
         window.db = db;
+        window.dbRealtime = dbRealtime;
         window.doc = doc;
         window.setDoc = setDoc;
-        window.updateDoc = updateDoc;
-        window.arrayUnion = arrayUnion;
         window.onSnapshot = onSnapshot;
         window.getDoc = getDoc;
-        console.log("Firebase initialized");
+        window.collection = collection;
+        window.ref = ref;
+        window.onValue = onValue;
+        window.set = set;
+        window.push = push;
+        console.log("Patient page Firebase initialized");
     </script>
     <style>
         * {
@@ -54,6 +57,7 @@
             --text: #0f172a;
             --muted: #5b687c;
             --blue: #1d4ed8;
+            --soft-blue: #e5edff;
             --danger: #dc2626;
             --amber: #f59e0b;
             --green: #10b981;
@@ -67,17 +71,18 @@
             color: var(--text);
             font-size: 14px;
         }
-        
+        body.emergency-shutdown .shutdown-overlay { display: flex; }
+
         /* Connection Status */
         .connection-status {
             position: fixed;
             bottom: 20px;
-            right: 20px;
+            left: 20px;
             padding: 8px 16px;
             border-radius: 20px;
             background: #dc2626;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             z-index: 1000;
             display: flex;
@@ -85,14 +90,8 @@
             gap: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             cursor: pointer;
-            transition: all 0.3s ease;
         }
-        .connection-status.connected {
-            background: #10b981;
-        }
-        .connection-status.disconnected {
-            background: #dc2626;
-        }
+        .connection-status.connected { background: #10b981; }
         .connection-status .status-dot {
             width: 8px;
             height: 8px;
@@ -101,516 +100,587 @@
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-        
-        .health-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+
+        .top-row {
+            display: flex;
             gap: 12px;
-            margin-top: 8px;
-        }
-
-        .health-item {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 16px 12px;
-            text-align: center;
-            transition: all 0.2s ease;
-            border: 1px solid #eef2ff;
-        }
-
-        .health-item span {
-            font-size: 12px;
-            color: var(--muted);
-            font-weight: 500;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .health-item .value {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--blue);
-        }
-
-        .health-item.warning {
-            background: #fff5f5;
-            border-color: var(--danger);
+            margin-bottom: 18px;
         }
         
-        .health-item.warning .value {
-            color: var(--danger);
-        }
-
-        .wheel-detail {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
+        .welcome-card {
+            background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 28px;
+            padding: 16px;
+            color: white;
+            box-shadow: 0 10px 24px rgba(29,78,216,0.3);
+            flex: 1.2;
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            border: 1px solid #eef2ff;
-        }
-
-        .wheel-detail.warning {
-            background: #fff5f5;
-            border-color: var(--danger);
         }
         
-        .wheel-detail.warning strong {
-            color: var(--danger);
-        }
-
-        .wheel-detail span {
-            color: var(--muted);
-            font-weight: 500;
-        }
-
-        .wheel-detail strong {
-            color: var(--text);
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .contact-item {
-            background: #f1f5f9;
-            border-radius: 40px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
-            font-size: 14px;
-            font-weight: 500;
+        .welcome-top {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: 0.2s;
-            border: 1px solid #e2e8f0;
+            gap: 12px;
+            margin-bottom: 12px;
         }
-
-        .contact-item:hover {
-            background: #e5edff;
-            border-color: var(--blue);
-        }
-
-        body.emergency-shutdown .shutdown-overlay { display: flex; }
-
-        .header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 14px;
-        }
-        .profile-card {
-            background: white;
-            border-radius: 40px;
-            padding: 6px 16px 6px 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            cursor: pointer;
-            transition: 0.1s;
-        }
-        .profile-card:active { background: #f0f4ff; }
-        .profile-img {
-            width: 44px; height: 44px;
-            border-radius: 30px;
+        
+        .profile-image {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
             object-fit: cover;
             border: 2px solid white;
             background: #cbd5e1;
         }
-        .profile-details { text-align: left; }
-        .profile-name { font-weight: 700; font-size: 15px; }
-        .profile-role { font-size: 11px; color: var(--muted); }
-
-        .icon-group {
-            display: flex;
-            background: white;
-            padding: 4px 8px;
-            border-radius: 50px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            gap: 6px;
-            position: relative;
+        
+        .greeting-text {
+            flex: 1;
         }
-        .icon-btn {
-            background: #f0f4fe;
+        
+        .greeting-text .hello {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.9;
+            display: block;
+        }
+        
+        .greeting-text .name-large {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.2;
+            display: block;
+            margin-top: 2px;
+        }
+        
+        .patient-id-small {
+            font-size: 11px;
+            font-weight: 500;
+            opacity: 0.85;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 4px;
+        }
+        
+        .datetime-display {
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.15);
+            padding: 5px 12px;
+            border-radius: 30px;
+            width: fit-content;
+            margin-top: 8px;
+        }
+        
+        .datetime-display .time {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .welcome-icons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        
+        .icon-small, .profile-icon-btn {
+            background: rgba(255,255,255,0.18);
             border: none;
             width: 38px;
             height: 38px;
-            border-radius: 50%;
+            border-radius: 19px;
             font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-        }
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger);
             color: white;
-            font-size: 10px;
-            font-weight: 700;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.25);
         }
-
-        .patient-full-card {
+        
+        .map-card {
             background: white;
             border-radius: 28px;
-            padding: 16px;
+            padding: 0;
             box-shadow: var(--shadow);
             border: var(--outline);
-            margin-bottom: 14px;
-            position: relative;
-        }
-        .edit-icon {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: #eef2ff;
-            border: none;
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--blue);
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .patient-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 12px;
-        }
-        .patient-photo {
-            width: 70px; height: 70px;
-            border-radius: 24px;
-            object-fit: cover;
-            background: #cbd5e1;
-            border: 2px solid white;
-            cursor: pointer;
-        }
-        .patient-name-id {
             flex: 1;
+            overflow: hidden;
         }
-        .patient-name-id h2 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 2px;
+        
+        #map {
+            height: 100%;
+            min-height: 148px;
+            width: 100%;
+            border-radius: 28px;
+            background: #e2e8f0;
         }
-        .patient-name-id .light {
-            color: var(--muted);
-            font-size: 12px;
+        
+        .leaflet-control-zoom, .leaflet-control-attribution {
+            display: none !important;
         }
+        
+        .patient-details-section {
+            background: white;
+            border-radius: 28px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        
         .details-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 8px;
+            gap: 14px;
+            margin-top: 14px;
+            background: #f8fafd;
+            padding: 16px;
+            border-radius: 22px;
         }
+        
         .detail-item {
             display: flex;
             flex-direction: column;
         }
+        
         .detail-label {
             font-size: 10px;
             color: var(--muted);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+        
         .detail-value {
             font-weight: 600;
-            font-size: 15px;
-            margin-top: 2px;
+            font-size: 14px;
+            margin-top: 3px;
+            color: var(--text);
         }
 
-        .round-row {
+        .metrics-two-column {
             display: flex;
-            justify-content: space-around;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        .telemetry-card {
             background: white;
-            padding: 12px 8px;
-            border-radius: 60px;
+            padding: 16px 12px;
+            border-radius: 28px;
             box-shadow: var(--shadow);
             border: var(--outline);
-            margin-bottom: 14px;
+            flex: 1;
         }
-        .round-item {
+        
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 12px;
+        }
+        
+        .telemetry-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            width: 60px;
+            text-align: center;
         }
-        .round-icon {
-            width: 50px; height: 50px;
+        
+        .tele-icon {
+            width: 52px;
+            height: 52px;
             background: #f0f5ff;
-            border: 2px solid rgba(29,78,216,0.15);
+            border: 2px solid rgba(29,78,216,0.12);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
             color: var(--blue);
+            margin-bottom: 8px;
         }
-        .round-item span {
+        
+        .tele-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        
+        .tele-value {
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 3px;
+            color: var(--text);
+        }
+        
+        .obstacle-clear { color: var(--green); }
+        .obstacle-warn { color: var(--amber); }
+        .obstacle-block { color: var(--danger); }
+        
+        .carousel-container {
+            background: white;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+        }
+        
+        .carousel-slides {
+            display: flex;
+            transition: transform 0.4s ease-in-out;
+            touch-action: pan-y pinch-zoom;
+        }
+        
+        .carousel-slide {
+            flex: 0 0 100%;
+            padding: 16px 12px;
+            min-height: 180px;
+        }
+        
+        .vital-signs-slide {
+            height: 100%;
+        }
+        
+        .health-header-compact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .health-header-compact h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .health-metrics-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .health-metric-compact {
+            text-align: center;
+            background: white;
+            padding: 10px 6px;
+            border-radius: 18px;
+            transition: all 0.2s;
+            border: 2px solid var(--green);
+        }
+        
+        .health-metric-compact.unstable {
+            border: 2px solid var(--danger);
+            background: #fff5f5;
+        }
+        
+        .health-metric-compact .metric-value-compact {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+        
+        .health-metric-compact.unstable .metric-value-compact {
+            color: var(--danger);
+        }
+        
+        .health-metric-compact .metric-label-compact {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+        
+        .content-slide {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content-slide-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .content-slide-header span {
+            font-size: 24px;
+        }
+        
+        .content-slide-header h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .content-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 130px;
+        }
+        
+        .content-item {
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .content-item .title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .content-item .detail {
+            color: var(--muted);
+            font-size: 11px;
+        }
+        
+        .empty-message {
+            text-align: center;
+            color: var(--muted);
+            padding: 20px;
+            font-size: 13px;
+        }
+        
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 0 12px;
+            background: white;
+            border-top: 1px solid #eef2ff;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .dot.active {
+            background: var(--blue);
+            width: 20px;
+            border-radius: 4px;
+        }
+        
+        .drive-mode-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, var(--blue) 0%, #3b82f6 100%);
+            border-color: var(--blue);
+        }
+        
+        .mode-btn.active .mode-name {
+            color: white;
+        }
+        
+        .mode-emoji {
+            font-size: 24px;
+        }
+        
+        .mode-name {
             font-size: 11px;
             font-weight: 600;
-            margin-top: 4px;
+            color: var(--text);
         }
-
+        
+        .direction-container {
+            background: white;
+            border-radius: 28px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        
+        .direction-header h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        
+        .direction-status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 16px 20px;
+            border-radius: 60px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        }
+        
+        .direction-status-badge.forward { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+        .direction-status-badge.backward { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+        .direction-status-badge.left { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+        .direction-status-badge.right { background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); }
+        .direction-status-badge.stop {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.01); opacity: 0.95; }
+        }
+        
+        .direction-icon-large { font-size: 38px; }
+        .direction-text-large { font-size: 19px; font-weight: 800; color: white; }
+        
         .emergency-btn {
             width: 100%;
             background: var(--danger);
             color: white;
             border: none;
-            border-radius: 50px;
-            padding: 16px;
-            font-size: 20px;
+            border-radius: 60px;
+            padding: 14px;
+            font-size: 17px;
             font-weight: 700;
-            box-shadow: 0 8px 18px rgba(220,38,38,0.3);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 12px;
-        }
-        .drive-mode-card {
-            background: white;
-            border-radius: 40px;
-            padding: 12px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: var(--shadow);
-            border: var(--outline);
             margin-bottom: 16px;
-            font-size: 14px;
         }
-        .mode-label { font-weight: 600; color: var(--muted); }
-        .mode-value { font-weight: 700; color: var(--blue); background: #e5edff; padding: 6px 24px; border-radius: 40px; }
-
-        .map-card {
-            background: white;
-            border-radius: 28px;
-            padding: 14px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-        }
-        .gps-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .gps-header h3 { font-size: 16px; }
-        .fullscreen-btn {
-            border: none; background: #eef2ff; color: #1e3a8a;
-            padding: 6px 14px; border-radius: 30px; font-weight: 600; font-size: 12px; cursor: pointer;
-        }
-        #map { height: 170px; border-radius: 20px; background: #e2e8f0; }
-
+        
         .popup-panel {
             position: fixed;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            border-radius: 36px;
-            padding: 22px;
-            width: calc(100% - 32px);
+            border-radius: 28px;
+            padding: 28px 24px;
+            width: calc(100% - 48px);
             max-width: 380px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             z-index: 1000;
             display: none;
-            max-height: 85vh;
-            overflow-y: auto;
+            text-align: center;
         }
-        .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .popup-header h3 { font-size: 20px; }
-        .close-popup { background: none; border: none; font-size: 28px; cursor: pointer; }
-
-        .mode-option {
-            background: #f1f5f9;
-            border-radius: 40px;
-            padding: 16px 20px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.1s;
+        
+        .popup-panel.square {
+            border-radius: 28px;
         }
-        .mode-option:hover { background: #e5edff; }
-
-        .shutdown-overlay {
-            display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
-            align-items: center; justify-content: center; z-index: 2000;
-        }
-        .shutdown-card { background:#0f172a; padding:24px; border-radius:40px; color:white; text-align:center; width:280px; }
-
-        #controlPad {
-            margin-top: 16px;
-            background: white;
-            border-radius: 40px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            display: none;
-        }
-        .ctrl-btn {
-            width:60px;
-            height:60px;
-            border-radius: 30px;
-            background:#eef2ff;
-            border:none;
-            font-size:28px;
-            cursor:pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.1s;
-        }
-        .ctrl-btn:active { background: #d0dbff; transform: scale(0.95); }
-        .ctrl-stop {
-            background:#dc2626;
-            color:white;
-        }
-        .ctrl-stop:active { background: #b91c1c; }
-
-        .safety-check-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
-            background: #f8fafc;
-            padding: 8px 12px;
-            border-radius: 30px;
-        }
-        .safety-check-item input[type="checkbox"] {
-            width: 22px;
-            height: 22px;
-            cursor: pointer;
-            accent-color: var(--blue);
-        }
-
-        .patient-option-item {
-            background: #f1f5f9;
-            border-radius: 30px;
-            padding: 16px 20px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.1s;
-            font-size: 16px;
-        }
-        .patient-option-item:hover { background: #e5edff; }
-        .patient-option-item span { font-size: 24px; }
-
-        .form-group {
+        
+        .popup-header {
             margin-bottom: 16px;
         }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--muted);
-            font-size: 13px;
-        }
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 14px 18px;
-            border-radius: 30px;
-            border: 1px solid #dbe0e8;
-            background: #f9fcff;
-            font-size: 15px;
-            font-family: 'DM Sans', sans-serif;
-        }
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-        .button-group button {
-            flex: 1;
-            padding: 14px;
-            border-radius: 40px;
+        
+        .popup-header h3 {
+            font-size: 22px;
             font-weight: 700;
-            border: none;
-            cursor: pointer;
-            font-size: 15px;
+            color: var(--blue);
         }
-        .btn-primary {
+        
+        .popup-message {
+            font-size: 16px;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 24px;
+            padding: 0 8px;
+        }
+        
+        .popup-close-btn {
             background: var(--blue);
             color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
         }
-        .btn-secondary {
+        
+        .popup-close-btn.secondary {
             background: #eef2ff;
             color: var(--text);
+            margin-top: 10px;
         }
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            background: #1e293b;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-size: 13px;
-            text-align: center;
-            z-index: 3000;
-            animation: slideUp 0.3s ease;
-            max-width: 320px;
-            margin: 0 auto;
-            pointer-events: none;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .edit-fields-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .edit-field-row {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .edit-field-row label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-        .edit-field-row input {
-            padding: 10px 14px;
-            border-radius: 16px;
-            border: 1px solid #d0d5dd;
+        
+        .contact-item {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
             font-size: 14px;
+        }
+        
+        .shutdown-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .shutdown-card {
+            background: #0f172a;
+            padding: 24px;
+            border-radius: 48px;
+            color: white;
+            text-align: center;
+            width: 280px;
         }
         
         .alert-popup {
@@ -624,7 +694,7 @@
             min-width: 280px;
             max-width: 340px;
             text-align: center;
-            z-index: 3500;
+            z-index: 3000;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             animation: popIn 0.3s ease;
             border: 1px solid rgba(255,255,255,0.2);
@@ -645,6 +715,12 @@
         .alert-popup .alert-message {
             font-size: 14px;
             color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
+        }
+        
+        .alert-popup .alert-time {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
             margin-bottom: 20px;
         }
         
@@ -669,12 +745,33 @@
             }
         }
         
+        .notification-badge {
+            position: relative;
+        }
+        
+        .notification-badge .badge-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .notification-log-item {
             background: #f8fafc;
             border-radius: 16px;
             padding: 12px;
             margin-bottom: 10px;
             border-left: 4px solid var(--blue);
+            text-align: left;
         }
         
         .notification-log-item.warning {
@@ -699,203 +796,162 @@
             color: var(--muted);
         }
         
-        .command-feedback {
+        @media screen and (max-width: 600px) {
+            .metrics-two-column { gap: 10px; }
+            .tele-icon { width: 48px; height: 48px; font-size: 22px; }
+        }
+        
+        .toast {
             position: fixed;
-            top: 20px;
+            bottom: 80px;
+            left: 20px;
             right: 20px;
-            background: var(--blue);
+            background: #1e293b;
             color: white;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-            z-index: 1000;
-            animation: fadeOut 2s ease forwards;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            text-align: center;
+            z-index: 3000;
+            animation: slideUp 0.3s ease;
+            max-width: 320px;
+            margin: 0 auto;
             pointer-events: none;
         }
         
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: translateY(0); }
-            70% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-20px); }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-<div class="header-row">
-    <div class="profile-card" id="caretakerProfileBtn">
-        <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver">
-        <div class="profile-details">
-            <div class="profile-name">John Doe</div>
-            <div class="profile-role">caretaker</div>
+<div class="top-row">
+    <div class="welcome-card">
+        <div>
+            <div class="welcome-top">
+                <img class="profile-image" id="profileImage" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile">
+                <div class="greeting-text">
+                    <span class="hello">Welcome back,</span>
+                    <span class="name-large" id="patientFirstName">Loading...</span>
+                    <span class="patient-id-small" id="patientIdSmall"></span>
+                </div>
+            </div>
+            <div class="datetime-display" id="datetimeDisplay">
+                <span>📅</span>
+                <span id="dateText"></span>
+                <span>⏰</span>
+                <span class="time" id="timeText">--:-- --</span>
+            </div>
+        </div>
+        <div class="welcome-icons">
+            <button class="icon-small notification-badge" id="welcomeNotifBtn">
+                🔔
+                <span id="notificationBadge" class="badge-count" style="display: none;">0</span>
+            </button>
+            <button class="icon-small" id="welcomeLogBtn">📋</button>
+            <button class="profile-icon-btn" id="profileIconBtn">👤</button>
         </div>
     </div>
-    <div class="icon-group">
-        <button class="icon-btn" id="notificationBtn" style="position: relative;">
-            🔔
-            <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
-        </button>
-        <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
-        <button class="icon-btn" id="openLogBtn">📋</button>
+    
+    <div class="map-card">
+        <div id="map"></div>
     </div>
 </div>
 
-<div class="patient-full-card" id="patientCard">
-    <button class="edit-icon" id="editPatientBtn">✎</button>
-    <div class="patient-row">
-        <img class="patient-photo" id="patientPhoto" src="" alt="patient" onclick="triggerPhotoUpload()">
-        <div class="patient-name-id">
-            <h2 id="patientNameDisplay">Loading...</h2>
-            <span class="light" id="patientIdDisplay"></span>
-        </div>
+<div id="patientDetailsSection" class="patient-details-section" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="font-size: 18px;">📋 Patient Information</h3>
+        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px; background: none; border: none; cursor: pointer;">×</button>
     </div>
     <div class="details-grid" id="patientDetailsGrid"></div>
 </div>
 
-<input type="file" id="patientPhotoInput" accept="image/*" style="display:none;">
+<div class="metrics-two-column">
+    <div class="telemetry-card">
+        <div class="telemetry-grid">
+            <div class="telemetry-item">
+                <div class="tele-icon">⚡</div>
+                <span class="tele-label">SPEED</span>
+                <span class="tele-value" id="speedValue">0.0 m/s</span>
+            </div>
+            <div class="telemetry-item">
+                <div class="tele-icon">🔋</div>
+                <span class="tele-label">BATTERY</span>
+                <span class="tele-value" id="batteryValue">--%</span>
+            </div>
+            <div class="telemetry-item">
+                <div class="tele-icon">🚧</div>
+                <span class="tele-label">OBSTACLE</span>
+                <span class="tele-value" id="obstacleValue">--</span>
+            </div>
+            <div class="telemetry-item">
+                <div class="tele-icon">📍</div>
+                <span class="tele-label">RANGE</span>
+                <span class="tele-value" id="rangeValue">-- km</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="carousel-container">
+        <div class="carousel-wrapper">
+            <div class="carousel-slides" id="carouselSlides"></div>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+</div>
 
-<div class="round-row">
-    <button class="round-item" id="callIcon"><div class="round-icon">📞</div><span>Call</span></button>
-    <button class="round-item" id="healthIcon"><div class="round-icon">❤️</div><span>Health</span></button>
-    <button class="round-item" id="wheelIcon"><div class="round-icon">🦽</div><span>Wheel</span></button>
-    <button class="round-item" id="patientIcon"><div class="round-icon">👤</div><span>Patient</span></button>
+<div class="drive-mode-row">
+    <div class="mode-btn" data-mode="Line Following">
+        <span class="mode-emoji">➖</span>
+        <span class="mode-name">Line Following</span>
+    </div>
+    <div class="mode-btn" data-mode="Control">
+        <span class="mode-emoji">🎮</span>
+        <span class="mode-name">Control</span>
+    </div>
+    <div class="mode-btn" data-mode="Self Drive">
+        <span class="mode-emoji">🤖</span>
+        <span class="mode-name">Self Drive</span>
+    </div>
+</div>
+
+<div class="direction-container">
+    <div class="direction-header">
+        <h4>🔄 CURRENT MOVEMENT</h4>
+    </div>
+    <div class="direction-status-badge stop" id="directionBadge">
+        <span class="direction-icon-large" id="dirIconLarge">⏹️</span>
+        <span class="direction-text-large" id="dirTextLarge">Stopped</span>
+    </div>
 </div>
 
 <button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
 
-<div class="drive-mode-card">
-    <span class="mode-label">Drive mode</span>
-    <span class="mode-value" id="modeDisplay">Line Following</span>
-</div>
-
-<div class="map-card">
-    <div class="gps-header">
-        <h3>📍 Live GPS</h3>
-        <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
+<div id="callPopup" class="popup-panel square">
+    <div class="popup-header"><h3>📞 Quick Call</h3></div>
+    <div class="popup-message">Emergency contacts available</div>
+    <div style="margin-bottom: 16px;">
+        <div class="contact-item">🚑 Emergency <span style="float:right;">108</span></div>
+        <div class="contact-item">👨‍⚕️ Dr. Adams <span style="float:right;">+1 555 1234</span></div>
+        <div class="contact-item">🏠 Family <span style="float:right;">+1 555 8723</span></div>
     </div>
-    <div id="map"></div>
+    <button class="popup-close-btn" onclick="closePopup('call')">Close</button>
 </div>
 
-<div id="controlPad">
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-        <button class="ctrl-btn" data-cmd="forward">⬆️</button>
-        <div style="display: flex; gap: 20px;">
-            <button class="ctrl-btn" data-cmd="left">⬅️</button>
-            <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
-            <button class="ctrl-btn" data-cmd="right">➡️</button>
-        </div>
-        <button class="ctrl-btn" data-cmd="back">⬇️</button>
-    </div>
-    <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
-</div>
-
-<div id="modePopup" class="popup-panel">
-    <div class="popup-header"><h3>⚙️ Select mode</h3><button class="close-popup" onclick="closeModePopup()">×</button></div>
-    <div class="mode-option" data-mode="Line Following">➖ Line Following</div>
-    <div class="mode-option" data-mode="Control">🎮 Control</div>
-    <div class="mode-option" data-mode="Self Drive">🤖 Self Drive</div>
-</div>
-
-<div id="callPopup" class="popup-panel">
-    <div class="popup-header"><h3>📞 Emergency</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
-    <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
-    <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
-    <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
-</div>
-
-<div id="healthPopup" class="popup-panel">
-    <div class="popup-header"><h3>❤️ Health Monitoring</h3><button class="close-popup" onclick="closePopup('health')">×</button></div>
-    <div class="health-grid">
-        <div class="health-item" id="healthHeartItem">
-            <span>Heart Rate</span>
-            <div class="value" id="hrValue">84</div>
-            <small>bpm</small>
-        </div>
-        <div class="health-item" id="healthBPItem">
-            <span>Blood Pressure</span>
-            <div class="value" id="bpValue">130/80</div>
-            <small>mmHg</small>
-        </div>
-        <div class="health-item" id="healthTempItem">
-            <span>Temperature</span>
-            <div class="value" id="tempValue">36.8</div>
-            <small>°C</small>
-        </div>
-        <div class="health-item" id="healthO2Item">
-            <span>SpO₂</span>
-            <div class="value" id="o2Value">98</div>
-            <small>%</small>
-        </div>
-    </div>
-</div>
-
-<div id="wheelPopup" class="popup-panel">
-    <div class="popup-header"><h3>🦽 Wheelchair Status</h3><button class="close-popup" onclick="closePopup('wheel')">×</button></div>
-    <div class="wheel-detail" id="batteryDetail">
-        <span>🔋 Battery</span>
-        <strong id="batteryValue">82%</strong>
-    </div>
-    <div class="wheel-detail" id="speedDetail">
-        <span>⚡ Speed</span>
-        <strong id="speedValue">1.2 m/s</strong>
-    </div>
-    <div class="wheel-detail">
-        <span>🚧 Obstacle</span>
-        <strong id="obstacleValue">Clear</strong>
-    </div>
-    <div class="wheel-detail">
-        <span>📍 Range</span>
-        <strong id="rangeValue">5.2 km</strong>
-    </div>
-</div>
-
-<div id="patientMainMenu" class="popup-panel">
-    <div class="popup-header"><h3>👤 Patient menu</h3><button class="close-popup" onclick="closePatientMainMenu()">×</button></div>
-    <div class="patient-option-item" onclick="showPatientSubmenu('message')"><span>💬</span> Send message</div>
-    <div class="patient-option-item" onclick="showPatientSubmenu('calendar')"><span>📅</span> Mark calendar</div>
-    <div class="patient-option-item" onclick="showPatientSubmenu('appointment')"><span>📋</span> Book appointment</div>
-    <div class="patient-option-item" onclick="showPatientSubmenu('media')"><span>🎵</span> Media & music</div>
-    <div class="patient-option-item" onclick="showPatientSubmenu('alarm')"><span>⏰</span> Set alarm</div>
-</div>
-
-<div id="patientSubmenu" class="popup-panel" style="display: none;">
-    <div class="popup-header"><h3 id="submenuTitle">Title</h3><button class="close-popup" onclick="closePatientSubmenu()">×</button></div>
-    <div id="submenuContent"></div>
-</div>
-
-<div id="notificationPopup" class="popup-panel" style="max-width: 400px;">
-    <div class="popup-header"><h3>🔔 Notifications</h3><button class="close-popup" onclick="closeNotificationPopup()">×</button></div>
-    <div id="notificationList" style="max-height: 400px; overflow-y: auto;"></div>
-    <button class="btn-secondary" style="margin-top: 16px; width: 100%;" onclick="clearAllNotifications()">Clear All</button>
-</div>
-
-<div id="caretakerPopup" class="popup-panel caretaker-popup">
-    <div class="popup-header"><h3>👤 Caretaker</h3><button class="close-popup" onclick="closeCaretakerPopup()">×</button></div>
-    <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
-        <div><strong>John Doe</strong><br><span style="color:var(--muted);">ID: CT-2210</span></div>
-    </div>
-    <div class="detail-row"><span>📧 Email</span> <span>john.d@care.com</span></div>
-    <div class="detail-row"><span>📞 Phone</span> <span>+1 555 7700</span></div>
-    <div class="detail-row"><span>🏥 Facility</span> <span>HomeCare Plus</span></div>
-</div>
-
-<div id="editPatientPopup" class="popup-panel" style="max-width: 420px;">
-    <div class="popup-header"><h3>✏️ Edit Patient Details</h3><button class="close-popup" onclick="closeEditPatientPopup()">×</button></div>
-    <div id="editPatientForm" class="edit-fields-container"></div>
-    <div class="button-group" style="margin-top: 20px;">
-        <button class="btn-primary" id="savePatientEditBtn">💾 Save Changes</button>
-        <button class="btn-secondary" onclick="closeEditPatientPopup()">Cancel</button>
-    </div>
+<div id="logPopup" class="popup-panel square">
+    <div class="popup-header"><h3>📋 Notifications Log</h3></div>
+    <div id="notificationLog" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;"></div>
+    <button class="popup-close-btn" id="clearAllNotificationsBtn">🗑️ Clear All Notifications</button>
+    <button class="popup-close-btn secondary" onclick="closeLogPopup()" style="margin-top: 10px;">Close</button>
 </div>
 
 <div class="shutdown-overlay" id="shutdownOverlay">
     <div class="shutdown-card">
-        <div style="font-size:40px;">⚠️</div>
-        <div style="font-size:22px; font-weight:700;">EMERGENCY HALT</div>
-        <p style="margin:12px 0;">Emergency stop activated</p>
-        <button onclick="closeShutdown()" style="background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
+        <div style="font-size:42px;">⚠️</div>
+        <div style="font-size:20px; font-weight:700;">EMERGENCY HALT</div>
+        <button onclick="closeShutdown()" style="margin-top:14px; background:white; border:none; padding:10px 24px; border-radius:40px;">Dismiss</button>
     </div>
 </div>
 
@@ -905,244 +961,804 @@
 </div>
 
 <script type="module">
-// =============== FIREBASE REALTIME DATABASE INTEGRATION ================
-
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-const dbRealtime = getDatabase(app);
-let currentMode = 'Line Following';
-let currentDirection = 'stop';
-let emergencyActive = false;
-
-// =============== LISTEN FOR STATUS FROM ESP32 ================
-function listenForESP32Status() {
-  const statusRef = ref(dbRealtime, 'status');
-  
-  onValue(statusRef, (snapshot) => {
-    const status = snapshot.val();
-    if (status) {
-      updateUIWithStatus(status);
-      updateConnectionStatus(true);
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    
+    const db = window.db;
+    const dbRealtime = window.dbRealtime;
+    const PATIENT_ID = "patient_main";
+    const MODE_ID = "drive_mode";
+    const EMERGENCY_ID = "emergency_status";
+    
+    let patientData = {
+        fullName: 'Rebecca Rowe',
+        patientId: 'PT-10234',
+        age: '67',
+        bloodGroup: 'A+',
+        doctor: 'Dr. Sarah Adams',
+        contactNo: '+1 555 0199',
+        photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+    };
+    
+    let currentMode = 'Line Following';
+    let currentDirection = 'stop';
+    let emergencyActive = false;
+    
+    // Track processed items by ID to prevent duplicates
+    let processedItems = {
+        messages: new Set(),
+        alarms: new Set(),
+        appointments: new Set(),
+        media: new Set(),
+        calendar: new Set(),
+        healthAlerts: new Set(),
+        driveModeChanges: new Set(),
+        emergencyEvents: new Set()
+    };
+    
+    let dataStore = {
+        messages: [],
+        alarms: [],
+        appointments: [],
+        media: [],
+        calendar: []
+    };
+    
+    let notifications = [];
+    let notificationCount = 0;
+    
+    let carouselIndex = 0;
+    let slides = [];
+    let autoSlideInterval = null;
+    let isVitalsAbnormal = false;
+    let touchStartX = 0, touchEndX = 0;
+    let lastHealthState = { hr: 84, temp: 36.8, o2: 98, bp: '130/80' };
+    
+    // =============== FIREBASE REALTIME DATABASE FUNCTIONS ===============
+    
+    // Send command to ESP32 via Firebase
+    async function sendCommandToESP32(type, value) {
+        const commandRef = ref(dbRealtime, 'commands/lastCommand');
+        const timestamp = Date.now();
+        
+        const commandData = {
+            type: type,
+            value: value,
+            timestamp: timestamp,
+            source: 'patient'
+        };
+        
+        try {
+            await set(commandRef, JSON.stringify(commandData));
+            await set(ref(dbRealtime, 'commands/timestamp'), timestamp);
+            console.log(`✅ Command sent: ${type} - ${value}`);
+            showToast(`Command sent: ${value}`);
+            return true;
+        } catch (error) {
+            console.error("Failed to send command:", error);
+            showToast("⚠️ Failed to send command");
+            return false;
+        }
     }
-  }, (error) => {
-    updateConnectionStatus(false);
-  });
-}
-
-// =============== UPDATE PATIENT UI WITH STATUS ================
-function updateUIWithStatus(status) {
-  // Battery
-  if (status.battery !== undefined) {
-    const batteryElem = document.getElementById('batteryValue');
-    if (batteryElem) batteryElem.innerText = Math.round(status.battery) + '%';
-  }
-  
-  // Speed
-  if (status.speed !== undefined) {
-    const speedElem = document.getElementById('speedValue');
-    if (speedElem) speedElem.innerText = status.speed.toFixed(1) + ' m/s';
-  }
-  
-  // Direction
-  if (status.direction !== undefined) {
-    const badge = document.getElementById('directionBadge');
-    const icon = document.getElementById('dirIconLarge');
-    const text = document.getElementById('dirTextLarge');
     
-    if (badge) badge.className = 'direction-status-badge ' + status.direction;
-    
-    const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️', straight: '⏹️' };
-    const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED', straight: 'STOPPED' };
-    
-    if (icon) icon.innerHTML = icons[status.direction] || '⏹️';
-    if (text) text.innerHTML = texts[status.direction] || 'Stopped';
-  }
-  
-  // Obstacle
-  if (status.obstacle !== undefined) {
-    const obsSpan = document.getElementById('obstacleValue');
-    if (obsSpan) {
-      obsSpan.innerText = status.obstacle;
-      obsSpan.className = 'tele-value ' + 
-        (status.obstacle === 'Clear' ? 'obstacle-clear' : 
-         status.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+    // Listen for status from ESP32
+    function listenForESP32Status() {
+        const statusRef = ref(dbRealtime, 'status');
+        
+        onValue(statusRef, (snapshot) => {
+            const status = snapshot.val();
+            if (status) {
+                console.log("📊 Status received:", status);
+                updateUIWithStatus(status);
+                updateConnectionStatus(true);
+            }
+        }, (error) => {
+            console.error("Status listener error:", error);
+            updateConnectionStatus(false);
+        });
     }
-  }
-  
-  // Mode
-  if (status.mode !== undefined && status.mode !== currentMode) {
-    currentMode = status.mode;
-    updateModeUI(currentMode);
-  }
-  
-  // Angle for tilt warning
-  if (status.angle !== undefined && Math.abs(status.angle) > 15) {
-    addToNotificationLog('⚠️ Tilt Warning', `Wheelchair tilted at ${status.angle.toFixed(1)}°`, new Date().toLocaleString(), true);
-  }
-}
-
-// =============== SEND MODE CHANGE ================
-async function setMode(mode) {
-  if (mode === currentMode) return;
-  
-  const commandRef = ref(dbRealtime, 'commands/lastCommand');
-  const timestamp = Date.now();
-  
-  const commandData = {
-    type: 'mode',
-    value: mode,
-    timestamp: timestamp,
-    source: 'patient'
-  };
-  
-  try {
-    await set(commandRef, JSON.stringify(commandData));
-    await set(ref(dbRealtime, 'commands/timestamp'), timestamp);
-    currentMode = mode;
-    updateModeUI(mode);
-    addToNotificationLog('🔄 Drive Mode', `You changed mode to: ${mode}`, new Date().toLocaleString(), false);
-  } catch (error) {
-    console.error("Failed to change mode:", error);
-    showToast("⚠️ Failed to change mode");
-  }
-}
-
-// =============== SEND EMERGENCY ================
-async function triggerEmergency() {
-  const uniqueId = `patient_emergency_${Date.now()}`;
-  if (processedItems.emergencyEvents.has(uniqueId)) return;
-  processedItems.emergencyEvents.add(uniqueId);
-  
-  const commandRef = ref(dbRealtime, 'commands/lastCommand');
-  const timestamp = Date.now();
-  
-  const commandData = {
-    type: 'emergency',
-    value: 'stop',
-    timestamp: timestamp,
-    source: 'patient'
-  };
-  
-  try {
-    await set(commandRef, JSON.stringify(commandData));
-    await set(ref(dbRealtime, 'commands/timestamp'), timestamp);
     
-    emergencyActive = true;
-    document.body.classList.add('emergency-shutdown');
-    const overlay = document.getElementById('shutdownOverlay');
-    if (overlay) overlay.style.display = 'flex';
+    // Update patient UI with status
+    function updateUIWithStatus(status) {
+        // Battery
+        if (status.battery !== undefined) {
+            const batteryElem = document.getElementById('batteryValue');
+            if (batteryElem) batteryElem.innerText = Math.round(status.battery) + '%';
+        }
+        
+        // Speed
+        if (status.speed !== undefined) {
+            const speedElem = document.getElementById('speedValue');
+            if (speedElem) speedElem.innerText = status.speed.toFixed(1) + ' m/s';
+        }
+        
+        // Direction
+        if (status.direction !== undefined) {
+            currentDirection = status.direction;
+            const badge = document.getElementById('directionBadge');
+            const icon = document.getElementById('dirIconLarge');
+            const text = document.getElementById('dirTextLarge');
+            
+            if (badge) badge.className = 'direction-status-badge ' + status.direction;
+            
+            const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️', straight: '⏹️' };
+            const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED', straight: 'STOPPED' };
+            
+            if (icon) icon.innerHTML = icons[status.direction] || '⏹️';
+            if (text) text.innerHTML = texts[status.direction] || 'Stopped';
+        }
+        
+        // Obstacle
+        if (status.obstacle !== undefined) {
+            const obsSpan = document.getElementById('obstacleValue');
+            if (obsSpan) {
+                obsSpan.innerText = status.obstacle;
+                obsSpan.className = 'tele-value ' + 
+                    (status.obstacle === 'Clear' ? 'obstacle-clear' : 
+                     status.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+            }
+        }
+        
+        // Range (simulated from battery)
+        if (status.battery !== undefined) {
+            const rangeElem = document.getElementById('rangeValue');
+            if (rangeElem) {
+                const range = (status.battery / 100 * 8).toFixed(1);
+                rangeElem.innerText = range + ' km';
+            }
+        }
+        
+        // Mode
+        if (status.mode !== undefined && status.mode !== currentMode) {
+            currentMode = status.mode;
+            updateModeUI(currentMode);
+            addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${currentMode}`, new Date().toLocaleString(), false);
+        }
+        
+        // Angle for tilt warning
+        if (status.angle !== undefined && Math.abs(status.angle) > 15) {
+            const uniqueId = `tilt_${status.angle}_${Date.now()}`;
+            if (!processedItems.healthAlerts.has(uniqueId)) {
+                processedItems.healthAlerts.add(uniqueId);
+                addToNotificationLog('⚠️ Tilt Warning', `Wheelchair tilted at ${status.angle.toFixed(1)}°`, new Date().toLocaleString(), true, uniqueId);
+            }
+        }
+    }
     
-    addToNotificationLog('🚨 EMERGENCY', 'You have activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
-    showAlertPopup('🚨 EMERGENCY STOP', 'Emergency stop activated. Help is on the way!', 'Now', uniqueId);
+    // Send mode change
+    async function setMode(mode) {
+        if (mode === currentMode) return;
+        
+        const success = await sendCommandToESP32('mode', mode);
+        if (success) {
+            currentMode = mode;
+            updateModeUI(mode);
+            addToNotificationLog('🔄 Drive Mode', `You changed mode to: ${mode}`, new Date().toLocaleString(), false);
+        }
+    }
     
-    setTimeout(async () => {
-      await set(ref(dbRealtime, 'emergency_status/active'), false);
-      emergencyActive = false;
-      document.body.classList.remove('emergency-shutdown');
-      if (overlay) overlay.style.display = 'none';
-    }, 5000);
-  } catch (error) {
-    console.error("Failed to trigger emergency:", error);
-  }
-}
-
-// =============== LISTEN FOR EMERGENCY STATUS ================
-function listenForEmergency() {
-  const emergencyRef = ref(dbRealtime, 'emergency_status/active');
-  onValue(emergencyRef, (snapshot) => {
-    const active = snapshot.val();
-    if (active === true && !emergencyActive) {
-      const uniqueId = `emergency_${Date.now()}`;
-      if (!processedItems.emergencyEvents.has(uniqueId)) {
+    // Send emergency
+    async function triggerEmergency() {
+        const uniqueId = `patient_emergency_${Date.now()}`;
+        if (processedItems.emergencyEvents.has(uniqueId)) return;
         processedItems.emergencyEvents.add(uniqueId);
+        
+        await sendCommandToESP32('emergency', 'stop');
+        
         emergencyActive = true;
         document.body.classList.add('emergency-shutdown');
         const overlay = document.getElementById('shutdownOverlay');
         if (overlay) overlay.style.display = 'flex';
-        addToNotificationLog('🚨 EMERGENCY', 'Caretaker has activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
-        showAlertPopup('🚨 EMERGENCY STOP', 'Caretaker has activated emergency stop! Please wait for assistance.', 'Now', uniqueId);
-      }
-    } else if (active === false && emergencyActive) {
-      emergencyActive = false;
-      document.body.classList.remove('emergency-shutdown');
-      const overlay = document.getElementById('shutdownOverlay');
-      if (overlay) overlay.style.display = 'none';
+        
+        addToNotificationLog('🚨 EMERGENCY', 'You have activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
+        showAlertPopup('🚨 EMERGENCY STOP', 'Emergency stop activated. Help is on the way!', 'Now');
+        
+        setTimeout(async () => {
+            await set(ref(dbRealtime, 'emergency_status/active'), false);
+            emergencyActive = false;
+            document.body.classList.remove('emergency-shutdown');
+            if (overlay) overlay.style.display = 'none';
+        }, 5000);
     }
-  });
-}
-
-// =============== UPDATE MODE UI ================
-function updateModeUI(mode) {
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.mode === mode) btn.classList.add('active');
-  });
-}
-
-// =============== LISTEN FOR NOTIFICATIONS ================
-function listenForNotifications() {
-  const notificationsRef = ref(dbRealtime, 'notifications');
-  onValue(notificationsRef, (snapshot) => {
-    const notifications = snapshot.val();
-    if (notifications) {
-      const latestKey = Object.keys(notifications).pop();
-      const latest = notifications[latestKey];
-      if (latest) {
-        addToNotificationLog(latest.title, latest.message, new Date().toLocaleString(), latest.isWarning || false);
-      }
+    
+    function closeShutdown() {
+        if (emergencyActive) {
+            set(ref(dbRealtime, 'emergency_status/active'), false);
+            emergencyActive = false;
+        }
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
     }
-  });
-}
-
-// =============== LISTEN FOR MODE CHANGES ================
-function listenForModeChanges() {
-  const modeRef = ref(dbRealtime, 'drive_mode/mode');
-  onValue(modeRef, (snapshot) => {
-    const mode = snapshot.val();
-    if (mode && mode !== currentMode) {
-      currentMode = mode;
-      updateModeUI(currentMode);
-      addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${mode}`, new Date().toLocaleString(), false);
+    
+    // Listen for emergency status from Firebase
+    function listenForEmergency() {
+        const emergencyRef = ref(dbRealtime, 'emergency_status/active');
+        onValue(emergencyRef, (snapshot) => {
+            const active = snapshot.val();
+            if (active === true && !emergencyActive) {
+                const uniqueId = `emergency_${Date.now()}`;
+                if (!processedItems.emergencyEvents.has(uniqueId)) {
+                    processedItems.emergencyEvents.add(uniqueId);
+                    emergencyActive = true;
+                    document.body.classList.add('emergency-shutdown');
+                    const overlay = document.getElementById('shutdownOverlay');
+                    if (overlay) overlay.style.display = 'flex';
+                    addToNotificationLog('🚨 EMERGENCY', 'Caretaker has activated emergency stop!', new Date().toLocaleString(), true, uniqueId);
+                    showAlertPopup('🚨 EMERGENCY STOP', 'Caretaker has activated emergency stop! Please wait for assistance.', 'Now');
+                }
+            } else if (active === false && emergencyActive) {
+                emergencyActive = false;
+                document.body.classList.remove('emergency-shutdown');
+                const overlay = document.getElementById('shutdownOverlay');
+                if (overlay) overlay.style.display = 'none';
+            }
+        });
     }
-  });
-}
-
-// =============== INITIALIZE ================
-function initFirebaseListeners() {
-  listenForESP32Status();
-  listenForModeChanges();
-  listenForEmergency();
-  listenForNotifications();
-  
-  // Also listen for alerts
-  const tiltAlertRef = ref(dbRealtime, 'alerts/tilt');
-  onValue(tiltAlertRef, (snapshot) => {
-    const alert = snapshot.val();
-    if (alert) {
-      const uniqueId = `tilt_${alert.timestamp}`;
-      if (!processedItems.healthAlerts.has(uniqueId)) {
-        processedItems.healthAlerts.add(uniqueId);
-        addToNotificationLog('⚠️ Tilt Detected', `Wheelchair tilted at ${alert.angle}°`, new Date().toLocaleString(), true, uniqueId);
-      }
+    
+    // Listen for mode changes from Firebase
+    function listenForModeChanges() {
+        const modeRef = ref(dbRealtime, 'drive_mode/mode');
+        onValue(modeRef, (snapshot) => {
+            const mode = snapshot.val();
+            if (mode && mode !== currentMode) {
+                currentMode = mode;
+                updateModeUI(currentMode);
+                addToNotificationLog('🔄 Drive Mode', `Mode changed to: ${mode}`, new Date().toLocaleString(), false);
+            }
+        });
     }
-  });
-}
-
-// Call initialization
-initFirebaseListeners();
-
-// Update emergency button
-const emergencyBtn = document.getElementById('emergencyStopBtn');
-if (emergencyBtn) {
-  emergencyBtn.onclick = triggerEmergency;
-}
-
-// Update mode buttons
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => setMode(btn.dataset.mode));
-});
-
-// Remove all WebSocket code
+    
+    // Listen for notifications from Firebase
+    function listenForNotifications() {
+        const notificationsRef = ref(dbRealtime, 'notifications');
+        onValue(notificationsRef, (snapshot) => {
+            const notificationsData = snapshot.val();
+            if (notificationsData) {
+                const latestKey = Object.keys(notificationsData).pop();
+                const latest = notificationsData[latestKey];
+                if (latest) {
+                    addToNotificationLog(latest.title, latest.message, new Date().toLocaleString(), latest.isWarning || false);
+                }
+            }
+        });
+    }
+    
+    // Listen for alerts
+    function listenForAlerts() {
+        const tiltAlertRef = ref(dbRealtime, 'alerts/tilt');
+        onValue(tiltAlertRef, (snapshot) => {
+            const alert = snapshot.val();
+            if (alert) {
+                const uniqueId = `tilt_${alert.timestamp}`;
+                if (!processedItems.healthAlerts.has(uniqueId)) {
+                    processedItems.healthAlerts.add(uniqueId);
+                    addToNotificationLog('⚠️ Tilt Detected', `Wheelchair tilted at ${alert.angle}°`, new Date().toLocaleString(), true, uniqueId);
+                    showAlertPopup('⚠️ Tilt Warning', `Wheelchair tilted at ${alert.angle}°`, new Date().toLocaleString());
+                }
+            }
+        });
+        
+        const blinkAlertRef = ref(dbRealtime, 'alerts/blink');
+        onValue(blinkAlertRef, (snapshot) => {
+            const alert = snapshot.val();
+            if (alert) {
+                addToNotificationLog('👁️ Blink Command', `Command: ${alert.command}`, new Date().toLocaleString(), false);
+            }
+        });
+    }
+    
+    // Listen for caretaker actions from Firestore
+    function listenCaretakerActions() {
+        const actionsRef = doc(db, "patientActions", "feed");
+        onSnapshot(actionsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const types = ['messages', 'alarms', 'appointments', 'media', 'calendar'];
+                
+                types.forEach(type => {
+                    if (data[type] && Array.isArray(data[type])) {
+                        data[type].forEach(item => {
+                            const itemId = `${item.timestamp || item.time || Date.now()}_${item.title || item.text || ''}`;
+                            
+                            if (!processedItems[type].has(itemId)) {
+                                processedItems[type].add(itemId);
+                                dataStore[type].push({ ...item, triggered: false });
+                                
+                                const uniqueId = `${type}_${item.title || item.text}_${item.time || Date.now()}`;
+                                
+                                if (type === 'alarms' && item.time) {
+                                    addToNotificationLog('⏰ New Alarm', item.title, item.time, true, uniqueId);
+                                } else if (type === 'appointments' && item.time) {
+                                    addToNotificationLog('📋 New Appointment', `${item.title} - ${item.detail || ''}`, item.time, false, uniqueId);
+                                } else if (type === 'calendar' && item.time) {
+                                    addToNotificationLog('📅 New Calendar Event', item.title, item.time, false, uniqueId);
+                                } else if (type === 'messages') {
+                                    addToNotificationLog('💬 New Message', item.text, item.time, false, uniqueId);
+                                } else if (type === 'media') {
+                                    addToNotificationLog('🎵 Media', item.title, item.time, false, uniqueId);
+                                }
+                            }
+                        });
+                    }
+                });
+                rebuildCarousel();
+            }
+        });
+    }
+    
+    // Update mode UI
+    function updateModeUI(mode) {
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.mode === mode) btn.classList.add('active');
+        });
+    }
+    
+    // =============== UI FUNCTIONS ===============
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    function showAlertPopup(title, message, time) {
+        const existingPopup = document.querySelector('.alert-popup');
+        if (existingPopup) existingPopup.remove();
+        
+        const popup = document.createElement('div');
+        popup.className = 'alert-popup';
+        popup.innerHTML = `
+            <div class="alert-icon">⏰</div>
+            <div class="alert-title">${escapeHtml(title)}</div>
+            <div class="alert-message">${escapeHtml(message)}</div>
+            <div class="alert-time">📅 ${time || 'Now'}</div>
+            <button onclick="this.parentElement.remove()">Dismiss</button>
+        `;
+        document.body.appendChild(popup);
+        
+        setTimeout(() => {
+            if (popup.parentElement) popup.remove();
+        }, 10000);
+    }
+    
+    function addToNotificationLog(title, message, time, isWarning = false, uniqueId = null) {
+        const id = uniqueId || `${title}_${message}_${time || Date.now()}`;
+        if (processedItems.healthAlerts.has(id)) return;
+        processedItems.healthAlerts.add(id);
+        
+        const logEntry = {
+            id: id,
+            title: title,
+            message: message,
+            time: time || new Date().toLocaleString(),
+            timestamp: new Date(),
+            isWarning: isWarning
+        };
+        notifications.unshift(logEntry);
+        notificationCount++;
+        updateNotificationBadge();
+        updateNotificationLogDisplay();
+    }
+    
+    function updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        if (notificationCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    function updateNotificationLogDisplay() {
+        const logContainer = document.getElementById('notificationLog');
+        if (!logContainer) return;
+        
+        if (notifications.length === 0) {
+            logContainer.innerHTML = '<div class="empty-message">No notifications yet</div>';
+            return;
+        }
+        
+        logContainer.innerHTML = notifications.slice(0, 50).map(n => `
+            <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
+                <div class="log-title">${escapeHtml(n.title)}</div>
+                <div class="log-message">${escapeHtml(n.message)}</div>
+                <div class="log-time">${n.time}</div>
+            </div>
+        `).join('');
+    }
+    
+    function clearAllNotifications() {
+        notifications = [];
+        notificationCount = 0;
+        updateNotificationBadge();
+        updateNotificationLogDisplay();
+        showToast('✅ All notifications cleared');
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function updateConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionText');
+        
+        if (connected) {
+            statusDiv.className = 'connection-status connected';
+            statusText.innerText = 'Connected';
+        } else {
+            statusDiv.className = 'connection-status disconnected';
+            statusText.innerText = 'Disconnected';
+        }
+    }
+    
+    // =============== PATIENT DATA ===============
+    async function loadPatientFromFirestore() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        const docSnap = await getDoc(patientRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            Object.assign(patientData, data);
+        }
+        updatePatientDisplay();
+        renderPatientDetails();
+    }
+    
+    function updatePatientDisplay() {
+        document.getElementById('patientFirstName').innerText = patientData.fullName.split(' ')[0];
+        document.getElementById('patientIdSmall').innerHTML = `ID: ${patientData.patientId} · ${patientData.age}y`;
+        document.getElementById('profileImage').src = patientData.photo;
+    }
+    
+    function renderPatientDetails() {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Full Name', value: patientData.fullName },
+            { label: 'Patient ID', value: patientData.patientId },
+            { label: 'Age', value: patientData.age + ' years' },
+            { label: 'Blood Group', value: patientData.bloodGroup },
+            { label: 'Doctor', value: patientData.doctor },
+            { label: 'Contact', value: patientData.contactNo }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${f.value}</div>`;
+            grid.appendChild(div);
+        });
+    }
+    
+    // =============== CAROUSEL FUNCTIONS ===============
+    function rebuildCarousel() {
+        const container = document.getElementById('carouselSlides');
+        if (!container) return;
+        container.innerHTML = '';
+        slides = [];
+        
+        const vitalsSlide = document.createElement('div');
+        vitalsSlide.className = 'carousel-slide vital-signs-slide';
+        vitalsSlide.innerHTML = `
+            <div class="health-header-compact">
+                <span>❤️</span>
+                <h4>Vital Signs</h4>
+            </div>
+            <div class="health-metrics-compact">
+                <div class="health-metric-compact" id="hrMetricSlide">
+                    <div class="metric-value-compact" id="healthHeartRateSlide">84</div>
+                    <div class="metric-label-compact">HR</div>
+                    <small>bpm</small>
+                </div>
+                <div class="health-metric-compact" id="bpMetricSlide">
+                    <div class="metric-value-compact" id="healthBPSlide">130/80</div>
+                    <div class="metric-label-compact">BP</div>
+                    <small>mmHg</small>
+                </div>
+                <div class="health-metric-compact" id="tempMetricSlide">
+                    <div class="metric-value-compact" id="healthTempSlide">36.8</div>
+                    <div class="metric-label-compact">TEMP</div>
+                    <small>°C</small>
+                </div>
+                <div class="health-metric-compact" id="o2MetricSlide">
+                    <div class="metric-value-compact" id="healthO2Slide">98</div>
+                    <div class="metric-label-compact">SpO₂</div>
+                    <small>%</small>
+                </div>
+            </div>
+        `;
+        container.appendChild(vitalsSlide);
+        slides.push({ type: 'vitals', element: vitalsSlide });
+        
+        const contentConfigs = [
+            { key: 'messages', icon: '💬', title: 'Messages' },
+            { key: 'alarms', icon: '⏰', title: 'Alarms' },
+            { key: 'appointments', icon: '📋', title: 'Appointments' },
+            { key: 'media', icon: '🎵', title: 'Media & Music' },
+            { key: 'calendar', icon: '📅', title: 'Calendar' }
+        ];
+        
+        contentConfigs.forEach(config => {
+            const items = dataStore[config.key] || [];
+            const slide = document.createElement('div');
+            slide.className = 'carousel-slide content-slide';
+            slide.innerHTML = `
+                <div class="content-slide-header">
+                    <span>${config.icon}</span>
+                    <h4>${config.title}</h4>
+                </div>
+                <div class="content-list">
+                    ${items.length > 0 ? items.slice().reverse().slice(0, 5).map(item => `
+                        <div class="content-item">
+                            <div class="title">${escapeHtml(item.title || item.text || 'Update')}</div>
+                            <div class="detail">${escapeHtml(item.detail || '')} ${item.time ? '• ' + item.time : ''}</div>
+                        </div>
+                    `).join('') : '<div class="empty-message">No items yet</div>'}
+                </div>
+            `;
+            container.appendChild(slide);
+            slides.push({ type: config.key, element: slide });
+        });
+        
+        updateDots();
+        updateCarouselPosition();
+    }
+    
+    function updateDots() {
+        const dotsContainer = document.getElementById('carouselDots');
+        if (!dotsContainer) return;
+        dotsContainer.innerHTML = '';
+        slides.forEach((_, idx) => {
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (idx === carouselIndex ? ' active' : '');
+            dot.onclick = () => goToSlide(idx);
+            dotsContainer.appendChild(dot);
+        });
+    }
+    
+    function updateCarouselPosition() {
+        const wrapper = document.querySelector('.carousel-slides');
+        if (wrapper) {
+            wrapper.style.transform = `translateX(-${carouselIndex * 100}%)`;
+        }
+        updateDots();
+    }
+    
+    function goToSlide(index) {
+        if (index < 0) index = 0;
+        if (index >= slides.length) index = slides.length - 1;
+        carouselIndex = index;
+        updateCarouselPosition();
+        resetAutoSlideTimer();
+    }
+    
+    function nextSlide() {
+        if (isVitalsAbnormal) return;
+        let next = carouselIndex + 1;
+        if (next >= slides.length) next = 0;
+        carouselIndex = next;
+        updateCarouselPosition();
+    }
+    
+    function resetAutoSlideTimer() {
+        if (autoSlideInterval) clearInterval(autoSlideInterval);
+        if (!isVitalsAbnormal) {
+            autoSlideInterval = setInterval(() => nextSlide(), 10000);
+        }
+    }
+    
+    function initTouchEvents() {
+        const wrapper = document.querySelector('.carousel-wrapper');
+        if (!wrapper) return;
+        wrapper.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+        wrapper.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const threshold = 50;
+            if (touchEndX < touchStartX - threshold && carouselIndex < slides.length - 1) {
+                carouselIndex++;
+                updateCarouselPosition();
+                resetAutoSlideTimer();
+            } else if (touchEndX > touchStartX + threshold && carouselIndex > 0) {
+                carouselIndex--;
+                updateCarouselPosition();
+                resetAutoSlideTimer();
+            }
+        });
+    }
+    
+    // =============== HEALTH MONITORING ===============
+    function updateHealthMetrics() {
+        let hr = parseInt(document.getElementById('healthHeartRateSlide')?.innerText) || 84;
+        hr = Math.min(110, Math.max(65, hr + (Math.random() > 0.5 ? 1 : -1)));
+        let temp = 36.8 + (Math.random() - 0.5) * 0.2;
+        let o2 = Math.min(100, Math.max(92, 98 + (Math.random() > 0.8 ? -1 : 0)));
+        let systolic = 130 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 5 : -5) : 0);
+        let diastolic = 80 + (systolic - 130) * 0.6;
+        
+        if (document.getElementById('healthHeartRateSlide')) {
+            document.getElementById('healthHeartRateSlide').innerText = hr;
+            document.getElementById('healthTempSlide').innerText = temp.toFixed(1);
+            document.getElementById('healthO2Slide').innerText = o2;
+            document.getElementById('healthBPSlide').innerText = `${Math.min(160, Math.max(85, systolic))}/${Math.min(100, Math.max(55, diastolic))}`;
+        }
+        
+        const abnormal = (hr < 60 || hr > 100) || (temp < 36.1 || temp > 37.2) || (o2 < 95);
+        
+        if (abnormal && !isVitalsAbnormal) {
+            isVitalsAbnormal = true;
+            if (autoSlideInterval) clearInterval(autoSlideInterval);
+            if (carouselIndex !== 0) { carouselIndex = 0; updateCarouselPosition(); }
+            
+            let alertMsg = '';
+            if (hr < 60 || hr > 100) alertMsg += `Heart rate: ${hr} bpm. `;
+            if (temp < 36.1 || temp > 37.2) alertMsg += `Temperature: ${temp.toFixed(1)}°C. `;
+            if (o2 < 95) alertMsg += `Oxygen: ${o2}%. `;
+            
+            const uniqueId = `health_alert_${hr}_${temp.toFixed(1)}_${o2}_${Date.now()}`;
+            if (!processedItems.healthAlerts.has(uniqueId)) {
+                processedItems.healthAlerts.add(uniqueId);
+                addToNotificationLog('⚠️ Health Alert', alertMsg || 'Vitals are abnormal!', new Date().toLocaleString(), true, uniqueId);
+                showAlertPopup('⚠️ Health Alert', alertMsg || 'Vitals are abnormal!', new Date().toLocaleString());
+            }
+        } else if (!abnormal && isVitalsAbnormal) {
+            isVitalsAbnormal = false;
+            resetAutoSlideTimer();
+            const uniqueId = `health_normal_${Date.now()}`;
+            addToNotificationLog('✅ Health Normal', 'Vitals have returned to normal range.', new Date().toLocaleString(), false, uniqueId);
+        }
+    }
+    
+    // =============== DATE/TIME ===============
+    function updateDateTime() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('dateText').innerText = dateStr;
+        document.getElementById('timeText').innerText = timeStr;
+    }
+    
+    // =============== TIME-BASED ALERTS ===============
+    function checkTimeBasedAlerts() {
+        const now = new Date();
+        
+        dataStore.alarms.forEach(alarm => {
+            if (alarm.triggered) return;
+            if (alarm.time && shouldTriggerAlert(alarm.time, now)) {
+                alarm.triggered = true;
+                const uniqueId = `alarm_${alarm.title}_${alarm.time}`;
+                showAlertPopup('⏰ Alarm', alarm.title, alarm.time, uniqueId);
+            }
+        });
+        
+        dataStore.appointments.forEach(appt => {
+            if (appt.triggered) return;
+            if (appt.time && shouldTriggerAlert(appt.time, now)) {
+                appt.triggered = true;
+                const uniqueId = `appointment_${appt.title}_${appt.time}`;
+                showAlertPopup('📋 Appointment Reminder', `${appt.title} at ${appt.detail || ''}`, appt.time, uniqueId);
+            }
+        });
+        
+        dataStore.calendar.forEach(event => {
+            if (event.triggered) return;
+            if (event.time && shouldTriggerAlert(event.time, now)) {
+                event.triggered = true;
+                const uniqueId = `calendar_${event.title}_${event.time}`;
+                showAlertPopup('📅 Calendar Event', event.title, event.time, uniqueId);
+            }
+        });
+    }
+    
+    function shouldTriggerAlert(alertTime, currentTime) {
+        if (!alertTime) return false;
+        
+        try {
+            let alertDate;
+            if (alertTime.includes(' - ')) {
+                alertDate = new Date(alertTime.split(' - ')[0]);
+            } else if (alertTime.match(/\d{4}-\d{2}-\d{2}/)) {
+                alertDate = new Date(alertTime.replace(/-/g, '/'));
+            } else if (alertTime.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+                alertDate = new Date(alertTime);
+            } else if (alertTime.match(/\d{1,2}:\d{2}/)) {
+                const [hours, minutes] = alertTime.split(':').map(Number);
+                const alertToday = new Date();
+                alertToday.setHours(hours, minutes, 0, 0);
+                const diff = Math.abs(alertToday - currentTime);
+                return diff < 60000;
+            } else {
+                alertDate = new Date(alertTime);
+            }
+            
+            if (isNaN(alertDate.getTime())) return false;
+            const diff = Math.abs(alertDate - currentTime);
+            return diff < 60000;
+        } catch(e) {
+            return false;
+        }
+    }
+    
+    // =============== MAP INITIALIZATION ===============
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([12.9716, 77.5946], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
+    const wheelchairMarker = L.marker([12.9716, 77.5946]).addTo(map).bindPopup('You are here');
+    
+    // Simulate GPS movement
+    let gpsLat = 12.9716;
+    let gpsLng = 77.5946;
+    setInterval(() => {
+        gpsLat += (Math.random() - 0.5) * 0.0005;
+        gpsLng += (Math.random() - 0.5) * 0.0005;
+        wheelchairMarker.setLatLng([gpsLat, gpsLng]);
+        map.setView([gpsLat, gpsLng], 15);
+    }, 5000);
+    
+    // =============== POPUP FUNCTIONS ===============
+    window.closePatientDetails = () => {
+        document.getElementById('patientDetailsSection').style.display = 'none';
+    };
+    window.closePopup = (type) => { 
+        if(type==='call') document.getElementById('callPopup').style.display='none';
+    };
+    window.closeLogPopup = () => {
+        document.getElementById('logPopup').style.display = 'none';
+    };
+    window.closeShutdown = closeShutdown;
+    
+    // =============== INITIALIZATION ===============
+    async function init() {
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        
+        await loadPatientFromFirestore();
+        
+        // Firebase Realtime Database listeners
+        listenForESP32Status();
+        listenForModeChanges();
+        listenForEmergency();
+        listenForAlerts();
+        listenForNotifications();
+        
+        // Firestore listeners
+        listenCaretakerActions();
+        
+        // Carousel
+        rebuildCarousel();
+        initTouchEvents();
+        resetAutoSlideTimer();
+        
+        // Health monitoring
+        setInterval(updateHealthMetrics, 8000);
+        setInterval(checkTimeBasedAlerts, 30000);
+        
+        // UI Event Listeners
+        document.getElementById('profileIconBtn').onclick = () => {
+            const section = document.getElementById('patientDetailsSection');
+            section.style.display = section.style.display === 'none' || section.style.display === '' ? 'block' : 'none';
+        };
+        document.getElementById('welcomeNotifBtn').onclick = () => {
+            document.getElementById('logPopup').style.display = 'block';
+        };
+        document.getElementById('welcomeLogBtn').onclick = () => {
+            document.getElementById('logPopup').style.display = 'block';
+        };
+        document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
+        document.getElementById('clearAllNotificationsBtn').onclick = clearAllNotifications;
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMode(btn.dataset.mode));
+        });
+    }
+    
+    init();
 </script>
 </body>
 </html>
