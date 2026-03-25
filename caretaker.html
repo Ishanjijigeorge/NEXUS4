@@ -1097,8 +1097,30 @@ async function connectToArduino() {
         showToast("❌ Connection error. See console (F12).");
     }
 }
-
-async function readSerialData() {
+    
+    async function disconnectFromArduino() {
+        if (reader) {
+            await reader.cancel();
+            reader = null;
+        }
+        if (writer) {
+            await writer.close();
+            writer = null;
+        }
+        if (serialPort && serialPort.readable) {
+            await serialPort.close();
+        }
+        
+        serialPort = null;
+        isConnected = false;
+        updateConnectionStatus(false);
+        document.getElementById('connectBtn').innerHTML = '🔌 Connect Arduino';
+        document.getElementById('connectBtn').classList.remove('connected');
+        showToast("Arduino disconnected");
+        addNotification("🔌 Connection", "Arduino disconnected", false);
+    }
+    
+ async function readSerialData() {
     const decoder = new TextDecoder();
     while (serialPort && serialPort.readable && isConnected) {
         reader = serialPort.readable.getReader();
@@ -1129,57 +1151,6 @@ async function readSerialData() {
         }
     }
 }
-    
-    async function disconnectFromArduino() {
-        if (reader) {
-            await reader.cancel();
-            reader = null;
-        }
-        if (writer) {
-            await writer.close();
-            writer = null;
-        }
-        if (serialPort && serialPort.readable) {
-            await serialPort.close();
-        }
-        
-        serialPort = null;
-        isConnected = false;
-        updateConnectionStatus(false);
-        document.getElementById('connectBtn').innerHTML = '🔌 Connect Arduino';
-        document.getElementById('connectBtn').classList.remove('connected');
-        showToast("Arduino disconnected");
-        addNotification("🔌 Connection", "Arduino disconnected", false);
-    }
-    
-    async function readSerialData() {
-        try {
-            while (reader && isConnected) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                
-                // Process incoming serial data
-                serialBuffer += value;
-                
-                // Process complete lines
-                let lines = serialBuffer.split('\n');
-                serialBuffer = lines.pop() || '';
-                
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-                    if (trimmedLine) {
-                        handleArduinoData(trimmedLine);
-                        addToSerialConsole(trimmedLine);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Serial read error:", error);
-            if (isConnected) {
-                await disconnectFromArduino();
-            }
-        }
-    }
     
     async function sendCommand(command) {
         if (!writer || !isConnected) {
