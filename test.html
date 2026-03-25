@@ -544,11 +544,11 @@
             border-radius: 40px;
         }
 
-        /* Speed Control Card */
+        /* Speed Control Card Styles */
         .speed-control-card {
             background: white;
             border-radius: 28px;
-            padding: 16px;
+            padding: 20px;
             box-shadow: var(--shadow);
             border: var(--outline);
             margin-bottom: 16px;
@@ -558,7 +558,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .speed-header h3 {
@@ -567,26 +567,29 @@
             color: var(--text);
         }
 
-        .speed-value {
-            font-size: 24px;
-            font-weight: 700;
+        .speed-value-display {
+            font-size: 28px;
+            font-weight: 800;
             color: var(--blue);
-            background: #e5edff;
+            background: #eef2ff;
             padding: 4px 16px;
             border-radius: 40px;
         }
 
-        .speed-slider {
+        .speed-slider-container {
+            margin: 20px 0;
+        }
+
+        #speedSlider {
             width: 100%;
             height: 6px;
             -webkit-appearance: none;
-            background: #e2e8f0;
-            border-radius: 5px;
+            background: linear-gradient(90deg, #dc2626, #f59e0b, #10b981, #3b82f6, #1d4ed8);
+            border-radius: 3px;
             outline: none;
-            margin: 15px 0;
         }
 
-        .speed-slider::-webkit-slider-thumb {
+        #speedSlider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 20px;
             height: 20px;
@@ -594,49 +597,62 @@
             background: var(--blue);
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid white;
         }
 
-        .speed-slider::-webkit-slider-thumb:hover {
+        #speedSlider::-webkit-slider-thumb:hover {
             transform: scale(1.2);
         }
 
         .speed-labels {
             display: flex;
             justify-content: space-between;
-            font-size: 11px;
+            margin-top: 8px;
+            font-size: 10px;
             color: var(--muted);
-            margin-top: 5px;
         }
 
         .speed-presets {
             display: flex;
             gap: 8px;
-            margin-top: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
         }
 
-        .preset-btn {
+        .speed-preset-btn {
             flex: 1;
-            background: #eef2ff;
+            padding: 10px;
             border: none;
-            padding: 8px;
             border-radius: 30px;
+            background: #f1f5f9;
             font-size: 12px;
             font-weight: 600;
-            color: var(--blue);
             cursor: pointer;
             transition: all 0.2s;
+            color: var(--text);
         }
 
-        .preset-btn:active {
-            transform: scale(0.95);
+        .speed-preset-btn:hover {
+            background: #e2e8f0;
+            transform: scale(0.98);
         }
 
-        .preset-btn.active {
+        .speed-preset-btn.active {
             background: var(--blue);
             color: white;
         }
 
-        /* Fixed Angle Card Styles */
+        .speed-status {
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+
+        /* Angle Card Styles */
         .angle-card {
             background: white;
             border-radius: 28px;
@@ -674,7 +690,6 @@
             font-size: 32px;
         }
 
-        /* Center-based bar track */
         .angle-bar-track {
             background: #e2e8f0;
             border-radius: 20px;
@@ -684,7 +699,6 @@
             overflow: visible;
         }
 
-        /* Center marker line */
         .angle-center-marker {
             position: absolute;
             left: 50%;
@@ -697,7 +711,6 @@
             z-index: 2;
         }
 
-        /* Left fill - expands from center to left */
         .angle-bar-fill-left {
             position: absolute;
             height: 100%;
@@ -708,7 +721,6 @@
             transform-origin: right center;
         }
 
-        /* Right fill - expands from center to right */
         .angle-bar-fill-right {
             position: absolute;
             height: 100%;
@@ -719,7 +731,6 @@
             transform-origin: left center;
         }
 
-        /* Moving indicator dot */
         .angle-indicator-dot {
             position: absolute;
             top: -10px;
@@ -735,7 +746,6 @@
             cursor: pointer;
         }
 
-        /* Markers below the bar */
         .angle-markers {
             display: flex;
             justify-content: space-between;
@@ -1286,23 +1296,31 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- NEW: Speed Control Card -->
-    <div class="speed-control-card">
+    <!-- Speed Control Card -->
+    <div class="speed-control-card" id="speedControlCard">
         <div class="speed-header">
             <h3>⚡ Motor Speed Control</h3>
-            <div class="speed-value" id="speedValue">150</div>
+            <span id="speedValue" class="speed-value-display">150</span>
         </div>
-        <input type="range" id="speedSlider" class="speed-slider" min="0" max="255" value="150" step="5">
-        <div class="speed-labels">
-            <span>Slow (0)</span>
-            <span>Normal (150)</span>
-            <span>Fast (255)</span>
+        <div class="speed-slider-container">
+            <input type="range" id="speedSlider" min="0" max="255" value="150" step="5">
+            <div class="speed-labels">
+                <span>STOP</span>
+                <span>SLOW</span>
+                <span>MEDIUM</span>
+                <span>FAST</span>
+                <span>MAX</span>
+            </div>
         </div>
         <div class="speed-presets">
-            <button class="preset-btn" data-speed="80">🐢 Slow</button>
-            <button class="preset-btn active" data-speed="150">⚡ Normal</button>
-            <button class="preset-btn" data-speed="200">🚀 Fast</button>
-            <button class="preset-btn" data-speed="255">🏁 Max</button>
+            <button class="speed-preset-btn" data-speed="0">⏹️ Stop</button>
+            <button class="speed-preset-btn" data-speed="80">🐢 Slow</button>
+            <button class="speed-preset-btn" data-speed="150">⚡ Medium</button>
+            <button class="speed-preset-btn" data-speed="200">🏃 Fast</button>
+            <button class="speed-preset-btn" data-speed="255">🚀 Max</button>
+        </div>
+        <div class="speed-status" id="speedStatus">
+            Current speed: 150/255
         </div>
     </div>
 
@@ -1547,7 +1565,10 @@
         let lastCommandTime = 0;
         let lastAngleValue = 0;
         let angleUpdateCount = 0;
-        let currentMotorSpeed = 150; // Default speed
+
+        // Speed control variables
+        let currentSpeed = 150;
+        let speedUpdatePending = null;
 
         // Health monitoring state
         let lastHealthState = {
@@ -1585,41 +1606,116 @@
         };
 
         // =============== SPEED CONTROL FUNCTIONS ===============
-        
+
         async function setMotorSpeed(speed) {
+            speed = Math.min(255, Math.max(0, speed));
+            
             if (!esp32Connected) {
                 showToast("⚠️ ESP32 not connected!");
                 return false;
             }
             
-            // Clamp speed between 0 and 255
-            speed = Math.min(255, Math.max(0, speed));
-            currentMotorSpeed = speed;
-            
-            // Send speed command to Arduino
-            const command = `SPEED:${speed}`;
-            const success = await sendCommand(command);
-            
-            if (success) {
-                // Update UI
-                document.getElementById('speedValue').innerText = speed;
-                document.getElementById('speedSlider').value = speed;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
                 
-                // Update preset buttons active state
-                document.querySelectorAll('.preset-btn').forEach(btn => {
-                    const btnSpeed = parseInt(btn.dataset.speed);
-                    if (btnSpeed === speed) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
+                const response = await fetch(`http://${esp32IP}/speed?value=${speed}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
                 });
                 
-                showToast(`⚡ Speed set to ${speed}`);
-                addNotification("Speed Changed", `Motor speed set to ${speed}`, false);
-                return true;
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    currentSpeed = speed;
+                    updateSpeedDisplay(speed);
+                    addToSerialConsole(`→ SPEED:${speed}`, true);
+                    showToast(`⚡ Speed set to ${speed}/255`);
+                    return true;
+                } else {
+                    throw new Error("HTTP " + response.status);
+                }
+            } catch (error) {
+                console.error("Speed set error:", error);
+                showToast("❌ Failed to set speed");
+                return false;
             }
-            return false;
+        }
+
+        async function getCurrentSpeed() {
+            if (!esp32Connected) {
+                return null;
+            }
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const response = await fetch(`http://${esp32IP}/getspeed`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const speed = parseInt(await response.text());
+                    if (!isNaN(speed)) {
+                        currentSpeed = speed;
+                        updateSpeedDisplay(speed);
+                        return speed;
+                    }
+                }
+            } catch (error) {
+                console.error("Get speed error:", error);
+            }
+            return null;
+        }
+
+        function updateSpeedDisplay(speed) {
+            const speedValueDisplay = document.getElementById('speedValue');
+            const speedSlider = document.getElementById('speedSlider');
+            const speedStatus = document.getElementById('speedStatus');
+            
+            if (speedValueDisplay) {
+                speedValueDisplay.innerText = speed;
+            }
+            
+            if (speedSlider) {
+                speedSlider.value = speed;
+            }
+            
+            if (speedStatus) {
+                const percentage = Math.round((speed / 255) * 100);
+                speedStatus.innerHTML = `Current speed: ${speed}/255 (${percentage}%)`;
+            }
+            
+            document.querySelectorAll('.speed-preset-btn').forEach(btn => {
+                const btnSpeed = parseInt(btn.dataset.speed);
+                if (btnSpeed === speed) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function parseSpeedFromSerial(data) {
+            if (!data) return null;
+            
+            if (data.startsWith('SPEED_SET:')) {
+                const speed = parseInt(data.substring(10));
+                if (!isNaN(speed)) {
+                    currentSpeed = speed;
+                    updateSpeedDisplay(speed);
+                    return speed;
+                }
+            }
+            return null;
         }
 
         // =============== ANGLE SENSING FUNCTIONS ===============
@@ -1693,9 +1789,7 @@
             const angleStatus = document.getElementById('angleStatus');
             const tiltValueInWheel = document.getElementById('tiltValue');
             
-            let directionText = '';
-            let directionClass = '';
-            let directionIcon = '';
+            let directionText = '', directionClass = '', directionIcon = '';
             
             if (validAngle > 5) {
                 directionIcon = '⬅️';
@@ -1759,7 +1853,7 @@
             
             const debugElem = document.getElementById('angleDebug');
             if (debugElem && angleUpdateCount % 10 === 0) {
-                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Speed: ${currentMotorSpeed}`;
+                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
             }
             
             lastWheelState.angle = validAngle;
@@ -1806,6 +1900,9 @@
 
         function parseAngleFromSerial(data) {
             if (!data) return null;
+            
+            parseSpeedFromSerial(data);
+            
             if (data.startsWith('ANGLE:')) {
                 const angleStr = data.substring(6).trim();
                 const angle = parseFloat(angleStr);
@@ -1822,7 +1919,7 @@
             angleFetchInterval = setInterval(() => {
                 fetchAngleData();
             }, 33);
-            console.log("Angle monitoring started");
+            console.log("Angle monitoring started at 33ms interval");
         }
 
         async function calibrateAngleSensor() {
@@ -1890,6 +1987,7 @@
                         updateConnectionStatus(true);
                         lastPing = Date.now();
                         startAngleMonitoring();
+                        getCurrentSpeed();
                         return true;
                     }
                 }
@@ -1905,7 +2003,7 @@
 
         async function sendCommand(command) {
             if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected!");
+                showToast("⚠️ ESP32 not connected! Check connection.");
                 return false;
             }
             
@@ -2019,11 +2117,6 @@
             if (connected) {
                 showToast("✅ Connected to ESP32 Bridge!");
                 addNotification("🔌 Connected", `Connected to ESP32 at ${esp32IP}`, false);
-                
-                // Send initial speed setting
-                setTimeout(() => {
-                    setMotorSpeed(currentMotorSpeed);
-                }, 500);
                 
                 if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
                 window.heartbeatInterval = setInterval(async () => {
@@ -2618,19 +2711,21 @@
         document.getElementById('connectBtn').onclick = connectToESP32;
         document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
 
-        // Speed control event handlers
+        // Speed control event listeners
         const speedSlider = document.getElementById('speedSlider');
-        speedSlider.addEventListener('input', (e) => {
-            const speed = parseInt(e.target.value);
-            document.getElementById('speedValue').innerText = speed;
-        });
+        if (speedSlider) {
+            speedSlider.addEventListener('input', (e) => {
+                const speed = parseInt(e.target.value);
+                updateSpeedDisplay(speed);
+                
+                if (speedUpdatePending) clearTimeout(speedUpdatePending);
+                speedUpdatePending = setTimeout(() => {
+                    setMotorSpeed(speed);
+                }, 300);
+            });
+        }
         
-        speedSlider.addEventListener('change', (e) => {
-            const speed = parseInt(e.target.value);
-            setMotorSpeed(speed);
-        });
-        
-        document.querySelectorAll('.preset-btn').forEach(btn => {
+        document.querySelectorAll('.speed-preset-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const speed = parseInt(btn.dataset.speed);
                 setMotorSpeed(speed);
