@@ -1072,29 +1072,38 @@ async function connectToArduino() {
         await disconnectFromArduino();
         return;
     }
-
+    
     try {
-        // 1. Request the port (removed filters to ensure all boards show up)
-        const port = await navigator.serial.requestPort();
+        // This filter specifically looks for USB-to-Serial chips 
+        // and ignores your Bluetooth speakers/headphones
+        const port = await navigator.serial.requestPort({
+            filters: [
+                { usbVendorId: 0x2341 }, // Official Arduino
+                { usbVendorId: 0x1A86 }, // Common Clone (CH340)
+                { usbVendorId: 0x10C4 }, // CP210x
+                { usbVendorId: 0x0403 }  // FTDI
+            ]
+        });
         
-        // 2. Open at 115200 (Matches Arduino code)
         await port.open({ baudRate: 115200 });
-
+        
         serialPort = port;
         isConnected = true;
         writer = port.writable.getWriter();
-
-        updateConnectionStatus(true);
-        document.getElementById('connectBtn').innerHTML = '🔌 Disconnect Arduino';
-        document.getElementById('connectBtn').classList.add('connected');
-        showToast("✅ Linked to Arduino!");
-
-        // 3. Start the continuous read loop
-        readSerialData();
         
+        updateConnectionStatus(true);
+        document.getElementById('connectBtn').innerHTML = '🔌 Disconnect';
+        showToast("✅ Connected!");
+        
+        readSerialData();
     } catch (error) {
         console.error("Link failed:", error);
-        showToast("❌ Connection error. See console (F12).");
+        // If it fails with "Failed to open", tell the user why
+        if (error.name === 'NetworkError') {
+            showToast("❌ Port busy! Close Arduino Serial Monitor.");
+        } else {
+            showToast("❌ Connection failed.");
+        }
     }
 }
     
