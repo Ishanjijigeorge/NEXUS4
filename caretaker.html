@@ -1474,170 +1474,170 @@
 
         // =============== FIXED ANGLE SENSING FUNCTIONS - SYNCHRONIZED ===============
         
-        function updateAngleDisplay(angle) {
-            // Validate and clamp angle to -45 to 45 degrees
-            let validAngle = Math.min(45, Math.max(-45, angle));
+       function updateAngleDisplay(angle) {
+    // Validate and clamp angle to -45 to 45 degrees
+    let validAngle = Math.min(45, Math.max(-45, angle));
+    
+    // Store for debug
+    lastAngleValue = validAngle;
+    angleUpdateCount++;
+    
+    // Update angle value display
+    const angleValueElem = document.getElementById('angleValue');
+    if (angleValueElem) {
+        const angleFormatted = validAngle.toFixed(1);
+        angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+    }
+    
+    // Get the track element to calculate positions
+    const track = document.getElementById('angleBarTrack');
+    if (track) {
+        const trackWidth = track.offsetWidth;
+        const centerX = trackWidth / 2;
+        const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
+        
+        // Calculate dot position - moves in SAME direction as angle
+        // Positive angle = LEFT turn (dot moves LEFT)
+        // Negative angle = RIGHT turn (dot moves RIGHT)
+        const dotOffset = (validAngle / 45) * maxOffset;
+        const dotLeft = centerX + dotOffset;
+        
+        // Update indicator dot position
+        const indicatorDot = document.getElementById('angleIndicatorDot');
+        if (indicatorDot) {
+            indicatorDot.style.left = `${dotLeft}px`;
             
-            // Store for debug
-            lastAngleValue = validAngle;
-            angleUpdateCount++;
-            
-            // Update angle value display
-            const angleValueElem = document.getElementById('angleValue');
-            if (angleValueElem) {
-                const angleFormatted = validAngle.toFixed(1);
-                angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
-            }
-            
-            // Get the track element to calculate positions
-            const track = document.getElementById('angleBarTrack');
-            if (track) {
-                const trackWidth = track.offsetWidth;
-                const centerX = trackWidth / 2;
-                const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
-                
-                // Calculate dot position - moves in SAME direction as angle
-                // Positive angle = LEFT turn (dot moves LEFT)
-                // Negative angle = RIGHT turn (dot moves RIGHT)
-                const dotOffset = (validAngle / 45) * maxOffset;
-                const dotLeft = centerX + dotOffset;
-                
-                // Update indicator dot position
-                const indicatorDot = document.getElementById('angleIndicatorDot');
-                if (indicatorDot) {
-                    indicatorDot.style.left = `${dotLeft}px`;
-                    
-                    // Change dot color based on severity
-                    if (Math.abs(validAngle) > 25) {
-                        indicatorDot.style.background = '#dc2626';
-                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
-                    } else if (Math.abs(validAngle) > 18) {
-                        indicatorDot.style.background = '#f59e0b';
-                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
-                    } else {
-                        indicatorDot.style.background = '#3b82f6';
-                        indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                    }
-                }
-                
-                // Calculate fill percentages - BOTH expand from center in SAME direction as dot
-                // LEFT fill (positive angle): expands from center to left
-                // RIGHT fill (negative angle): expands from center to right
-                const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
-                const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
-                
-                // Update left fill (expands left from center)
-                const fillLeft = document.getElementById('angleFillLeft');
-                if (fillLeft) {
-                    fillLeft.style.width = `${leftFillPercent}%`;
-                    // Change color based on angle severity
-                    if (validAngle > 25) {
-                        fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
-                    } else if (validAngle > 18) {
-                        fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-                    } else if (validAngle > 0) {
-                        fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
-                    }
-                }
-                
-                // Update right fill (expands right from center)
-                const fillRight = document.getElementById('angleFillRight');
-                if (fillRight) {
-                    fillRight.style.width = `${rightFillPercent}%`;
-                    // Change color based on angle severity
-                    if (validAngle < -25) {
-                        fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
-                    } else if (validAngle < -18) {
-                        fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
-                    } else if (validAngle < 0) {
-                        fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
-                    }
-                }
-            }
-            
-            // Update direction text (using actual angle)
-            const angleDirectionElem = document.getElementById('angleDirection');
-            const angleCard = document.getElementById('angleCard');
-            const angleStatus = document.getElementById('angleStatus');
-            const tiltValueInWheel = document.getElementById('tiltValue');
-            
-            let directionText = '';
-            let directionClass = '';
-            let directionIcon = '';
-            
-            // Positive angle = LEFT turn
-            if (validAngle > 5) {
-                directionIcon = '⬅️';
-                directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
-                directionClass = 'left';
-            } else if (validAngle < -5) {
-                directionIcon = '➡️';
-                directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
-                directionClass = 'right';
-            } else {
-                directionIcon = '✓';
-                directionText = 'STRAIGHT (centered)';
-                directionClass = 'straight';
-            }
-            
-            if (angleDirectionElem) {
-                angleDirectionElem.className = `angle-direction ${directionClass}`;
-                angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
-            }
-            
-            // Update tilt value in wheel popup
-            if (tiltValueInWheel) {
-                tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
-            }
-            
-            // Update status and warnings
+            // Change dot color based on severity
             if (Math.abs(validAngle) > 25) {
-                angleCard.classList.add('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
-                    angleStatus.style.background = '#fee2e2';
-                    angleStatus.style.color = '#dc2626';
-                    angleStatus.style.fontWeight = 'bold';
-                }
-                
-                // Add notification on threshold crossing
-                if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
-                    addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
-                }
+                indicatorDot.style.background = '#dc2626';
+                indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
             } else if (Math.abs(validAngle) > 18) {
-                angleCard.classList.add('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
-                    angleStatus.style.background = '#fffbeb';
-                    angleStatus.style.color = '#f59e0b';
-                    angleStatus.style.fontWeight = '500';
-                }
-            } else if (Math.abs(validAngle) > 10) {
-                angleCard.classList.remove('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
-                    angleStatus.style.background = '#fffbeb';
-                    angleStatus.style.color = '#f59e0b';
-                    angleStatus.style.fontWeight = 'normal';
-                }
+                indicatorDot.style.background = '#f59e0b';
+                indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
             } else {
-                angleCard.classList.remove('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
-                    angleStatus.style.background = '#dcfce7';
-                    angleStatus.style.color = '#166534';
-                    angleStatus.style.fontWeight = 'normal';
-                }
+                indicatorDot.style.background = '#3b82f6';
+                indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
             }
-            
-            // Update debug info every 10 updates
-            const debugElem = document.getElementById('angleDebug');
-            if (debugElem && angleUpdateCount % 10 === 0) {
-                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
-            }
-            
-            lastWheelState.angle = validAngle;
         }
+        
+        // FIXED: Bar fill - MUST go in SAME direction as the dot
+        // LEFT fill (positive angle): expands from center to left
+        // RIGHT fill (negative angle): expands from center to right
+    const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+        
+        // Update left fill (expands left from center) - for LEFT turn
+        const fillLeft = document.getElementById('angleFillLeft');
+        if (fillLeft) {
+            fillLeft.style.width = `${leftFillPercent}%`;
+            // Change color based on angle severity
+            if (validAngle > 25) {
+                fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
+            } else if (validAngle > 18) {
+                fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+            } else if (validAngle > 0) {
+                fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
+            }
+        }
+        
+        // Update right fill (expands right from center) - for RIGHT turn
+        const fillRight = document.getElementById('angleFillRight');
+        if (fillRight) {
+            fillRight.style.width = `${rightFillPercent}%`;
+            // Change color based on angle severity
+            if (validAngle < -25) {
+                fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
+            } else if (validAngle < -18) {
+                fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+            } else if (validAngle < 0) {
+                fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
+            }
+        }
+    }
+    
+    // Update direction text (using actual angle)
+    const angleDirectionElem = document.getElementById('angleDirection');
+    const angleCard = document.getElementById('angleCard');
+    const angleStatus = document.getElementById('angleStatus');
+    const tiltValueInWheel = document.getElementById('tiltValue');
+    
+    let directionText = '';
+    let directionClass = '';
+    let directionIcon = '';
+    
+    // Positive angle = LEFT turn
+    if (validAngle > 5) {
+        directionIcon = '⬅️';
+        directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+        directionClass = 'left';
+    } else if (validAngle < -5) {
+        directionIcon = '➡️';
+        directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+        directionClass = 'right';
+    } else {
+        directionIcon = '✓';
+        directionText = 'STRAIGHT (centered)';
+        directionClass = 'straight';
+    }
+    
+    if (angleDirectionElem) {
+        angleDirectionElem.className = `angle-direction ${directionClass}`;
+        angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+    }
+    
+    // Update tilt value in wheel popup
+    if (tiltValueInWheel) {
+        tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+    }
+    
+    // Update status and warnings
+    if (Math.abs(validAngle) > 25) {
+        angleCard.classList.add('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+            angleStatus.style.background = '#fee2e2';
+            angleStatus.style.color = '#dc2626';
+            angleStatus.style.fontWeight = 'bold';
+        }
+        
+        // Add notification on threshold crossing
+        if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+            addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+        }
+    } else if (Math.abs(validAngle) > 18) {
+        angleCard.classList.add('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+            angleStatus.style.background = '#fffbeb';
+            angleStatus.style.color = '#f59e0b';
+            angleStatus.style.fontWeight = '500';
+        }
+    } else if (Math.abs(validAngle) > 10) {
+        angleCard.classList.remove('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
+            angleStatus.style.background = '#fffbeb';
+            angleStatus.style.color = '#f59e0b';
+            angleStatus.style.fontWeight = 'normal';
+        }
+    } else {
+        angleCard.classList.remove('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+            angleStatus.style.background = '#dcfce7';
+            angleStatus.style.color = '#166534';
+            angleStatus.style.fontWeight = 'normal';
+        }
+    }
+    
+    // Update debug info every 10 updates
+    const debugElem = document.getElementById('angleDebug');
+    if (debugElem && angleUpdateCount % 10 === 0) {
+        debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
+    }
+    
+    lastWheelState.angle = validAngle;
+}
 
         // Fast angle fetch with optimized polling
         let angleFetchInterval = null;
