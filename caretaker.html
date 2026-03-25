@@ -1186,28 +1186,29 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- NEW: Angle Sensing Card - Real-time tilt display like OLED -->
-    <div class="angle-card" id="angleCard">
-        <div class="angle-header">
-            <h3>📐 Tilt Angle (Gyro)</h3>
-            <span id="angleUnit">°</span>
-        </div>
-        <div class="angle-value" id="angleValue">
-            0.0<span>°</span>
-        </div>
-        <div class="angle-bar-container">
-            <div class="angle-bar" id="angleBar"></div>
-        </div>
-        <div class="angle-marker">
-            <div class="angle-marker-line" style="left: 50%;"></div>
-        </div>
-        <div class="angle-direction" id="angleDirection">
-            STRAIGHT
-        </div>
-        <div class="angle-status" id="angleStatus">
-            Waiting for data...
-        </div>
+ <!-- UPDATED: Angle Sensing Card with Center-based Bar -->
+<div class="angle-card" id="angleCard">
+    <div class="angle-header">
+        <h3>📐 Tilt Angle (Gyro)</h3>
+        <button class="calibrate-angle-btn" id="calibrateAngleBtn" onclick="calibrateAngleSensor()">Calibrate</button>
     </div>
+    <div class="angle-value" id="angleValue">
+        0.0<span>°</span>
+    </div>
+    
+    <!-- Center-based bar container -->
+    <div class="angle-bar-container" id="angleBarContainer">
+        <div class="angle-bar-fill" id="angleBar"></div>
+        <div class="angle-bar-indicator" id="angleBarIndicator"></div>
+    </div>
+    
+    <div class="angle-direction" id="angleDirection">
+        ✓ STRAIGHT
+    </div>
+    <div class="angle-status" id="angleStatus">
+        Waiting for data...
+    </div>
+</div>
 
     <div class="map-card">
         <div class="gps-header">
