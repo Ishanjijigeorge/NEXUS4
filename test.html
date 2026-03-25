@@ -118,12 +118,10 @@
                 opacity: 1;
                 transform: scale(1);
             }
-
             50% {
                 opacity: 0.5;
                 transform: scale(1.2);
             }
-
             100% {
                 opacity: 1;
                 transform: scale(1);
@@ -546,6 +544,285 @@
             border-radius: 40px;
         }
 
+        /* Speed Control Card */
+        .speed-control-card {
+            background: white;
+            border-radius: 28px;
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+        }
+
+        .speed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .speed-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .speed-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--blue);
+            background: #e5edff;
+            padding: 4px 16px;
+            border-radius: 40px;
+        }
+
+        .speed-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .speed-slider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #e2e8f0;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .speed-slider::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+
+        .speed-presets {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .preset-btn {
+            flex: 1;
+            background: #f1f5f9;
+            border: none;
+            padding: 8px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+
+        .preset-btn.active {
+            background: var(--blue);
+            color: white;
+        }
+
+        .preset-btn:hover {
+            background: #e5edff;
+        }
+
+        .speed-warning {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 10px;
+            padding: 6px;
+            border-radius: 20px;
+            background: #fffbeb;
+            color: #f59e0b;
+        }
+
+        /* Fixed Angle Card Styles - Synchronized Bar and Dot */
+        .angle-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .angle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .angle-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .angle-value {
+            font-size: 56px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--blue);
+            margin: 10px 0;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+
+        .angle-value span {
+            font-size: 32px;
+        }
+
+        /* Center-based bar track */
+        .angle-bar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 8px;
+            position: relative;
+            margin: 20px 0;
+            overflow: visible;
+        }
+
+        /* Center marker line */
+        .angle-center-marker {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            width: 3px;
+            height: 32px;
+            background: #dc2626;
+            transform: translateX(-50%);
+            border-radius: 2px;
+            z-index: 2;
+        }
+
+        /* Left fill - expands from center to left */
+        .angle-bar-fill-left {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6);
+            border-radius: 20px 0 0 20px;
+            right: 50%;
+            transition: width 0.05s linear;
+            transform-origin: right center;
+        }
+
+        /* Right fill - expands from center to right */
+        .angle-bar-fill-right {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626);
+            border-radius: 0 20px 20px 0;
+            left: 50%;
+            transition: width 0.05s linear;
+            transform-origin: left center;
+        }
+
+        /* Moving indicator dot */
+        .angle-indicator-dot {
+            position: absolute;
+            top: -10px;
+            width: 28px;
+            height: 28px;
+            background: #1d4ed8;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 3;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        /* Markers below the bar */
+        .angle-markers {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .angle-direction {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 40px;
+            background: #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .angle-direction.left {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .angle-direction.right {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .angle-direction.straight {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .angle-warning {
+            border: 2px solid #dc2626;
+            animation: warning-pulse 1s ease-in-out;
+        }
+
+        @keyframes warning-pulse {
+            0%, 100% { border-color: #dc2626; }
+            50% { border-color: #ff6b6b; }
+        }
+
+        .angle-status {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+            padding: 8px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .angle-debug {
+            font-size: 9px;
+            text-align: center;
+            margin-top: 8px;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .calibrate-btn {
+            background: #eef2ff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--blue);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calibrate-btn:active {
+            transform: scale(0.95);
+        }
+
         .map-card {
             background: white;
             border-radius: 28px;
@@ -803,7 +1080,6 @@
                 transform: translateY(100px);
                 opacity: 0;
             }
-
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -886,7 +1162,6 @@
                 opacity: 0;
                 transform: translate(-50%, -50%) scale(0.9);
             }
-
             to {
                 opacity: 1;
                 transform: translate(-50%, -50%) scale(1);
@@ -943,12 +1218,10 @@
                 opacity: 1;
                 transform: translateY(0);
             }
-
             70% {
                 opacity: 1;
                 transform: translateY(0);
             }
-
             100% {
                 opacity: 0;
                 transform: translateY(-20px);
@@ -1019,6 +1292,62 @@
     <div class="drive-mode-card">
         <span class="mode-label">Drive mode</span>
         <span class="mode-value" id="modeDisplay">Line Following</span>
+    </div>
+
+    <!-- Speed Control Card - NEW -->
+    <div class="speed-control-card">
+        <div class="speed-header">
+            <h3>⚡ Speed Control</h3>
+            <div class="speed-value" id="speedValueDisplay">20%</div>
+        </div>
+        <div class="speed-slider-container">
+            <span>🐢</span>
+            <input type="range" id="speedSlider" class="speed-slider" min="0" max="100" value="20" step="1">
+            <span>🐇</span>
+        </div>
+        <div class="speed-presets">
+            <button class="preset-btn" data-speed="10">Slow (10%)</button>
+            <button class="preset-btn active" data-speed="20">Normal (20%)</button>
+            <button class="preset-btn" data-speed="35">Medium (35%)</button>
+            <button class="preset-btn" data-speed="50">Fast (50%)</button>
+        </div>
+        <div class="speed-warning" id="speedWarning">
+            ⚠️ High speeds only for experienced users
+        </div>
+    </div>
+
+    <!-- Angle Sensing Card - Synchronized Bar and Dot -->
+    <div class="angle-card" id="angleCard">
+        <div class="angle-header">
+            <h3>📐 Tilt Angle</h3>
+            <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
+        </div>
+        <div class="angle-value" id="angleValue">
+            0.0<span>°</span>
+        </div>
+        
+        <!-- Center-based bar visualization -->
+        <div class="angle-bar-track" id="angleBarTrack">
+            <div class="angle-bar-fill-left" id="angleFillLeft"></div>
+            <div class="angle-bar-fill-right" id="angleFillRight"></div>
+            <div class="angle-center-marker"></div>
+            <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
+        </div>
+        <div class="angle-markers">
+            <span>45° LEFT</span>
+            <span>|</span>
+            <span>CENTER</span>
+            <span>|</span>
+            <span>45° RIGHT</span>
+        </div>
+        
+        <div class="angle-direction" id="angleDirection">
+            ✓ STRAIGHT
+        </div>
+        <div class="angle-status" id="angleStatus">
+            Waiting for data...
+        </div>
+        <div class="angle-debug" id="angleDebug"></div>
     </div>
 
     <div class="map-card">
@@ -1227,6 +1556,13 @@
         let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
+        let lastAngleValue = 0;
+        let angleUpdateCount = 0;
+        
+        // Speed control variables
+        let currentSpeedPercent = 20;
+        let currentSpeedValue = 50; // PWM value (0-255)
+        let lastSpeedSend = 0;
 
         // Health monitoring state
         let lastHealthState = {
@@ -1263,6 +1599,340 @@
             ]
         };
 
+        // =============== SPEED CONTROL FUNCTIONS ===============
+        
+        function updateSpeedDisplay() {
+            const speedDisplay = document.getElementById('speedValueDisplay');
+            const speedSlider = document.getElementById('speedSlider');
+            if (speedDisplay) speedDisplay.innerText = `${currentSpeedPercent}%`;
+            if (speedSlider) speedSlider.value = currentSpeedPercent;
+            
+            // Update warning color based on speed
+            const speedWarning = document.getElementById('speedWarning');
+            if (currentSpeedPercent > 40) {
+                speedWarning.style.background = '#fee2e2';
+                speedWarning.style.color = '#dc2626';
+                speedWarning.innerHTML = '⚠️ HIGH SPEED - Exercise caution!';
+            } else if (currentSpeedPercent > 25) {
+                speedWarning.style.background = '#fffbeb';
+                speedWarning.style.color = '#f59e0b';
+                speedWarning.innerHTML = '⚠️ Moderate speed - Stay alert';
+            } else {
+                speedWarning.style.background = '#dcfce7';
+                speedWarning.style.color = '#166534';
+                speedWarning.innerHTML = '✓ Safe speed range';
+            }
+            
+            // Update active preset button
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                const btnSpeed = parseInt(btn.dataset.speed);
+                if (btnSpeed === currentSpeedPercent) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        async function sendSpeedToArduino() {
+            if (!esp32Connected) {
+                return false;
+            }
+            
+            // Calculate PWM value (0-255) from percentage (0-100)
+            const pwmValue = Math.round((currentSpeedPercent / 100) * 255);
+            currentSpeedValue = pwmValue;
+            
+            // Send speed command to Arduino
+            const command = `SPEED:${currentSpeedPercent}`;
+            const success = await sendCommand(command);
+            
+            if (success) {
+                addNotification('⚡ Speed Changed', `Wheelchair speed set to ${currentSpeedPercent}% (PWM: ${pwmValue})`, false);
+            }
+            
+            return success;
+        }
+        
+        function setSpeed(percent) {
+            // Clamp between 0 and 100
+            percent = Math.min(100, Math.max(0, percent));
+            currentSpeedPercent = percent;
+            updateSpeedDisplay();
+            sendSpeedToArduino();
+        }
+        
+        // =============== FIXED ANGLE SENSING FUNCTIONS - SYNCHRONIZED ===============
+        
+        function updateAngleDisplay(angle) {
+            // Validate and clamp angle to -45 to 45 degrees
+            let validAngle = Math.min(45, Math.max(-45, angle));
+            
+            // Store for debug
+            lastAngleValue = validAngle;
+            angleUpdateCount++;
+            
+            // Update angle value display
+            const angleValueElem = document.getElementById('angleValue');
+            if (angleValueElem) {
+                const angleFormatted = validAngle.toFixed(1);
+                angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+            }
+            
+            // Get the track element to calculate positions
+            const track = document.getElementById('angleBarTrack');
+            if (track) {
+                const trackWidth = track.offsetWidth;
+                const centerX = trackWidth / 2;
+                const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
+                
+                // Calculate dot position - moves in SAME direction as angle
+                const dotOffset = (validAngle / 45) * maxOffset;
+                const dotLeft = centerX + dotOffset;
+                
+                // Update indicator dot position
+                const indicatorDot = document.getElementById('angleIndicatorDot');
+                if (indicatorDot) {
+                    indicatorDot.style.left = `${dotLeft}px`;
+                    
+                    // Change dot color based on severity
+                    if (Math.abs(validAngle) > 25) {
+                        indicatorDot.style.background = '#dc2626';
+                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
+                    } else if (Math.abs(validAngle) > 18) {
+                        indicatorDot.style.background = '#f59e0b';
+                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
+                    } else {
+                        indicatorDot.style.background = '#3b82f6';
+                        indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                    }
+                }
+                
+                // Bar fill - goes in SAME direction as the dot
+                const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+                const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+                
+                // Update left fill (expands left from center) - for LEFT turn
+                const fillLeft = document.getElementById('angleFillLeft');
+                if (fillLeft) {
+                    fillLeft.style.width = `${leftFillPercent}%`;
+                    if (validAngle > 25) {
+                        fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
+                    } else if (validAngle > 18) {
+                        fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+                    } else if (validAngle > 0) {
+                        fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
+                    }
+                }
+                
+                // Update right fill (expands right from center) - for RIGHT turn
+                const fillRight = document.getElementById('angleFillRight');
+                if (fillRight) {
+                    fillRight.style.width = `${rightFillPercent}%`;
+                    if (validAngle < -25) {
+                        fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
+                    } else if (validAngle < -18) {
+                        fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+                    } else if (validAngle < 0) {
+                        fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
+                    }
+                }
+            }
+            
+            // Update direction text
+            const angleDirectionElem = document.getElementById('angleDirection');
+            const angleCard = document.getElementById('angleCard');
+            const angleStatus = document.getElementById('angleStatus');
+            const tiltValueInWheel = document.getElementById('tiltValue');
+            
+            let directionText = '';
+            let directionClass = '';
+            let directionIcon = '';
+            
+            if (validAngle > 5) {
+                directionIcon = '⬅️';
+                directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+                directionClass = 'left';
+            } else if (validAngle < -5) {
+                directionIcon = '➡️';
+                directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+                directionClass = 'right';
+            } else {
+                directionIcon = '✓';
+                directionText = 'STRAIGHT (centered)';
+                directionClass = 'straight';
+            }
+            
+            if (angleDirectionElem) {
+                angleDirectionElem.className = `angle-direction ${directionClass}`;
+                angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+            }
+            
+            // Update tilt value in wheel popup
+            if (tiltValueInWheel) {
+                tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+            }
+            
+            // Update status and warnings
+            if (Math.abs(validAngle) > 25) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
+                    angleStatus.style.fontWeight = 'bold';
+                }
+                
+                if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+                    addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+                }
+            } else if (Math.abs(validAngle) > 18) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                    angleStatus.style.fontWeight = '500';
+                }
+            } else if (Math.abs(validAngle) > 10) {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                    angleStatus.style.fontWeight = 'normal';
+                }
+            } else {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                    angleStatus.style.fontWeight = 'normal';
+                }
+            }
+            
+            // Update debug info
+            const debugElem = document.getElementById('angleDebug');
+            if (debugElem && angleUpdateCount % 10 === 0) {
+                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Speed: ${currentSpeedPercent}%`;
+            }
+            
+            lastWheelState.angle = validAngle;
+        }
+
+        // Fast angle fetch
+        let angleFetchInterval = null;
+        let lastFetchTime = 0;
+
+        async function fetchAngleData() {
+            if (!esp32Connected) {
+                return null;
+            }
+            
+            const now = Date.now();
+            if (now - lastFetchTime < 30) {
+                return null;
+            }
+            lastFetchTime = now;
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300);
+                
+                const response = await fetch(`http://${esp32IP}/angle`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    const angle = parseFloat(data);
+                    if (!isNaN(angle) && isFinite(angle)) {
+                        updateAngleDisplay(angle);
+                        return angle;
+                    }
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError' && Math.random() < 0.02) {
+                    console.log("Angle fetch:", error.message);
+                }
+            }
+            return null;
+        }
+
+        // Parse angle from Arduino serial data
+        function parseAngleFromSerial(data) {
+            if (!data) return null;
+            
+            if (data.startsWith('ANGLE:')) {
+                const angleStr = data.substring(6).trim();
+                const angle = parseFloat(angleStr);
+                if (!isNaN(angle) && isFinite(angle)) {
+                    updateAngleDisplay(angle);
+                    return angle;
+                }
+            }
+            return null;
+        }
+
+        // Start angle monitoring
+        function startAngleMonitoring() {
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
+            angleFetchInterval = setInterval(() => {
+                fetchAngleData();
+            }, 33);
+            console.log("Angle monitoring started at 33ms interval");
+        }
+
+        // Calibrate angle sensor
+        async function calibrateAngleSensor() {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
+                return false;
+            }
+            
+            try {
+                const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    showToast("📐 Calibration requested - keep wheelchair level");
+                    addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level for 5 seconds", false);
+                    updateAngleDisplay(0);
+                    
+                    const calibrateBtn = document.getElementById('calibrateAngleBtn');
+                    if (calibrateBtn) {
+                        calibrateBtn.textContent = 'Calibrating...';
+                        calibrateBtn.disabled = true;
+                        setTimeout(() => {
+                            calibrateBtn.textContent = 'Calibrate';
+                            calibrateBtn.disabled = false;
+                        }, 3000);
+                    }
+                    return true;
+                }
+            } catch (error) {
+                console.error("Calibration error:", error);
+                showToast("❌ Calibration failed");
+            }
+            return false;
+        }
+
+        // Add window resize handler
+        window.addEventListener('resize', () => {
+            if (lastAngleValue !== undefined) {
+                setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
+            }
+        });
+
         // =============== ESP32 BRIDGE FUNCTIONS ===============
 
         async function testESP32Connection() {
@@ -1285,6 +1955,9 @@
                         esp32Connected = true;
                         updateConnectionStatus(true);
                         lastPing = Date.now();
+                        startAngleMonitoring();
+                        // Send initial speed to Arduino
+                        setTimeout(() => sendSpeedToArduino(), 500);
                         return true;
                     }
                 }
@@ -1294,6 +1967,7 @@
             
             esp32Connected = false;
             updateConnectionStatus(false);
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
             return false;
         }
 
@@ -1366,6 +2040,7 @@
             const statusDiv = document.getElementById('connectionStatus');
             const statusText = document.getElementById('connectionText');
             const connectBtn = document.getElementById('connectBtn');
+            const angleStatus = document.getElementById('angleStatus');
             
             if (connected) {
                 statusDiv.className = 'connection-status connected';
@@ -1374,12 +2049,22 @@
                     connectBtn.innerHTML = '🔌 Disconnect';
                     connectBtn.classList.add('connected');
                 }
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Connected - Receiving angle data';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                }
             } else {
                 statusDiv.className = 'connection-status disconnected';
                 statusText.innerText = 'ESP32 Disconnected';
                 if (connectBtn) {
                     connectBtn.innerHTML = '🔌 Connect to ESP32';
                     connectBtn.classList.remove('connected');
+                }
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ Disconnected - Waiting for ESP32';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
                 }
             }
         }
@@ -1389,8 +2074,8 @@
                 esp32Connected = false;
                 updateConnectionStatus(false);
                 showToast("Disconnected from ESP32");
-                if (window.heartbeatInterval) {
-                    clearInterval(window.heartbeatInterval);
+                if (angleFetchInterval) {
+                    clearInterval(angleFetchInterval);
                 }
                 return;
             }
@@ -1444,6 +2129,10 @@
             const line = document.createElement('div');
             line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
             consoleContent.appendChild(line);
+            
+            if (!isOutgoing) {
+                parseAngleFromSerial(message);
+            }
             
             line.scrollIntoView();
             
@@ -1903,10 +2592,12 @@
             let battery = lastWheelState.battery - (Math.random() * 1.5);
             battery = Math.max(10, Math.min(100, battery));
             
-            let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
+            // Adjust speed simulation based on current speed setting
+            let speed = (currentSpeedPercent / 100) * 2.5 + (Math.random() * 0.5);
+            speed = Math.min(3.5, Math.max(0.5, speed));
             
             document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
-            document.getElementById('speedValue').innerText = speed + ' m/s';
+            document.getElementById('speedValue').innerText = speed.toFixed(1) + ' m/s';
             
             const r = Math.random();
             const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
@@ -1922,14 +2613,14 @@
             }
             
             const speedNum = parseFloat(speed);
-            if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
-                addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
+            if (speedNum > 2.5 && lastWheelState.speed <= 2.5) {
+                addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum.toFixed(1)} m/s - Please reduce speed`, true);
                 document.getElementById('speedDetail').classList.add('warning');
-            } else if (speedNum <= 2.0) {
+            } else if (speedNum <= 2.5) {
                 document.getElementById('speedDetail').classList.remove('warning');
             }
             
-            lastWheelState = { battery, speed: speedNum };
+            lastWheelState = { battery, speed: speedNum, angle: lastWheelState.angle };
         }
 
         // =============== POPUP FUNCTIONS ===============
@@ -1959,6 +2650,7 @@
         window.clearAllNotifications = clearAllNotifications;
         window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
         window.toggleSerialConsole = toggleSerialConsole;
+        window.calibrateAngleSensor = calibrateAngleSensor;
 
         // =============== INITIALIZATION ===============
 
@@ -1976,6 +2668,21 @@
             }
         });
 
+        // Speed control event listeners
+        const speedSlider = document.getElementById('speedSlider');
+        if (speedSlider) {
+            speedSlider.addEventListener('input', (e) => {
+                setSpeed(parseInt(e.target.value));
+            });
+        }
+        
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const speed = parseInt(btn.dataset.speed);
+                setSpeed(speed);
+            });
+        });
+
         document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
         document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
         document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
@@ -1989,6 +2696,7 @@
         document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
         document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
         document.getElementById('connectBtn').onclick = connectToESP32;
+        document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
 
         document.querySelectorAll('.ctrl-btn').forEach(btn => {
             btn.onclick = () => sendControlCommand(btn.dataset.cmd);
@@ -2034,10 +2742,8 @@
 
         window.onload = () => {
             document.getElementById('controlPad').style.display = 'none';
-            
-            if (!('serial' in navigator)) {
-                console.log("Web Serial API not needed - using ESP32 bridge");
-            }
+            updateAngleDisplay(0);
+            updateSpeedDisplay();
             
             setTimeout(() => {
                 testESP32Connection();
