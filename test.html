@@ -1059,62 +1059,60 @@
         ]
     };
     
-    // Replace your existing Serial variables with these
 let socket = null;
 let isConnected = false;
 
-async function connectToArduino() {
-    if (isConnected) {
+function connectToArduino() {
+    if (isConnected && socket) {
         socket.close();
         return;
     }
 
-    const ip = prompt("Enter ESP32 IP Address:", "192.168.234.126");
+    const ip = prompt("Enter ESP32 IP Address:", "192.168.1.XX");
     if (!ip) return;
 
+    // We use port 81 because that is what the ESP32 code is listening on
     socket = new WebSocket(`ws://${ip}:81`);
 
     socket.onopen = () => {
         isConnected = true;
         updateConnectionStatus(true);
-        document.getElementById('connectBtn').innerHTML = '📡 Disconnect Wi-Fi';
-        showToast("✅ Wireless Connected!");
-        addNotification("📶 Wi-Fi", "Connected to ESP32 Bridge", false);
+        document.getElementById('connectBtn').innerHTML = '📡 Disconnect';
+        showToast("✅ Wireless Link Established");
     };
 
     socket.onmessage = (event) => {
         const data = event.data.trim();
-        if (data) {
-            handleArduinoData(data);
-            addToSerialConsole(data);
-        }
+        handleArduinoData(data); // This processes your ANGLE, TILT, and FWD messages
+        addToSerialConsole(data);
     };
 
     socket.onclose = () => {
         isConnected = false;
         updateConnectionStatus(false);
         document.getElementById('connectBtn').innerHTML = '🔌 Connect Wi-Fi';
-        showToast("❌ Connection Lost");
+        showToast("❌ Connection Closed");
+        // Optional: Auto-reconnect after 3 seconds
+        // setTimeout(connectToArduino, 3000);
     };
 
     socket.onerror = (error) => {
-        console.error("WS Error:", error);
-        showToast("🚀 Connection Failed. Check IP/Wi-Fi.");
+        console.error("WebSocket Error:", error);
+        showToast("🚀 Connection Failed. Is the IP correct?");
     };
 }
 
-// Update your sendCommand function to use WebSocket
+// Modify your existing sendCommand function
 async function sendCommand(command) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showToast("⚠️ Not connected to ESP32");
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(command);
+        showCommandFeedback(command);
+        addToSerialConsole("> " + command, true);
+        return true;
+    } else {
+        showToast("⚠️ Wireless not connected");
         return false;
     }
-    
-    socket.send(command);
-    console.log("Sent Wireless:", command);
-    showCommandFeedback(command);
-    addToSerialConsole("> " + command, true);
-    return true;
 }
     
     // =============== WEB SERIAL API FUNCTIONS ===============
