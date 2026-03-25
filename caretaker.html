@@ -1066,63 +1066,69 @@
     
     // =============== WEB SERIAL API FUNCTIONS ===============
     
-    async function connectToArduino() {
-        if (isConnected) {
-            await disconnectFromArduino();
-            return;
-        }
+// =============== ROBUST WEB SERIAL FUNCTIONS ===============
+async function connectToArduino() {
+    if (isConnected) {
+        await disconnectFromArduino();
+        return;
+    }
+
+    try {
+        // 1. Request the port (removed filters to ensure all boards show up)
+        const port = await navigator.serial.requestPort();
         
+        // 2. Open at 115200 (Matches Arduino code)
+        await port.open({ baudRate: 115200 });
+
+        serialPort = port;
+        isConnected = true;
+        writer = port.writable.getWriter();
+
+        updateConnectionStatus(true);
+        document.getElementById('connectBtn').innerHTML = '🔌 Disconnect Arduino';
+        document.getElementById('connectBtn').classList.add('connected');
+        showToast("✅ Linked to Arduino!");
+
+        // 3. Start the continuous read loop
+        readSerialData();
+        
+    } catch (error) {
+        console.error("Link failed:", error);
+        showToast("❌ Connection error. See console (F12).");
+    }
+}
+
+async function readSerialData() {
+    const decoder = new TextDecoder();
+    while (serialPort && serialPort.readable && isConnected) {
+        reader = serialPort.readable.getReader();
         try {
-            // Check if Web Serial API is supported
-            if (!('serial' in navigator)) {
-                showToast("❌ Web Serial API not supported. Please use Chrome/Edge browser.");
-                return;
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                
+                // Convert Uint8Array to string and add to buffer
+                serialBuffer += decoder.decode(value, { stream: true });
+                
+                // Process lines ended by newline
+                let lines = serialBuffer.split('\n');
+                serialBuffer = lines.pop(); // Keep partial line in buffer
+                
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed) {
+                        handleArduinoData(trimmed);
+                        addToSerialConsole(trimmed);
+                    }
+                }
             }
-            
-            // Request port selection from user
-            const port = await navigator.serial.requestPort({
-                filters: [
-                    { usbVendorId: 0x2341 }, // Arduino
-                    { usbVendorId: 0x1A86 }, // CH340/CH341
-                    { usbVendorId: 0x10C4 }, // CP210x
-                    { usbVendorId: 0x0403 }  // FTDI
-                ]
-            });
-            
-            // Open port at 115200 baud (match Arduino Serial.begin)
-            await port.open({ baudRate: 115200 });
-            
-            serialPort = port;
-            isConnected = true;
-            
-            // Set up text decoder and writer
-            const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-            reader = textDecoder.readable.getReader();
-            
-            writer = port.writable.getWriter();
-            
-            updateConnectionStatus(true);
-            document.getElementById('connectBtn').innerHTML = '🔌 Disconnect Arduino';
-            document.getElementById('connectBtn').classList.add('connected');
-            showToast("✅ Arduino connected successfully!");
-            addNotification("🔌 Connection", "Arduino connected via USB", false);
-            
-            // Start reading serial data
-            readSerialData();
-            
-            // Send initial handshake
-            await sendCommand("PING");
-            
-            // Start heartbeat check
-            startHeartbeatCheck();
-            
         } catch (error) {
-            console.error("Connection failed:", error);
-            showToast("❌ Failed to connect: " + error.message);
-            await disconnectFromArduino();
+            console.error("Read error:", error);
+        } finally {
+            reader.releaseLock();
         }
     }
+}
     
     async function disconnectFromArduino() {
         if (reader) {
