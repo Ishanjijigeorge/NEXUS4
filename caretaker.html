@@ -415,26 +415,29 @@
             position: relative;
             overflow: visible;
         }
+.angle-fill-left {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, #dc2626, #f59e0b, #fbbf24);
+    border-radius: 30px 0 0 30px;
+    right: 50%;
+    transition: width 0.05s linear;
+    width: 0%;
+    max-width: 50%;
+    transform-origin: right;
+}
 
-        .angle-fill-left {
-            position: absolute;
-            height: 100%;
-            background: linear-gradient(90deg, #dc2626, #f59e0b, #fbbf24);
-            border-radius: 30px 0 0 30px;
-            right: 50%;
-            transition: width 0.05s linear;
-            width: 0%;
-        }
-
-        .angle-fill-right {
-            position: absolute;
-            height: 100%;
-            background: linear-gradient(90deg, #fbbf24, #f59e0b, #3b82f6);
-            border-radius: 0 30px 30px 0;
-            left: 50%;
-            transition: width 0.05s linear;
-            width: 0%;
-        }
+.angle-fill-right {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b, #3b82f6);
+    border-radius: 0 30px 30px 0;
+    left: 50%;
+    transition: width 0.05s linear;
+    width: 0%;
+    max-width: 50%;
+    transform-origin: left;
+}
 
         .angle-center-marker {
             position: absolute;
@@ -961,23 +964,47 @@
 
         // =============== ANGLE FUNCTIONS ===============
         
-      function updateAngleDisplay(angle) {
+   function updateAngleDisplay(angle) {
     let validAngle = Math.min(45, Math.max(-45, angle));
     angleUpdateCount++;
     
     document.getElementById('angleValue').innerHTML = `${validAngle.toFixed(1)}<span>°</span>`;
     
-    // Calculate fill percentages - for left turn (positive angle), fill left side
+    // Calculate fill percentages - capped at 100% max
     const leftPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
     const rightPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
     
-    // Update fills
+    // Update fills - ensure they don't exceed 50% of track
     const fillLeft = document.getElementById('angleFillLeft');
     const fillRight = document.getElementById('angleFillRight');
-    if (fillLeft) fillLeft.style.width = `${leftPercent}%`;
-    if (fillRight) fillRight.style.width = `${rightPercent}%`;
     
-    // Update indicator dot position - MUST MOVE IN SAME DIRECTION AS FILL
+    if (fillLeft) {
+        // Left fill expands from center to left, max 50% of total width
+        fillLeft.style.width = `${leftPercent}%`;
+        // Change color based on severity
+        if (validAngle > 25) {
+            fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #ef4444, #f97316)';
+        } else if (validAngle > 18) {
+            fillLeft.style.background = 'linear-gradient(90deg, #f97316, #fbbf24, #fcd34d)';
+        } else {
+            fillLeft.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b, #fb923c)';
+        }
+    }
+    
+    if (fillRight) {
+        // Right fill expands from center to right, max 50% of total width
+        fillRight.style.width = `${rightPercent}%`;
+        // Change color based on severity
+        if (validAngle < -25) {
+            fillRight.style.background = 'linear-gradient(90deg, #f97316, #ef4444, #dc2626)';
+        } else if (validAngle < -18) {
+            fillRight.style.background = 'linear-gradient(90deg, #fcd34d, #fbbf24, #f97316)';
+        } else {
+            fillRight.style.background = 'linear-gradient(90deg, #fb923c, #f59e0b, #fbbf24)';
+        }
+    }
+    
+    // Update indicator dot position
     const indicator = document.getElementById('angleIndicator');
     const track = document.querySelector('.angle-track');
     if (indicator && track) {
@@ -985,9 +1012,7 @@
         if (trackWidth > 0) {
             const centerX = trackWidth / 2;
             const maxOffset = (trackWidth / 2) - 14;
-            // CRITICAL FIX: Use NEGATIVE offset for positive angles to move left
-            // Positive angle (left turn) = dot moves LEFT (negative offset)
-            // Negative angle (right turn) = dot moves RIGHT (positive offset)
+            // Dot moves left for positive angle, right for negative angle
             const offset = - (validAngle / 45) * maxOffset;
             indicator.style.left = `${centerX + offset}px`;
             
@@ -1040,7 +1065,6 @@
     
     lastWheelState.angle = validAngle;
 }
-
         let angleInterval = null;
         
         async function fetchAngleData() {
