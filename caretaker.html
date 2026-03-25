@@ -118,12 +118,10 @@
                 opacity: 1;
                 transform: scale(1);
             }
-
             50% {
                 opacity: 0.5;
                 transform: scale(1.2);
             }
-
             100% {
                 opacity: 1;
                 transform: scale(1);
@@ -546,171 +544,171 @@
             border-radius: 40px;
         }
 
-/* Updated Angle Card Styles with Center-based Bar */
-.angle-card {
-    background: white;
-    border-radius: 28px;
-    padding: 16px;
-    box-shadow: var(--shadow);
-    border: var(--outline);
-    margin-bottom: 16px;
-    position: relative;
-    overflow: hidden;
-}
+        /* Fixed Angle Card Styles */
+        .angle-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            position: relative;
+        }
 
-.angle-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
+        .angle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
 
-.angle-header h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-}
+        .angle-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
 
-.angle-value {
-    font-size: 48px;
-    font-weight: 800;
-    text-align: center;
-    color: var(--blue);
-    margin: 10px 0;
-    font-family: monospace;
-}
+        .angle-value {
+            font-size: 56px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--blue);
+            margin: 10px 0;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
 
-.angle-value span {
-    font-size: 28px;
-}
+        .angle-value span {
+            font-size: 32px;
+        }
 
-/* New Center-based Bar Container */
-.angle-bar-container {
-    background: #e2e8f0;
-    border-radius: 20px;
-    height: 12px;
-    margin: 20px 0;
-    position: relative;
-    overflow: visible;
-}
+        /* Fixed Center-based Bar */
+        .angle-bar-wrapper {
+            margin: 20px 0;
+            position: relative;
+        }
 
-/* Center line marker */
-.angle-bar-container::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: -8px;
-    width: 3px;
-    height: 28px;
-    background: var(--danger);
-    transform: translateX(-50%);
-    z-index: 2;
-    border-radius: 2px;
-}
+        .angle-bar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 8px;
+            position: relative;
+            margin: 20px 0;
+        }
 
-/* The moving bar indicator */
-.angle-bar-indicator {
-    position: absolute;
-    top: -4px;
-    width: 20px;
-    height: 20px;
-    background: #3b82f6;
-    border-radius: 50%;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: transform 0.1s ease-out;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    z-index: 3;
-}
+        .angle-bar-fill-left {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #f59e0b);
+            border-radius: 20px 0 0 20px;
+            right: 50%;
+            transition: width 0.05s linear;
+        }
 
-/* Alternative progress bar (fill from center) */
-.angle-bar-fill {
-    position: absolute;
-    height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-    border-radius: 20px;
-    transition: width 0.1s ease, margin-left 0.1s ease;
-    width: 0%;
-    left: 0;
-    top: 0;
-}
+        .angle-bar-fill-right {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #3b82f6);
+            border-radius: 0 20px 20px 0;
+            left: 50%;
+            transition: width 0.05s linear;
+        }
 
-.angle-marker {
-    position: relative;
-    height: 20px;
-    margin-top: 5px;
-}
+        .angle-center-marker {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            width: 4px;
+            height: 32px;
+            background: var(--danger);
+            transform: translateX(-50%);
+            border-radius: 2px;
+            z-index: 2;
+        }
 
-.angle-direction {
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    margin-top: 15px;
-    padding: 8px;
-    border-radius: 20px;
-    background: #f1f5f9;
-    transition: all 0.2s ease;
-}
+        .angle-indicator-dot {
+            position: absolute;
+            top: -10px;
+            width: 28px;
+            height: 28px;
+            background: var(--blue);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 3;
+            border: 2px solid white;
+        }
 
-.angle-direction.left {
-    background: #dbeafe;
-    color: #1e3a8a;
-}
+        .angle-markers {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 10px;
+        }
 
-.angle-direction.right {
-    background: #fee2e2;
-    color: #991b1b;
-}
+        .angle-direction {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 40px;
+            background: #f1f5f9;
+        }
 
-.angle-direction.straight {
-    background: #dcfce7;
-    color: #166534;
-}
+        .angle-direction.left {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
 
-.angle-warning {
-    border: 2px solid #dc2626;
-    animation: pulse-warning 1s infinite;
-}
+        .angle-direction.right {
+            background: #fee2e2;
+            color: #991b1b;
+        }
 
-@keyframes pulse-warning {
-    0% {
-        border-color: #dc2626;
-        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
-    }
-    70% {
-        border-color: #dc2626;
-        box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
-    }
-    100% {
-        border-color: #dc2626;
-        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-    }
-}
+        .angle-direction.straight {
+            background: #dcfce7;
+            color: #166534;
+        }
 
-.angle-status {
-    font-size: 12px;
-    text-align: center;
-    margin-top: 12px;
-    color: var(--muted);
-    font-weight: 500;
-}
+        .angle-warning {
+            border: 2px solid #dc2626;
+            animation: warning-pulse 1s ease-in-out;
+        }
 
-/* Calibration button (optional) */
-.calibrate-angle-btn {
-    background: #eef2ff;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    cursor: pointer;
-    color: var(--blue);
-    font-weight: 600;
-    transition: all 0.2s;
-}
+        @keyframes warning-pulse {
+            0%, 100% { border-color: #dc2626; }
+            50% { border-color: #ff6b6b; }
+        }
 
-.calibrate-angle-btn:hover {
-    background: #dbeafe;
-}
+        .angle-status {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+            padding: 6px;
+            border-radius: 20px;
+            background: #f8fafc;
+        }
+
+        .calibrate-btn {
+            background: #eef2ff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--blue);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calibrate-btn:active {
+            transform: scale(0.95);
+        }
+
         .map-card {
             background: white;
             border-radius: 28px;
@@ -968,7 +966,6 @@
                 transform: translateY(100px);
                 opacity: 0;
             }
-
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -1051,7 +1048,6 @@
                 opacity: 0;
                 transform: translate(-50%, -50%) scale(0.9);
             }
-
             to {
                 opacity: 1;
                 transform: translate(-50%, -50%) scale(1);
@@ -1108,12 +1104,10 @@
                 opacity: 1;
                 transform: translateY(0);
             }
-
             70% {
                 opacity: 1;
                 transform: translateY(0);
             }
-
             100% {
                 opacity: 0;
                 transform: translateY(-20px);
@@ -1125,6 +1119,14 @@
             justify-content: space-between;
             padding: 12px 0;
             border-bottom: 1px solid #eef2ff;
+        }
+
+        .angle-debug {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 8px;
+            color: #94a3b8;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -1186,29 +1188,39 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
- <!-- UPDATED: Angle Sensing Card with Center-based Bar -->
-<div class="angle-card" id="angleCard">
-    <div class="angle-header">
-        <h3>📐 Tilt Angle (Gyro)</h3>
-        <button class="calibrate-angle-btn" id="calibrateAngleBtn" onclick="calibrateAngleSensor()">Calibrate</button>
+    <!-- FIXED Angle Sensing Card -->
+    <div class="angle-card" id="angleCard">
+        <div class="angle-header">
+            <h3>📐 Tilt Angle</h3>
+            <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
+        </div>
+        <div class="angle-value" id="angleValue">
+            0.0<span>°</span>
+        </div>
+        
+        <!-- Center-based bar visualization -->
+        <div class="angle-bar-wrapper">
+            <div class="angle-bar-track">
+                <div class="angle-bar-fill-left" id="angleFillLeft"></div>
+                <div class="angle-bar-fill-right" id="angleFillRight"></div>
+                <div class="angle-center-marker"></div>
+                <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
+            </div>
+            <div class="angle-markers">
+                <span>45° LEFT</span>
+                <span>CENTER</span>
+                <span>45° RIGHT</span>
+            </div>
+        </div>
+        
+        <div class="angle-direction" id="angleDirection">
+            ✓ STRAIGHT
+        </div>
+        <div class="angle-status" id="angleStatus">
+            Waiting for data...
+        </div>
+        <div class="angle-debug" id="angleDebug"></div>
     </div>
-    <div class="angle-value" id="angleValue">
-        0.0<span>°</span>
-    </div>
-    
-    <!-- Center-based bar container -->
-    <div class="angle-bar-container" id="angleBarContainer">
-        <div class="angle-bar-fill" id="angleBar"></div>
-        <div class="angle-bar-indicator" id="angleBarIndicator"></div>
-    </div>
-    
-    <div class="angle-direction" id="angleDirection">
-        ✓ STRAIGHT
-    </div>
-    <div class="angle-status" id="angleStatus">
-        Waiting for data...
-    </div>
-</div>
 
     <div class="map-card">
         <div class="gps-header">
@@ -1416,11 +1428,8 @@
         let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
-
-        // Angle sensor state
-        let currentAngle = 0;
-        let lastAngleTime = 0;
-        let angleInterval = null;
+        let lastAngleValue = 0;
+        let angleUpdateCount = 0;
 
         // Health monitoring state
         let lastHealthState = {
@@ -1457,232 +1466,239 @@
             ]
         };
 
-    // =============== UPDATED ANGLE SENSING FUNCTIONS ===============
-
-function updateAngleDisplay(angle) {
-    currentAngle = angle;
-    
-    // Update angle value
-    const angleValueElem = document.getElementById('angleValue');
-    const angleBarContainer = document.getElementById('angleBarContainer');
-    const angleDirectionElem = document.getElementById('angleDirection');
-    const angleCard = document.getElementById('angleCard');
-    const tiltValueInWheel = document.getElementById('tiltValue');
-    
-    // Format angle with sign
-    const angleFormatted = angle >= 0 ? angle.toFixed(1) : angle.toFixed(1);
-    angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
-    
-    // FIXED: Bar should move from center (0%) to left for negative angles, right for positive
-    // Map angle from -45° to +45° to -100% to +100% (relative to center)
-    const barPositionPercent = (angle / 45) * 100; // This gives -100% to +100%
-    
-    // Create a dynamic bar that moves from center
-    // We'll use transform translateX on the bar indicator
-    const angleBarIndicator = document.getElementById('angleBarIndicator');
-    if (angleBarIndicator) {
-        // Calculate pixel position - bar should move left/right from center
-        // Max movement is about 50px left or right (adjust as needed)
-        const maxMovement = 50; // pixels
-        const pixelOffset = (angle / 45) * maxMovement;
-        angleBarIndicator.style.transform = `translateX(${pixelOffset}px)`;
+        // =============== FIXED ANGLE SENSING FUNCTIONS ===============
         
-        // Change bar color based on direction and severity
-        if (Math.abs(angle) > 25) {
-            angleBarIndicator.style.background = '#dc2626';
-        } else if (Math.abs(angle) > 18) {
-            angleBarIndicator.style.background = '#f59e0b';
-        } else {
-            angleBarIndicator.style.background = '#3b82f6';
-        }
-    }
-    
-    // Also update the progress bar alternative view
-    const angleBar = document.getElementById('angleBar');
-    if (angleBar) {
-        // Alternative: Show fill from center outward
-        if (angle > 0) {
-            angleBar.style.width = `${(angle / 45) * 50}%`;
-            angleBar.style.marginLeft = '50%';
-            angleBar.style.background = 'linear-gradient(90deg, #3b82f6, #1d4ed8)';
-        } else if (angle < 0) {
-            angleBar.style.width = `${(Math.abs(angle) / 45) * 50}%`;
-            angleBar.style.marginLeft = `${50 - (Math.abs(angle) / 45) * 50}%`;
-            angleBar.style.background = 'linear-gradient(90deg, #f59e0b, #dc2626)';
-        } else {
-            angleBar.style.width = '0%';
-            angleBar.style.marginLeft = '50%';
-        }
-    }
-    
-    // Update direction text and styling
-    let directionText = '';
-    let directionClass = '';
-    let directionIcon = '';
-    
-    if (angle > 5) {
-        directionIcon = '⬅️';
-        directionText = `LEFT TURN (${angle.toFixed(1)}° left)`;
-        directionClass = 'left';
-    } else if (angle < -5) {
-        directionIcon = '➡️';
-        directionText = `RIGHT TURN (${Math.abs(angle).toFixed(1)}° right)`;
-        directionClass = 'right';
-    } else {
-        directionIcon = '✓';
-        directionText = 'STRAIGHT (centered)';
-        directionClass = 'straight';
-    }
-    
-    angleDirectionElem.className = `angle-direction ${directionClass}`;
-    angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
-    
-    // Update angle in wheel status popup
-    if (tiltValueInWheel) {
-        tiltValueInWheel.innerText = `${angleFormatted}°`;
-    }
-    
-    // Update angle status with more detailed info
-    const angleStatus = document.getElementById('angleStatus');
-    if (Math.abs(angle) > 25) {
-        angleCard.classList.add('angle-warning');
-        angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt detected! Risk of tipping!';
-        angleStatus.style.color = '#dc2626';
-        angleStatus.style.fontWeight = 'bold';
-        
-        // Add notification only once when threshold crossed
-        if (Math.abs(angle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
-            addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${angle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
-        }
-    } else if (Math.abs(angle) > 18) {
-        angleCard.classList.add('angle-warning');
-        angleStatus.innerHTML = `⚠️ Warning: High tilt angle (${Math.abs(angle).toFixed(1)}°) - Reduce speed`;
-        angleStatus.style.color = '#f59e0b';
-        angleStatus.style.fontWeight = '500';
-    } else if (Math.abs(angle) > 10) {
-        angleCard.classList.remove('angle-warning');
-        angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(angle).toFixed(1)}°) - Be cautious`;
-        angleStatus.style.color = '#f59e0b';
-        angleStatus.style.fontWeight = 'normal';
-    } else {
-        angleCard.classList.remove('angle-warning');
-        angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
-        angleStatus.style.color = '#10b981';
-        angleStatus.style.fontWeight = 'normal';
-    }
-    
-    // Add debug info to console occasionally
-    if (Math.random() < 0.05) { // 5% of updates
-        console.log(`Angle update: ${angle.toFixed(2)}° | Direction: ${directionText}`);
-    }
-    
-    lastWheelState.angle = angle;
-}
-
-// Improved angle fetch with error handling and retry logic
-async function fetchAngleData() {
-    if (!esp32Connected) {
-        return null;
-    }
-    
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1000);
-        
-        const response = await fetch(`http://${esp32IP}/angle`, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            const data = await response.text();
-            const angle = parseFloat(data);
-            if (!isNaN(angle) && isFinite(angle)) {
-                // Validate angle range
-                const validAngle = Math.min(45, Math.max(-45, angle));
-                if (validAngle !== angle) {
-                    console.warn(`Angle out of range: ${angle}, clamping to ${validAngle}`);
-                }
-                updateAngleDisplay(validAngle);
-                return validAngle;
+        function updateAngleDisplay(angle) {
+            // Validate and clamp angle
+            let validAngle = Math.min(45, Math.max(-45, angle));
+            
+            // Store for debug
+            lastAngleValue = validAngle;
+            angleUpdateCount++;
+            
+            // Update angle value display
+            const angleValueElem = document.getElementById('angleValue');
+            if (angleValueElem) {
+                const angleFormatted = validAngle.toFixed(1);
+                angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
             }
+            
+            // FIXED: Left turn = positive angle, Right turn = negative angle
+            // But OLED shows opposite, so we need to invert for webpage to match OLED
+            // If OLED shows LEFT when tilting left, we need to invert here
+            const displayAngle = -validAngle; // Invert to match OLED display
+            
+            // Calculate positions based on inverted angle
+            const leftPercent = displayAngle > 0 ? Math.min(100, (displayAngle / 45) * 100) : 0;
+            const rightPercent = displayAngle < 0 ? Math.min(100, (Math.abs(displayAngle) / 45) * 100) : 0;
+            
+            // Update left fill (for left turn)
+            const fillLeft = document.getElementById('angleFillLeft');
+            if (fillLeft) {
+                fillLeft.style.width = `${leftPercent}%`;
+            }
+            
+            // Update right fill (for right turn)
+            const fillRight = document.getElementById('angleFillRight');
+            if (fillRight) {
+                fillRight.style.width = `${rightPercent}%`;
+            }
+            
+            // Update indicator dot position (centered, moves left for left, right for right)
+            const indicatorDot = document.getElementById('angleIndicatorDot');
+            if (indicatorDot) {
+                const track = document.querySelector('.angle-bar-track');
+                if (track) {
+                    const trackWidth = track.offsetWidth;
+                    const centerX = trackWidth / 2;
+                    const maxOffset = trackWidth / 2 - 14; // Subtract half the dot width
+                    const offset = (displayAngle / 45) * maxOffset;
+                    indicatorDot.style.left = `${centerX + offset}px`;
+                    
+                    // Change dot color based on severity
+                    if (Math.abs(displayAngle) > 25) {
+                        indicatorDot.style.background = '#dc2626';
+                    } else if (Math.abs(displayAngle) > 18) {
+                        indicatorDot.style.background = '#f59e0b';
+                    } else {
+                        indicatorDot.style.background = '#3b82f6';
+                    }
+                }
+            }
+            
+            // Update direction text (using actual angle, not inverted for direction)
+            const angleDirectionElem = document.getElementById('angleDirection');
+            const angleCard = document.getElementById('angleCard');
+            const angleStatus = document.getElementById('angleStatus');
+            const tiltValueInWheel = document.getElementById('tiltValue');
+            
+            let directionText = '';
+            let directionClass = '';
+            let directionIcon = '';
+            
+            // Use actual angle for direction (positive = left turn in hardware)
+            if (validAngle > 5) {
+                directionIcon = '⬅️';
+                directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+                directionClass = 'left';
+            } else if (validAngle < -5) {
+                directionIcon = '➡️';
+                directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+                directionClass = 'right';
+            } else {
+                directionIcon = '✓';
+                directionText = 'STRAIGHT (centered)';
+                directionClass = 'straight';
+            }
+            
+            if (angleDirectionElem) {
+                angleDirectionElem.className = `angle-direction ${directionClass}`;
+                angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+            }
+            
+            // Update tilt value in wheel popup
+            if (tiltValueInWheel) {
+                tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+            }
+            
+            // Update status and warnings
+            if (Math.abs(validAngle) > 25) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
+                }
+                
+                // Add notification on threshold crossing
+                if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+                    addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+                }
+            } else if (Math.abs(validAngle) > 18) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                }
+            } else if (Math.abs(validAngle) > 10) {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                }
+            } else {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                }
+            }
+            
+            // Update debug info
+            const debugElem = document.getElementById('angleDebug');
+            if (debugElem && angleUpdateCount % 20 === 0) {
+                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
+            }
+            
+            lastWheelState.angle = validAngle;
         }
-    } catch (error) {
-        // Silent fail - angle data might not be available yet
-        if (error.name !== 'AbortError') {
-            console.log("Angle fetch error:", error.message);
-        }
-    }
-    return null;
-}
 
-// Improved angle parsing from serial data
-function parseAngleFromSerial(data) {
-    if (!data) return null;
-    
-    // Handle ANGLE: format
-    if (data.startsWith('ANGLE:')) {
-        const angleStr = data.substring(6).trim();
-        const angle = parseFloat(angleStr);
-        if (!isNaN(angle) && isFinite(angle)) {
-            const validAngle = Math.min(45, Math.max(-45, angle));
-            updateAngleDisplay(validAngle);
-            return validAngle;
-        }
-    }
-    
-    // Handle direct float values (just in case)
-    const angle = parseFloat(data);
-    if (!isNaN(angle) && isFinite(angle) && Math.abs(angle) <= 90) {
-        const validAngle = Math.min(45, Math.max(-45, angle));
-        updateAngleDisplay(validAngle);
-        return validAngle;
-    }
-    
-    return null;
-}
-
-// Enhanced angle monitoring with adaptive polling rate
-function startAngleMonitoring() {
-    if (angleInterval) clearInterval(angleInterval);
-    
-    // Poll at 100ms for smoother display (increased from 200ms)
-    angleInterval = setInterval(() => {
-        fetchAngleData();
-    }, 100);
-    
-    console.log("Angle monitoring started at 100ms interval");
-}
-
-// Calibration function for angle sensor (if needed)
-async function calibrateAngleSensor() {
-    if (!esp32Connected) {
-        showToast("⚠️ ESP32 not connected!");
-        return false;
-    }
-    
-    try {
-        const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache'
-        });
+        // Fast angle fetch with WebSocket-like polling
+        let angleFetchInterval = null;
         
-        if (response.ok) {
-            showToast("📐 Angle sensor calibration requested");
-            addNotification("Angle Calibration", "Gyro calibration initiated", false);
-            return true;
+        async function fetchAngleData() {
+            if (!esp32Connected) {
+                return null;
+            }
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 500);
+                
+                const response = await fetch(`http://${esp32IP}/angle`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    const angle = parseFloat(data);
+                    if (!isNaN(angle) && isFinite(angle)) {
+                        updateAngleDisplay(angle);
+                        return angle;
+                    }
+                }
+            } catch (error) {
+                // Silent fail for connection issues
+                if (error.name !== 'AbortError') {
+                    // Only log occasionally to avoid console spam
+                    if (Math.random() < 0.01) {
+                        console.log("Angle fetch:", error.message);
+                    }
+                }
+            }
+            return null;
         }
-    } catch (error) {
-        console.error("Calibration error:", error);
-    }
-    return false;
-}
-   
+
+        // Parse angle from Arduino serial data
+        function parseAngleFromSerial(data) {
+            if (!data) return null;
+            
+            // Handle ANGLE: format
+            if (data.startsWith('ANGLE:')) {
+                const angleStr = data.substring(6).trim();
+                const angle = parseFloat(angleStr);
+                if (!isNaN(angle) && isFinite(angle)) {
+                    updateAngleDisplay(angle);
+                    return angle;
+                }
+            }
+            return null;
+        }
+
+        // Start fast angle monitoring (50ms for smooth display)
+        function startAngleMonitoring() {
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
+            angleFetchInterval = setInterval(() => {
+                fetchAngleData();
+            }, 50); // 50ms for smooth animation
+            console.log("Angle monitoring started at 50ms interval");
+        }
+
+        // Calibrate angle sensor
+        async function calibrateAngleSensor() {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
+                return false;
+            }
+            
+            try {
+                const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    showToast("📐 Calibration requested - keep wheelchair level");
+                    addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level", false);
+                    // Reset to 0 temporarily
+                    updateAngleDisplay(0);
+                    return true;
+                }
+            } catch (error) {
+                console.error("Calibration error:", error);
+            }
+            return false;
+        }
+
         // =============== ESP32 BRIDGE FUNCTIONS ===============
 
         async function testESP32Connection() {
@@ -1715,7 +1731,7 @@ async function calibrateAngleSensor() {
             
             esp32Connected = false;
             updateConnectionStatus(false);
-            if (angleInterval) clearInterval(angleInterval);
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
             return false;
         }
 
@@ -1788,6 +1804,7 @@ async function calibrateAngleSensor() {
             const statusDiv = document.getElementById('connectionStatus');
             const statusText = document.getElementById('connectionText');
             const connectBtn = document.getElementById('connectBtn');
+            const angleStatus = document.getElementById('angleStatus');
             
             if (connected) {
                 statusDiv.className = 'connection-status connected';
@@ -1796,7 +1813,11 @@ async function calibrateAngleSensor() {
                     connectBtn.innerHTML = '🔌 Disconnect';
                     connectBtn.classList.add('connected');
                 }
-                document.getElementById('angleStatus').innerHTML = '✓ Connected - receiving angle data';
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Connected - Receiving angle data';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                }
             } else {
                 statusDiv.className = 'connection-status disconnected';
                 statusText.innerText = 'ESP32 Disconnected';
@@ -1804,7 +1825,11 @@ async function calibrateAngleSensor() {
                     connectBtn.innerHTML = '🔌 Connect to ESP32';
                     connectBtn.classList.remove('connected');
                 }
-                document.getElementById('angleStatus').innerHTML = '⚠️ Disconnected - waiting for ESP32';
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ Disconnected - Waiting for ESP32';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
+                }
             }
         }
 
@@ -1813,8 +1838,8 @@ async function calibrateAngleSensor() {
                 esp32Connected = false;
                 updateConnectionStatus(false);
                 showToast("Disconnected from ESP32");
-                if (angleInterval) {
-                    clearInterval(angleInterval);
+                if (angleFetchInterval) {
+                    clearInterval(angleFetchInterval);
                 }
                 return;
             }
@@ -2388,6 +2413,7 @@ async function calibrateAngleSensor() {
         window.clearAllNotifications = clearAllNotifications;
         window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
         window.toggleSerialConsole = toggleSerialConsole;
+        window.calibrateAngleSensor = calibrateAngleSensor;
 
         // =============== INITIALIZATION ===============
 
@@ -2418,6 +2444,7 @@ async function calibrateAngleSensor() {
         document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
         document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
         document.getElementById('connectBtn').onclick = connectToESP32;
+        document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
 
         document.querySelectorAll('.ctrl-btn').forEach(btn => {
             btn.onclick = () => sendControlCommand(btn.dataset.cmd);
