@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>CareTaker · Wireless Wheelchair Control System</title>
+    <title>CareTaker · Wheelchair Control System</title>
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- flatpickr -->
+    <!-- flatpickr for calendar & time -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <!-- Firebase SDKs -->
@@ -139,7 +139,7 @@
             cursor: not-allowed;
         }
         
-        .ws-console {
+        .serial-console {
             position: fixed;
             bottom: 80px;
             left: 20px;
@@ -158,11 +158,11 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         
-        .ws-console.show {
+        .serial-console.show {
             display: block;
         }
         
-        .ws-console .console-header {
+        .serial-console .console-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
@@ -170,7 +170,7 @@
             font-size: 10px;
         }
         
-        .ws-console .console-content {
+        .serial-console .console-content {
             font-family: 'Courier New', monospace;
             white-space: pre-wrap;
             word-break: break-all;
@@ -353,8 +353,7 @@
             right: 16px;
             background: #eef2ff;
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border-radius: 50%;
             font-size: 20px;
             display: flex;
@@ -371,8 +370,7 @@
             margin-bottom: 12px;
         }
         .patient-photo {
-            width: 70px;
-            height: 70px;
+            width: 70px; height: 70px;
             border-radius: 24px;
             object-fit: cover;
             background: #cbd5e1;
@@ -432,8 +430,7 @@
             width: 60px;
         }
         .round-icon {
-            width: 50px;
-            height: 50px;
+            width: 50px; height: 50px;
             background: #f0f5ff;
             border: 2px solid rgba(29,78,216,0.15);
             border-radius: 50%;
@@ -487,7 +484,6 @@
             padding: 14px;
             box-shadow: var(--shadow);
             border: var(--outline);
-            margin-bottom: 14px;
         }
         .gps-header {
             display: flex;
@@ -800,34 +796,6 @@
             padding: 12px 0;
             border-bottom: 1px solid #eef2ff;
         }
-        
-        .ws-ip-display {
-            background: #eef2ff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--blue);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .status-badge {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        
-        .status-badge.online {
-            background: #10b981;
-            box-shadow: 0 0 4px #10b981;
-        }
-        
-        .status-badge.offline {
-            background: #dc2626;
-        }
     </style>
 </head>
 <body>
@@ -841,17 +809,13 @@
         </div>
     </div>
     <div class="icon-group">
-        <div class="ws-ip-display" id="wsIpDisplay">
-            <span class="status-badge offline" id="wsStatusDot"></span>
-            <span id="wsIpText">ESP32: --</span>
-        </div>
         <button class="icon-btn" id="notificationBtn" style="position: relative;">
             🔔
             <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
         </button>
         <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
         <button class="icon-btn" id="openLogBtn">📋</button>
-        <button class="icon-btn" id="wsConsoleBtn">📡</button>
+        <button class="icon-btn" id="serialConsoleBtn">📟</button>
     </div>
 </div>
 
@@ -904,14 +868,14 @@
     <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
 </div>
 
-<button class="connect-btn" id="connectBtn">🔌 Connect to ESP32</button>
+<button class="connect-btn" id="connectBtn">🔌 Connect Arduino</button>
 
-<div class="ws-console" id="wsConsole">
+<div class="serial-console" id="serialConsole">
     <div class="console-header">
-        <span>📡 WebSocket Monitor</span>
-        <button onclick="toggleWsConsole()" style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
+        <span>📟 Serial Monitor</span>
+        <button onclick="toggleSerialConsole()" style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
     </div>
-    <div class="console-content" id="wsConsoleContent"></div>
+    <div class="console-content" id="consoleContent"></div>
 </div>
 
 <div id="modePopup" class="popup-panel">
@@ -922,11 +886,10 @@
 </div>
 
 <div id="callPopup" class="popup-panel">
-    <div class="popup-header"><h3>📞 Emergency Contacts</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
+    <div class="popup-header"><h3>📞 Emergency</h3><button class="close-popup" onclick="closePopup('call')">×</button></div>
     <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
     <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
     <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
-    <div class="contact-item">👩 Sarah <span>+1 555 9012</span></div>
 </div>
 
 <div id="healthPopup" class="popup-panel">
@@ -1030,8 +993,8 @@
 
 <div class="connection-status disconnected" id="connectionStatus">
     <span class="status-dot"></span>
-    <span id="connectionText">ESP32 Disconnected</span>
-    <span id="baudRate" class="baud-rate">(WebSocket)</span>
+    <span id="connectionText">Disconnected</span>
+    <span id="baudRate" class="baud-rate">(115200)</span>
 </div>
 
 <script type="module">
@@ -1042,15 +1005,6 @@
     const MODE_ID = "drive_mode";
     const EMERGENCY_ID = "emergency_status";
     
-    // WebSocket connection
-    let ws = null;
-    let isWsConnected = false;
-    let wsReconnectAttempts = 0;
-    let wsConsoleBuffer = [];
-    let esp32Ip = null;
-    let lastCommandTime = 0;
-    
-    // Firebase and other data
     let patientData = {
         fullName: 'Rebecca Rowe',
         patientId: 'PT-10234',
@@ -1062,9 +1016,13 @@
     };
     
     let currentMode = 'Line Following';
+    let pendingMode = null;
     let notifications = [];
     let notificationCount = 0;
     let emergencyActive = false;
+    
+    
+    
     
     // Health monitoring state
     let lastHealthState = {
@@ -1101,153 +1059,168 @@
         ]
     };
     
-    // =============== WEB SOCKET FUNCTIONS ===============
-    
-    function getEsp32Ip() {
-        let ip = localStorage.getItem('esp32_ip');
-        if (!ip) {
-            ip = prompt('Enter ESP32 IP Address (e.g., 192.168.1.100):\n\nCheck ESP32 Serial Monitor for "IP:"', '192.168.1.100');
-            if (ip) localStorage.setItem('esp32_ip', ip);
+    // Replace your existing Serial variables with these
+let socket = null;
+let isConnected = false;
+
+async function connectToArduino() {
+    if (isConnected) {
+        socket.close();
+        return;
+    }
+
+    const ip = prompt("Enter ESP32 IP Address:", "192.168.234.126");
+    if (!ip) return;
+
+    socket = new WebSocket(`ws://${ip}:81`);
+
+    socket.onopen = () => {
+        isConnected = true;
+        updateConnectionStatus(true);
+        document.getElementById('connectBtn').innerHTML = '📡 Disconnect Wi-Fi';
+        showToast("✅ Wireless Connected!");
+        addNotification("📶 Wi-Fi", "Connected to ESP32 Bridge", false);
+    };
+
+    socket.onmessage = (event) => {
+        const data = event.data.trim();
+        if (data) {
+            handleArduinoData(data);
+            addToSerialConsole(data);
         }
-        return ip;
+    };
+
+    socket.onclose = () => {
+        isConnected = false;
+        updateConnectionStatus(false);
+        document.getElementById('connectBtn').innerHTML = '🔌 Connect Wi-Fi';
+        showToast("❌ Connection Lost");
+    };
+
+    socket.onerror = (error) => {
+        console.error("WS Error:", error);
+        showToast("🚀 Connection Failed. Check IP/Wi-Fi.");
+    };
+}
+
+// Update your sendCommand function to use WebSocket
+async function sendCommand(command) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        showToast("⚠️ Not connected to ESP32");
+        return false;
     }
     
-    function connectToESP32() {
-        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-            ws.close();
+    socket.send(command);
+    console.log("Sent Wireless:", command);
+    showCommandFeedback(command);
+    addToSerialConsole("> " + command, true);
+    return true;
+}
+    
+    // =============== WEB SERIAL API FUNCTIONS ===============
+    
+// =============== ROBUST WEB SERIAL FUNCTIONS ===============
+
+    async function disconnectFromArduino() {
+        if (reader) {
+            await reader.cancel();
+            reader = null;
+        }
+        if (writer) {
+            await writer.close();
+            writer = null;
+        }
+        if (serialPort && serialPort.readable) {
+            await serialPort.close();
         }
         
-        const ip = getEsp32Ip();
-        if (!ip) return;
-        
-        const wsUrl = `ws://${ip}:81`;
-        document.getElementById('wsIpText').innerHTML = `ESP32: Connecting...`;
-        document.getElementById('wsStatusDot').className = 'status-badge offline';
-        
-        ws = new WebSocket(wsUrl);
-        
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-            isWsConnected = true;
-            wsReconnectAttempts = 0;
-            updateConnectionStatus(true);
-            document.getElementById('connectBtn').innerHTML = '🔌 Disconnect';
-            document.getElementById('connectBtn').classList.add('connected');
-            document.getElementById('wsIpText').innerHTML = `ESP32: ${ip}`;
-            document.getElementById('wsStatusDot').className = 'status-badge online';
-            addToWsConsole('Connected to ESP32 at ' + wsUrl, 'info');
-            showToast('✅ Connected to ESP32!');
-            addNotification('📡 Connection', 'Connected to ESP32 bridge', false);
-        };
-        
-        ws.onmessage = (event) => {
-            const data = event.data;
-            console.log('WS Received:', data);
-            addToWsConsole('← ' + data, 'received');
-            handleESP32Message(data);
-        };
-        
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            addToWsConsole('Error: ' + error, 'error');
-        };
-        
-        ws.onclose = () => {
-            console.log('WebSocket closed');
-            isWsConnected = false;
-            updateConnectionStatus(false);
-            document.getElementById('connectBtn').innerHTML = '🔌 Connect to ESP32';
-            document.getElementById('connectBtn').classList.remove('connected');
-            document.getElementById('wsIpText').innerHTML = `ESP32: Disconnected`;
-            document.getElementById('wsStatusDot').className = 'status-badge offline';
-            addToWsConsole('Disconnected from ESP32', 'error');
-            showToast('⚠️ Disconnected from ESP32');
-            
-            // Attempt reconnect after 5 seconds
-            setTimeout(() => {
-                if (!isWsConnected && localStorage.getItem('esp32_ip')) {
-                    connectToESP32();
+        serialPort = null;
+        isConnected = false;
+        updateConnectionStatus(false);
+        document.getElementById('connectBtn').innerHTML = '🔌 Connect Arduino';
+        document.getElementById('connectBtn').classList.remove('connected');
+        showToast("Arduino disconnected");
+        addNotification("🔌 Connection", "Arduino disconnected", false);
+    }
+    
+ async function readSerialData() {
+    const decoder = new TextDecoder();
+    while (serialPort && serialPort.readable && isConnected) {
+        reader = serialPort.readable.getReader();
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                
+                // Convert Uint8Array to string and add to buffer
+                serialBuffer += decoder.decode(value, { stream: true });
+                
+                // Process lines ended by newline
+                let lines = serialBuffer.split('\n');
+                serialBuffer = lines.pop(); // Keep partial line in buffer
+                
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed) {
+                        handleArduinoData(trimmed);
+                        addToSerialConsole(trimmed);
+                    }
                 }
-            }, 5000);
-        };
-    }
-    
-    function disconnectFromESP32() {
-        if (ws) {
-            ws.close();
+            }
+        } catch (error) {
+            console.error("Read error:", error);
+        } finally {
+            reader.releaseLock();
         }
     }
+}
     
-    function handleESP32Message(data) {
-        // Handle plain text commands from ESP32/Arduino
-        if (data === 'PONG') {
-            console.log('Heartbeat received');
-        } else if (data === 'FWD') {
-            showCommandFeedback('Forward');
-            addNotification('⬆️ Forward', 'Moving forward', false);
-        } else if (data === 'LEFT') {
-            showCommandFeedback('Left');
-            addNotification('⬅️ Left', 'Turning left', false);
-        } else if (data === 'RIGHT') {
-            showCommandFeedback('Right');
-            addNotification('➡️ Right', 'Turning right', false);
-        } else if (data === 'STOP') {
-            showCommandFeedback('Stop');
-            addNotification('⏹️ Stop', 'Wheelchair stopped', false);
-        } else if (data === 'REV') {
-            showCommandFeedback('Reverse');
-            addNotification('⬇️ Reverse', 'Moving backward', false);
-        } else if (data.startsWith('ANGLE:')) {
-            const angle = parseFloat(data.substring(6));
-            document.getElementById('tiltValue').innerText = angle.toFixed(1) + '°';
-        } else if (data.startsWith('TILT STOP:')) {
-            const angle = parseFloat(data.split(':')[1]);
+    function handleArduinoData(data) {
+        console.log("Arduino:", data);
+        
+        // Parse various data formats from Arduino
+        if (data.startsWith("TILT STOP:")) {
+            const angle = parseFloat(data.split(":")[1]);
             showTiltWarning(angle);
-        } else if (data === 'TILT CLEARED') {
-            document.getElementById('tiltValue').innerText = '0.0°';
-        } else if (data === 'ARDUINO_CONNECTED') {
-            addNotification('🔌 Arduino', 'Arduino connected via ESP32', false);
-        } else if (data === 'ESP32_BRIDGE_READY') {
-            addNotification('📡 ESP32', 'ESP32 bridge is ready', false);
-        } else if (data.startsWith('MODE_SET:')) {
-            const mode = data.substring(9);
-            addNotification('⚙️ Mode', `Mode set to: ${mode}`, false);
+            document.getElementById('tiltValue').innerText = angle.toFixed(1) + "°";
+        }
+        else if (data.startsWith("TILT CLEARED")) {
+            document.getElementById('tiltValue').innerText = "0.0°";
+        }
+        else if (data.startsWith("LONG")) {
+            addNotification("👁️ Long Blink", "Left turn command executed", false);
+        }
+        else if (data.startsWith("STOP")) {
+            updateDirectionDisplay("stop");
+            addNotification("⏹️ Stop", "Wheelchair stopped", false);
+        }
+        else if (data.startsWith("FWD")) {
+            updateDirectionDisplay("forward");
+            addNotification("⬆️ Forward", "Moving forward", false);
+        }
+        else if (data.startsWith("LEFT")) {
+            updateDirectionDisplay("left");
+            addNotification("⬅️ Left", "Turning left", false);
+        }
+        else if (data.startsWith("RIGHT")) {
+            updateDirectionDisplay("right");
+            addNotification("➡️ Right", "Turning right", false);
+        }
+        else if (data.startsWith("ANGLE:")) {
+            const angle = parseFloat(data.substring(6));
+            document.getElementById('tiltValue').innerText = angle.toFixed(1) + "°";
+        }
+        else if (data.startsWith("PONG")) {
+            lastHeartbeat = Date.now();
         }
     }
     
-    function sendCommandToESP32(command) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            showToast('⚠️ Not connected to ESP32');
-            return false;
-        }
-        
-        const now = Date.now();
-        if (now - lastCommandTime < 100) return false;
-        lastCommandTime = now;
-        
-        ws.send(command);
-        addToWsConsole('→ ' + command, 'sent');
-        console.log('Sent:', command);
-        showCommandFeedback(command.replace('CMD:', ''));
-        return true;
-    }
-    
-    function addToWsConsole(message, type) {
-        wsConsoleBuffer.unshift({ message, type, time: new Date().toLocaleTimeString() });
-        if (wsConsoleBuffer.length > 100) wsConsoleBuffer.pop();
-        
-        const container = document.getElementById('wsConsoleContent');
-        if (container) {
-            container.innerHTML = wsConsoleBuffer.slice(0, 50).map(m => 
-                `<div style="color:${m.type === 'error' ? '#f87171' : (m.type === 'sent' ? '#a5f3c3' : '#fbbf24')}; margin-bottom:4px; font-size:10px;">
-                    <span style="color:#94a3b8;">[${m.time}]</span> ${escapeHtml(m.message)}
-                </div>`
-            ).join('');
-        }
-    }
-    
-    function toggleWsConsole() {
-        document.getElementById('wsConsole').classList.toggle('show');
+    function startHeartbeatCheck() {
+        setInterval(() => {
+            if (isConnected && Date.now() - lastHeartbeat > 5000) {
+                sendCommand("PING");
+            }
+        }, 3000);
     }
     
     function updateConnectionStatus(connected) {
@@ -1256,230 +1229,72 @@
         
         if (connected) {
             statusDiv.className = 'connection-status connected';
-            statusText.innerText = 'ESP32 Connected';
+            statusText.innerText = 'Arduino Connected';
         } else {
             statusDiv.className = 'connection-status disconnected';
-            statusText.innerText = 'ESP32 Disconnected';
+            statusText.innerText = 'Disconnected';
         }
     }
     
-    function sendControlCommand(cmd) {
-        if (currentMode !== 'Control') {
-            showToast('⚠️ Switch to Control mode first');
-            return;
+    function updateDirectionDisplay(direction) {
+        const badge = document.getElementById('directionBadge');
+        if (badge) {
+            badge.className = 'direction-status-badge ' + direction;
         }
-        sendCommandToESP32(`CMD:${cmd}`);
     }
     
-    function showCommandFeedback(cmd) {
-        const feedback = document.createElement('div');
-        feedback.className = 'command-feedback';
-        feedback.textContent = `📡 ${cmd}`;
-        document.body.appendChild(feedback);
-        setTimeout(() => feedback.remove(), 2000);
-    }
-    
-    // =============== MODE CONTROL ===============
-    function confirmModeSwitch(mode) {
-        const checks = safetyChecks[mode];
-        if (!checks) return;
+    function addToSerialConsole(message, isOutgoing = false) {
+        const consoleContent = document.getElementById('consoleContent');
+        if (!consoleContent) return;
         
-        const existingPopup = document.getElementById('safetyPopup');
-        if (existingPopup) existingPopup.remove();
+        const time = new Date().toLocaleTimeString();
+        const prefix = isOutgoing ? '→ ' : '← ';
+        const color = isOutgoing ? '#a5f3c3' : '#fbbf24';
         
-        const modal = document.createElement('div');
-        modal.className = 'popup-panel';
-        modal.id = 'safetyPopup';
-        modal.innerHTML = `
-            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
-            <div style="margin: 16px 0;">
-                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
-                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.style.display = 'block';
+        const line = document.createElement('div');
+        line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
+        consoleContent.appendChild(line);
         
-        document.getElementById('confirmSwitchBtn').onclick = async () => {
-            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
-            let allChecked = true;
-            checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
-            if (!allChecked) {
-                showToast('⚠️ Please tick all safety checkboxes');
-                return;
-            }
-            
-            // Send stop command first
-            await sendCommandToESP32("CMD:stop");
-            
-            if (await sendCommandToESP32(`MODE:${mode}`)) {
-                currentMode = mode;
-                document.getElementById('modeDisplay').innerText = currentMode;
-                document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-                modal.remove();
-                await saveModeToFirestore(currentMode);
-                addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
-            }
-        };
-    }
-    
-    async function saveModeToFirestore(mode) {
-        const modeRef = doc(db, "settings", MODE_ID);
-        await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
-    }
-    
-    // =============== EMERGENCY FUNCTIONS ===============
-    async function triggerEmergency() {
-        emergencyActive = true;
-        await sendCommandToESP32("EMERGENCY");
-        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-        await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
-        document.body.classList.add('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'flex';
-        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
+        // Auto-scroll
+        line.scrollIntoView();
         
-        setTimeout(async () => {
-            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
-            emergencyActive = false;
-        }, 5000);
-    }
-    
-    function closeShutdown() {
-        if (emergencyActive) {
-            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
-            emergencyActive = false;
+        // Limit lines
+        while (consoleContent.children.length > 200) {
+            consoleContent.removeChild(consoleContent.firstChild);
         }
-        document.body.classList.remove('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'none';
     }
     
-    function listenEmergencyFromPatient() {
-        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-        onSnapshot(emergencyRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
-                emergencyActive = true;
-                sendCommandToESP32("EMERGENCY");
-                document.body.classList.add('emergency-shutdown');
-                document.getElementById('shutdownOverlay').style.display = 'flex';
-                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
-            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
-                emergencyActive = false;
-                document.body.classList.remove('emergency-shutdown');
-                document.getElementById('shutdownOverlay').style.display = 'none';
-            }
-        });
+    function toggleSerialConsole() {
+        const consoleDiv = document.getElementById('serialConsole');
+        consoleDiv.classList.toggle('show');
     }
     
-    // =============== HEALTH MONITORING (SIMULATION) ===============
-    function simulateHealthMonitoring() {
-        let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
-        hr = Math.min(120, Math.max(55, hr));
-        
-        let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
-        temp = Math.min(39, Math.max(35, temp));
-        
-        let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
-        o2 = Math.min(100, Math.max(90, o2));
-        
-        let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
-        let diastolic = 80 + (systolic - 120) * 0.6;
-        systolic = Math.min(160, Math.max(90, systolic));
-        diastolic = Math.min(100, Math.max(60, diastolic));
-        const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
-        
-        document.getElementById('hrValue').innerText = hr;
-        document.getElementById('tempValue').innerText = temp.toFixed(1);
-        document.getElementById('o2Value').innerText = o2;
-        document.getElementById('bpValue').innerText = bp;
-        
-        if (hr < 60 || hr > 100) {
-            if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
-                addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
-                document.getElementById('healthHeartItem').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthHeartItem').classList.remove('warning');
-        }
-        
-        if (temp < 36.1 || temp > 37.2) {
-            if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
-                addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
-                document.getElementById('healthTempItem').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthTempItem').classList.remove('warning');
-        }
-        
-        if (o2 < 95) {
-            if (lastHealthState.o2 >= 95) {
-                addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
-                document.getElementById('healthO2Item').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthO2Item').classList.remove('warning');
-        }
-        
-        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
-            if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
-                addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
-                document.getElementById('healthBPItem').classList.add('warning');
-            }
-        } else {
-            document.getElementById('healthBPItem').classList.remove('warning');
-        }
-        
-        lastHealthState = { hr, temp, o2, bp };
-    }
-    
-    function simulateWheelchairMonitoring() {
-        let battery = lastWheelState.battery - (Math.random() * 1.5);
-        battery = Math.max(10, Math.min(100, battery));
-        
-        let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
-        
-        document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
-        document.getElementById('speedValue').innerText = speed + ' m/s';
-        
-        const r = Math.random();
-        const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
-        const range = (Math.random() * 8 + 2).toFixed(1);
-        document.getElementById('obstacleValue').innerText = obstacle;
-        document.getElementById('rangeValue').innerText = range + ' km';
-        
-        if (battery < 20 && lastWheelState.battery >= 20) {
-            addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
-            document.getElementById('batteryDetail').classList.add('warning');
-        } else if (battery >= 20) {
-            document.getElementById('batteryDetail').classList.remove('warning');
-        }
-        
-        const speedNum = parseFloat(speed);
-        if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
-            addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
-            document.getElementById('speedDetail').classList.add('warning');
-        } else if (speedNum <= 2.0) {
-            document.getElementById('speedDetail').classList.remove('warning');
-        }
-        
-        lastWheelState = { battery, speed: speedNum };
-    }
-    
-    function showTiltWarning(angle) {
-        addNotification('⚠️ Tilt Detected', `Wheelchair tilted at ${angle.toFixed(1)}°`, true);
-        document.getElementById('tiltValue').innerText = angle.toFixed(1) + "°";
-    }
-    
-    // =============== UI HELPER FUNCTIONS ===============
+    // =============== UI FUNCTIONS ===============
     function showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
+    }
+    
+    function showCommandFeedback(command) {
+        const feedback = document.createElement('div');
+        feedback.className = 'command-feedback';
+        feedback.textContent = `📡 ${command}`;
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 2000);
+    }
+    
+    function showTiltWarning(angle) {
+        addNotification('⚠️ Tilt Detected', `Wheelchair tilted at ${angle}°`, true);
+        document.getElementById('wheelPopup').style.display = 'block';
+        document.getElementById('tiltValue').innerText = angle.toFixed(1) + "°";
+        setTimeout(() => {
+            if (document.getElementById('wheelPopup').style.display === 'block') {
+                document.getElementById('wheelPopup').style.display = 'none';
+            }
+        }, 5000);
     }
     
     function showAlertPopup(title, message) {
@@ -1565,6 +1380,77 @@
             return m;
         });
     }
+    
+    // =============== MODE CONTROL ===============
+    function confirmModeSwitch(mode) {
+        const checks = safetyChecks[mode];
+        if (!checks) return;
+        pendingMode = mode;
+        
+        const existingPopup = document.getElementById('safetyPopup');
+        if (existingPopup) existingPopup.remove();
+        
+        const modal = document.createElement('div');
+        modal.className = 'popup-panel';
+        modal.id = 'safetyPopup';
+        modal.innerHTML = `
+            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
+            <div style="margin: 16px 0;">
+                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
+                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+        
+        document.getElementById('confirmSwitchBtn').onclick = async () => {
+            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
+            let allChecked = true;
+            checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
+            if (!allChecked) {
+                showToast('⚠️ Please tick all safety checkboxes');
+                return;
+            }
+            
+         // Send mode change to Arduino (SAFE)
+ await sendCommand("CMD:stop");   // 🔥 force stop first
+
+ if (await sendCommand(`MODE:${mode}`)) {
+     currentMode = mode;
+
+     document.getElementById('modeDisplay').innerText = currentMode;
+     document.getElementById('controlPad').style.display =
+         (currentMode === 'Control') ? 'block' : 'none';
+
+     modal.remove();
+
+     await saveModeToFirestore(currentMode);
+
+     addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
+ }
+        };
+    }
+    
+    async function saveModeToFirestore(mode) {
+        const modeRef = doc(db, "settings", MODE_ID);
+        await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
+    }
+    
+    // =============== CONTROL COMMANDS ===============
+let lastCommandTime = 0;
+
+function sendControlCommand(cmd) {
+    if (currentMode !== 'Control') return;
+
+    const now = Date.now();
+    if (now - lastCommandTime < 100) return; // limit speed
+
+    lastCommandTime = now;
+    sendCommand(`CMD:${cmd}`);
+}
     
     // =============== PATIENT MANAGEMENT ===============
     async function loadPatientFromFirestore() {
@@ -1705,26 +1591,26 @@
         let title = '', content = '';
         if (option === 'message') {
             title = '💬 Send message';
-            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3" style="width:100%; padding:12px; border-radius:16px; border:1px solid #ddd;"></textarea></div>
+            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
                 <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'calendar') {
             title = '📅 Mark calendar';
-            content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit" style="width:100%; padding:12px; border-radius:16px;"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time" style="width:100%; padding:12px; border-radius:16px;"></div>
+            content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
                 <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'appointment') {
             title = '📋 Book appointment';
-            content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name" style="width:100%; padding:12px; border-radius:16px;"></div>
-                <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name" style="width:100%; padding:12px; border-radius:16px;"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time" style="width:100%; padding:12px; border-radius:16px;"></div>
+            content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
+                <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
                 <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'media') {
             title = '🎵 Media & music';
             content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
         } else if (option === 'alarm') {
             title = '⏰ Set alarm';
-            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time" style="width:100%; padding:12px; border-radius:16px;"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time" style="width:100%; padding:12px; border-radius:16px;"></div>
+            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
                 <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         }
         document.getElementById('submenuTitle').innerText = title;
@@ -1748,6 +1634,143 @@
             }
         }, 50);
     };
+    
+    // =============== EMERGENCY FUNCTIONS ===============
+    async function triggerEmergency() {
+        emergencyActive = true;
+        await sendCommand("EMERGENCY");
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
+        
+        setTimeout(async () => {
+            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }, 5000);
+    }
+    
+    function closeShutdown() {
+        if (emergencyActive) {
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    }
+    
+    function listenEmergencyFromPatient() {
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                emergencyActive = true;
+                sendCommand("EMERGENCY");
+                document.body.classList.add('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'flex';
+                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
+            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
+                emergencyActive = false;
+                document.body.classList.remove('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'none';
+            }
+        });
+    }
+    
+    // =============== HEALTH MONITORING (SIMULATION) ===============
+    function simulateHealthMonitoring() {
+        let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
+        hr = Math.min(120, Math.max(55, hr));
+        
+        let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
+        temp = Math.min(39, Math.max(35, temp));
+        
+        let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
+        o2 = Math.min(100, Math.max(90, o2));
+        
+        let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
+        let diastolic = 80 + (systolic - 120) * 0.6;
+        systolic = Math.min(160, Math.max(90, systolic));
+        diastolic = Math.min(100, Math.max(60, diastolic));
+        const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
+        
+        document.getElementById('hrValue').innerText = hr;
+        document.getElementById('tempValue').innerText = temp.toFixed(1);
+        document.getElementById('o2Value').innerText = o2;
+        document.getElementById('bpValue').innerText = bp;
+        
+        if (hr < 60 || hr > 100) {
+            if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
+                addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
+                document.getElementById('healthHeartItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthHeartItem').classList.remove('warning');
+        }
+        
+        if (temp < 36.1 || temp > 37.2) {
+            if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
+                addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
+                document.getElementById('healthTempItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthTempItem').classList.remove('warning');
+        }
+        
+        if (o2 < 95) {
+            if (lastHealthState.o2 >= 95) {
+                addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
+                document.getElementById('healthO2Item').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthO2Item').classList.remove('warning');
+        }
+        
+        if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
+            if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
+                addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
+                document.getElementById('healthBPItem').classList.add('warning');
+            }
+        } else {
+            document.getElementById('healthBPItem').classList.remove('warning');
+        }
+        
+        lastHealthState = { hr, temp, o2, bp };
+    }
+    
+    function simulateWheelchairMonitoring() {
+        let battery = lastWheelState.battery - (Math.random() * 1.5);
+        battery = Math.max(10, Math.min(100, battery));
+        
+        let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
+        
+        document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
+        document.getElementById('speedValue').innerText = speed + ' m/s';
+        
+        const r = Math.random();
+        const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
+        const range = (Math.random() * 8 + 2).toFixed(1);
+        document.getElementById('obstacleValue').innerText = obstacle;
+        document.getElementById('rangeValue').innerText = range + ' km';
+        
+        if (battery < 20 && lastWheelState.battery >= 20) {
+            addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
+            document.getElementById('batteryDetail').classList.add('warning');
+        } else if (battery >= 20) {
+            document.getElementById('batteryDetail').classList.remove('warning');
+        }
+        
+        const speedNum = parseFloat(speed);
+        if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
+            addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
+            document.getElementById('speedDetail').classList.add('warning');
+        } else if (speedNum <= 2.0) {
+            document.getElementById('speedDetail').classList.remove('warning');
+        }
+        
+        lastWheelState = { battery, speed: speedNum };
+    }
     
     // =============== POPUP FUNCTIONS ===============
     function closeAllPopups() {
@@ -1774,12 +1797,7 @@
     window.closeShutdown = closeShutdown;
     window.clearAllNotifications = clearAllNotifications;
     window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
-    window.toggleWsConsole = toggleWsConsole;
-    window.toggleGpsFullscreen = () => { 
-        const card = document.querySelector('.map-card'); 
-        if (!document.fullscreenElement) card.requestFullscreen(); 
-        else document.exitFullscreen(); 
-    };
+    window.toggleSerialConsole = toggleSerialConsole;
     
     // =============== INITIALIZATION ===============
     document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
@@ -1807,8 +1825,8 @@
     document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
     document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display='block'; };
     document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
-    document.getElementById('wsConsoleBtn').onclick = toggleWsConsole;
-    document.getElementById('connectBtn').onclick = () => { if (isWsConnected) disconnectFromESP32(); else connectToESP32(); };
+    document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
+    document.getElementById('connectBtn').onclick = connectToArduino;
     
     // Control buttons
     document.querySelectorAll('.ctrl-btn').forEach(btn => {
@@ -1823,7 +1841,9 @@
     // Map initialization
     const map = L.map('map').setView([12.9716, 77.5946], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair Location');
+    L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
+    window.toggleGpsFullscreen = () => { const card = document.querySelector('.map-card'); if (!document.fullscreenElement) card.requestFullscreen(); else document.exitFullscreen(); };
+    document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
     
     // Start everything
     await loadPatientFromFirestore();
@@ -1851,18 +1871,13 @@
     window.onload = () => {
         document.getElementById('controlPad').style.display = 'none';
         
-        // Check if WebSocket is supported
-        if (!window.WebSocket) {
+        // Check if Web Serial API is available
+        if (!('serial' in navigator)) {
             const connectBtn = document.getElementById('connectBtn');
             connectBtn.disabled = true;
             connectBtn.style.opacity = '0.5';
-            connectBtn.title = 'WebSocket not supported';
-            showToast("⚠️ WebSocket not supported. Please use a modern browser.");
-        }
-        
-        // Auto-connect if IP exists
-        if (localStorage.getItem('esp32_ip')) {
-            setTimeout(connectToESP32, 1000);
+            connectBtn.title = 'Web Serial API not supported. Use Chrome/Edge browser.';
+            showToast("⚠️ Web Serial API not supported. Please use Chrome or Edge browser.");
         }
     };
 </script>
