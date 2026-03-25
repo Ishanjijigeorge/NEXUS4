@@ -1398,128 +1398,232 @@
             ]
         };
 
-        // =============== ANGLE SENSING FUNCTIONS ===============
+    // =============== UPDATED ANGLE SENSING FUNCTIONS ===============
+
+function updateAngleDisplay(angle) {
+    currentAngle = angle;
+    
+    // Update angle value
+    const angleValueElem = document.getElementById('angleValue');
+    const angleBarContainer = document.getElementById('angleBarContainer');
+    const angleDirectionElem = document.getElementById('angleDirection');
+    const angleCard = document.getElementById('angleCard');
+    const tiltValueInWheel = document.getElementById('tiltValue');
+    
+    // Format angle with sign
+    const angleFormatted = angle >= 0 ? angle.toFixed(1) : angle.toFixed(1);
+    angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+    
+    // FIXED: Bar should move from center (0%) to left for negative angles, right for positive
+    // Map angle from -45° to +45° to -100% to +100% (relative to center)
+    const barPositionPercent = (angle / 45) * 100; // This gives -100% to +100%
+    
+    // Create a dynamic bar that moves from center
+    // We'll use transform translateX on the bar indicator
+    const angleBarIndicator = document.getElementById('angleBarIndicator');
+    if (angleBarIndicator) {
+        // Calculate pixel position - bar should move left/right from center
+        // Max movement is about 50px left or right (adjust as needed)
+        const maxMovement = 50; // pixels
+        const pixelOffset = (angle / 45) * maxMovement;
+        angleBarIndicator.style.transform = `translateX(${pixelOffset}px)`;
         
-        function updateAngleDisplay(angle) {
-            currentAngle = angle;
-            
-            // Update angle value
-            const angleValueElem = document.getElementById('angleValue');
-            const angleBarElem = document.getElementById('angleBar');
-            const angleDirectionElem = document.getElementById('angleDirection');
-            const angleCard = document.getElementById('angleCard');
-            const tiltValueInWheel = document.getElementById('tiltValue');
-            
-            // Format angle with sign
-            const angleFormatted = angle >= 0 ? angle.toFixed(1) : angle.toFixed(1);
-            angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
-            
-            // Update bar position (map -45° to +45° to 0-100%)
-            const barPercent = ((angle + 45) / 90) * 100;
-            angleBarElem.style.width = `${Math.min(100, Math.max(0, barPercent))}%`;
-            
-            // Update direction text and styling
-            let directionText = '';
-            let directionClass = '';
-            
-            if (angle > 5) {
-                directionText = `⬅️ LEFT (${angle.toFixed(1)}°)`;
-                directionClass = 'left';
-            } else if (angle < -5) {
-                directionText = `RIGHT ➡️ (${Math.abs(angle).toFixed(1)}°)`;
-                directionClass = 'right';
-            } else {
-                directionText = '✓ STRAIGHT';
-                directionClass = 'straight';
-            }
-            
-            angleDirectionElem.className = `angle-direction ${directionClass}`;
-            angleDirectionElem.innerHTML = directionText;
-            
-            // Update angle in wheel status popup
-            if (tiltValueInWheel) {
-                tiltValueInWheel.innerText = `${angleFormatted}°`;
-            }
-            
-            // Check for tilt warning (over 25 degrees)
-            if (Math.abs(angle) > 25) {
-                angleCard.classList.add('angle-warning');
-                document.getElementById('angleStatus').innerHTML = '⚠️ WARNING: Severe tilt detected!';
-                document.getElementById('angleStatus').style.color = '#dc2626';
-                
-                // Add notification only once when threshold crossed
-                if (Math.abs(angle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
-                    addNotification('⚠️ Severe Tilt Warning', `Wheelchair tilt is ${angle.toFixed(1)}° - Risk of tipping!`, true);
+        // Change bar color based on direction and severity
+        if (Math.abs(angle) > 25) {
+            angleBarIndicator.style.background = '#dc2626';
+        } else if (Math.abs(angle) > 18) {
+            angleBarIndicator.style.background = '#f59e0b';
+        } else {
+            angleBarIndicator.style.background = '#3b82f6';
+        }
+    }
+    
+    // Also update the progress bar alternative view
+    const angleBar = document.getElementById('angleBar');
+    if (angleBar) {
+        // Alternative: Show fill from center outward
+        if (angle > 0) {
+            angleBar.style.width = `${(angle / 45) * 50}%`;
+            angleBar.style.marginLeft = '50%';
+            angleBar.style.background = 'linear-gradient(90deg, #3b82f6, #1d4ed8)';
+        } else if (angle < 0) {
+            angleBar.style.width = `${(Math.abs(angle) / 45) * 50}%`;
+            angleBar.style.marginLeft = `${50 - (Math.abs(angle) / 45) * 50}%`;
+            angleBar.style.background = 'linear-gradient(90deg, #f59e0b, #dc2626)';
+        } else {
+            angleBar.style.width = '0%';
+            angleBar.style.marginLeft = '50%';
+        }
+    }
+    
+    // Update direction text and styling
+    let directionText = '';
+    let directionClass = '';
+    let directionIcon = '';
+    
+    if (angle > 5) {
+        directionIcon = '⬅️';
+        directionText = `LEFT TURN (${angle.toFixed(1)}° left)`;
+        directionClass = 'left';
+    } else if (angle < -5) {
+        directionIcon = '➡️';
+        directionText = `RIGHT TURN (${Math.abs(angle).toFixed(1)}° right)`;
+        directionClass = 'right';
+    } else {
+        directionIcon = '✓';
+        directionText = 'STRAIGHT (centered)';
+        directionClass = 'straight';
+    }
+    
+    angleDirectionElem.className = `angle-direction ${directionClass}`;
+    angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+    
+    // Update angle in wheel status popup
+    if (tiltValueInWheel) {
+        tiltValueInWheel.innerText = `${angleFormatted}°`;
+    }
+    
+    // Update angle status with more detailed info
+    const angleStatus = document.getElementById('angleStatus');
+    if (Math.abs(angle) > 25) {
+        angleCard.classList.add('angle-warning');
+        angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt detected! Risk of tipping!';
+        angleStatus.style.color = '#dc2626';
+        angleStatus.style.fontWeight = 'bold';
+        
+        // Add notification only once when threshold crossed
+        if (Math.abs(angle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+            addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${angle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+        }
+    } else if (Math.abs(angle) > 18) {
+        angleCard.classList.add('angle-warning');
+        angleStatus.innerHTML = `⚠️ Warning: High tilt angle (${Math.abs(angle).toFixed(1)}°) - Reduce speed`;
+        angleStatus.style.color = '#f59e0b';
+        angleStatus.style.fontWeight = '500';
+    } else if (Math.abs(angle) > 10) {
+        angleCard.classList.remove('angle-warning');
+        angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(angle).toFixed(1)}°) - Be cautious`;
+        angleStatus.style.color = '#f59e0b';
+        angleStatus.style.fontWeight = 'normal';
+    } else {
+        angleCard.classList.remove('angle-warning');
+        angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+        angleStatus.style.color = '#10b981';
+        angleStatus.style.fontWeight = 'normal';
+    }
+    
+    // Add debug info to console occasionally
+    if (Math.random() < 0.05) { // 5% of updates
+        console.log(`Angle update: ${angle.toFixed(2)}° | Direction: ${directionText}`);
+    }
+    
+    lastWheelState.angle = angle;
+}
+
+// Improved angle fetch with error handling and retry logic
+async function fetchAngleData() {
+    if (!esp32Connected) {
+        return null;
+    }
+    
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
+        
+        const response = await fetch(`http://${esp32IP}/angle`, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const data = await response.text();
+            const angle = parseFloat(data);
+            if (!isNaN(angle) && isFinite(angle)) {
+                // Validate angle range
+                const validAngle = Math.min(45, Math.max(-45, angle));
+                if (validAngle !== angle) {
+                    console.warn(`Angle out of range: ${angle}, clamping to ${validAngle}`);
                 }
-            } else if (Math.abs(angle) > 18) {
-                angleCard.classList.add('angle-warning');
-                document.getElementById('angleStatus').innerHTML = '⚠️ Warning: High tilt angle';
-                document.getElementById('angleStatus').style.color = '#f59e0b';
-            } else {
-                angleCard.classList.remove('angle-warning');
-                document.getElementById('angleStatus').innerHTML = '✓ Normal operating range';
-                document.getElementById('angleStatus').style.color = '#5b687c';
+                updateAngleDisplay(validAngle);
+                return validAngle;
             }
-            
-            lastWheelState.angle = angle;
         }
-
-        // Function to poll angle data from ESP32
-        async function fetchAngleData() {
-            if (!esp32Connected) {
-                return;
-            }
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
-                
-                const response = await fetch(`http://${esp32IP}/angle`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.text();
-                    const angle = parseFloat(data);
-                    if (!isNaN(angle)) {
-                        updateAngleDisplay(angle);
-                        return angle;
-                    }
-                }
-            } catch (error) {
-                // Silent fail - angle data might not be available via endpoint
-                console.log("Angle fetch error:", error);
-            }
-            
-            // If no direct endpoint, try parsing from serial data
-            return null;
+    } catch (error) {
+        // Silent fail - angle data might not be available yet
+        if (error.name !== 'AbortError') {
+            console.log("Angle fetch error:", error.message);
         }
+    }
+    return null;
+}
 
-        // Parse angle from Arduino serial data
-        function parseAngleFromSerial(data) {
-            if (data && data.startsWith('ANGLE:')) {
-                const angle = parseFloat(data.substring(6));
-                if (!isNaN(angle)) {
-                    updateAngleDisplay(angle);
-                    return angle;
-                }
-            }
-            return null;
+// Improved angle parsing from serial data
+function parseAngleFromSerial(data) {
+    if (!data) return null;
+    
+    // Handle ANGLE: format
+    if (data.startsWith('ANGLE:')) {
+        const angleStr = data.substring(6).trim();
+        const angle = parseFloat(angleStr);
+        if (!isNaN(angle) && isFinite(angle)) {
+            const validAngle = Math.min(45, Math.max(-45, angle));
+            updateAngleDisplay(validAngle);
+            return validAngle;
         }
+    }
+    
+    // Handle direct float values (just in case)
+    const angle = parseFloat(data);
+    if (!isNaN(angle) && isFinite(angle) && Math.abs(angle) <= 90) {
+        const validAngle = Math.min(45, Math.max(-45, angle));
+        updateAngleDisplay(validAngle);
+        return validAngle;
+    }
+    
+    return null;
+}
 
-        // Start angle monitoring interval
-        function startAngleMonitoring() {
-            if (angleInterval) clearInterval(angleInterval);
-            angleInterval = setInterval(() => {
-                fetchAngleData();
-            }, 200); // Update every 200ms for smooth display
+// Enhanced angle monitoring with adaptive polling rate
+function startAngleMonitoring() {
+    if (angleInterval) clearInterval(angleInterval);
+    
+    // Poll at 100ms for smoother display (increased from 200ms)
+    angleInterval = setInterval(() => {
+        fetchAngleData();
+    }, 100);
+    
+    console.log("Angle monitoring started at 100ms interval");
+}
+
+// Calibration function for angle sensor (if needed)
+async function calibrateAngleSensor() {
+    if (!esp32Connected) {
+        showToast("⚠️ ESP32 not connected!");
+        return false;
+    }
+    
+    try {
+        const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache'
+        });
+        
+        if (response.ok) {
+            showToast("📐 Angle sensor calibration requested");
+            addNotification("Angle Calibration", "Gyro calibration initiated", false);
+            return true;
         }
-
+    } catch (error) {
+        console.error("Calibration error:", error);
+    }
+    return false;
+}
+   
         // =============== ESP32 BRIDGE FUNCTIONS ===============
 
         async function testESP32Connection() {
