@@ -548,7 +548,7 @@
         .speed-control-card {
             background: white;
             border-radius: 28px;
-            padding: 16px 20px;
+            padding: 16px;
             box-shadow: var(--shadow);
             border: var(--outline);
             margin-bottom: 16px;
@@ -576,20 +576,14 @@
             border-radius: 40px;
         }
 
-        .speed-slider-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 15px 0;
-        }
-
         .speed-slider {
-            flex: 1;
+            width: 100%;
             height: 6px;
             -webkit-appearance: none;
             background: #e2e8f0;
             border-radius: 5px;
             outline: none;
+            margin: 15px 0;
         }
 
         .speed-slider::-webkit-slider-thumb {
@@ -599,30 +593,42 @@
             border-radius: 50%;
             background: var(--blue);
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
-        .speed-slider::-webkit-slider-thumb:active {
+        .speed-slider::-webkit-slider-thumb:hover {
             transform: scale(1.2);
+        }
+
+        .speed-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 5px;
         }
 
         .speed-presets {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 12px;
         }
 
         .preset-btn {
             flex: 1;
-            background: #f1f5f9;
+            background: #eef2ff;
             border: none;
             padding: 8px;
             border-radius: 30px;
             font-size: 12px;
             font-weight: 600;
+            color: var(--blue);
             cursor: pointer;
             transition: all 0.2s;
-            color: var(--text);
+        }
+
+        .preset-btn:active {
+            transform: scale(0.95);
         }
 
         .preset-btn.active {
@@ -630,21 +636,7 @@
             color: white;
         }
 
-        .preset-btn:hover {
-            background: #e5edff;
-        }
-
-        .speed-warning {
-            font-size: 11px;
-            text-align: center;
-            margin-top: 10px;
-            padding: 6px;
-            border-radius: 20px;
-            background: #fffbeb;
-            color: #f59e0b;
-        }
-
-        /* Fixed Angle Card Styles - Synchronized Bar and Dot */
+        /* Fixed Angle Card Styles */
         .angle-card {
             background: white;
             border-radius: 28px;
@@ -1294,29 +1286,27 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- Speed Control Card - NEW -->
+    <!-- NEW: Speed Control Card -->
     <div class="speed-control-card">
         <div class="speed-header">
-            <h3>⚡ Speed Control</h3>
-            <div class="speed-value" id="speedValueDisplay">20%</div>
+            <h3>⚡ Motor Speed Control</h3>
+            <div class="speed-value" id="speedValue">150</div>
         </div>
-        <div class="speed-slider-container">
-            <span>🐢</span>
-            <input type="range" id="speedSlider" class="speed-slider" min="0" max="100" value="20" step="1">
-            <span>🐇</span>
+        <input type="range" id="speedSlider" class="speed-slider" min="0" max="255" value="150" step="5">
+        <div class="speed-labels">
+            <span>Slow (0)</span>
+            <span>Normal (150)</span>
+            <span>Fast (255)</span>
         </div>
         <div class="speed-presets">
-            <button class="preset-btn" data-speed="10">Slow (10%)</button>
-            <button class="preset-btn active" data-speed="20">Normal (20%)</button>
-            <button class="preset-btn" data-speed="35">Medium (35%)</button>
-            <button class="preset-btn" data-speed="50">Fast (50%)</button>
-        </div>
-        <div class="speed-warning" id="speedWarning">
-            ⚠️ High speeds only for experienced users
+            <button class="preset-btn" data-speed="80">🐢 Slow</button>
+            <button class="preset-btn active" data-speed="150">⚡ Normal</button>
+            <button class="preset-btn" data-speed="200">🚀 Fast</button>
+            <button class="preset-btn" data-speed="255">🏁 Max</button>
         </div>
     </div>
 
-    <!-- Angle Sensing Card - Synchronized Bar and Dot -->
+    <!-- Angle Sensing Card -->
     <div class="angle-card" id="angleCard">
         <div class="angle-header">
             <h3>📐 Tilt Angle</h3>
@@ -1326,7 +1316,6 @@
             0.0<span>°</span>
         </div>
         
-        <!-- Center-based bar visualization -->
         <div class="angle-bar-track" id="angleBarTrack">
             <div class="angle-bar-fill-left" id="angleFillLeft"></div>
             <div class="angle-bar-fill-right" id="angleFillRight"></div>
@@ -1558,11 +1547,7 @@
         let lastCommandTime = 0;
         let lastAngleValue = 0;
         let angleUpdateCount = 0;
-        
-        // Speed control variables
-        let currentSpeedPercent = 20;
-        let currentSpeedValue = 50; // PWM value (0-255)
-        let lastSpeedSend = 0;
+        let currentMotorSpeed = 150; // Default speed
 
         // Health monitoring state
         let lastHealthState = {
@@ -1601,101 +1586,68 @@
 
         // =============== SPEED CONTROL FUNCTIONS ===============
         
-        function updateSpeedDisplay() {
-            const speedDisplay = document.getElementById('speedValueDisplay');
-            const speedSlider = document.getElementById('speedSlider');
-            if (speedDisplay) speedDisplay.innerText = `${currentSpeedPercent}%`;
-            if (speedSlider) speedSlider.value = currentSpeedPercent;
-            
-            // Update warning color based on speed
-            const speedWarning = document.getElementById('speedWarning');
-            if (currentSpeedPercent > 40) {
-                speedWarning.style.background = '#fee2e2';
-                speedWarning.style.color = '#dc2626';
-                speedWarning.innerHTML = '⚠️ HIGH SPEED - Exercise caution!';
-            } else if (currentSpeedPercent > 25) {
-                speedWarning.style.background = '#fffbeb';
-                speedWarning.style.color = '#f59e0b';
-                speedWarning.innerHTML = '⚠️ Moderate speed - Stay alert';
-            } else {
-                speedWarning.style.background = '#dcfce7';
-                speedWarning.style.color = '#166534';
-                speedWarning.innerHTML = '✓ Safe speed range';
-            }
-            
-            // Update active preset button
-            document.querySelectorAll('.preset-btn').forEach(btn => {
-                const btnSpeed = parseInt(btn.dataset.speed);
-                if (btnSpeed === currentSpeedPercent) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-        
-        async function sendSpeedToArduino() {
+        async function setMotorSpeed(speed) {
             if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
                 return false;
             }
             
-            // Calculate PWM value (0-255) from percentage (0-100)
-            const pwmValue = Math.round((currentSpeedPercent / 100) * 255);
-            currentSpeedValue = pwmValue;
+            // Clamp speed between 0 and 255
+            speed = Math.min(255, Math.max(0, speed));
+            currentMotorSpeed = speed;
             
             // Send speed command to Arduino
-            const command = `SPEED:${currentSpeedPercent}`;
+            const command = `SPEED:${speed}`;
             const success = await sendCommand(command);
             
             if (success) {
-                addNotification('⚡ Speed Changed', `Wheelchair speed set to ${currentSpeedPercent}% (PWM: ${pwmValue})`, false);
+                // Update UI
+                document.getElementById('speedValue').innerText = speed;
+                document.getElementById('speedSlider').value = speed;
+                
+                // Update preset buttons active state
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    const btnSpeed = parseInt(btn.dataset.speed);
+                    if (btnSpeed === speed) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                showToast(`⚡ Speed set to ${speed}`);
+                addNotification("Speed Changed", `Motor speed set to ${speed}`, false);
+                return true;
             }
-            
-            return success;
+            return false;
         }
-        
-        function setSpeed(percent) {
-            // Clamp between 0 and 100
-            percent = Math.min(100, Math.max(0, percent));
-            currentSpeedPercent = percent;
-            updateSpeedDisplay();
-            sendSpeedToArduino();
-        }
-        
-        // =============== FIXED ANGLE SENSING FUNCTIONS - SYNCHRONIZED ===============
+
+        // =============== ANGLE SENSING FUNCTIONS ===============
         
         function updateAngleDisplay(angle) {
-            // Validate and clamp angle to -45 to 45 degrees
             let validAngle = Math.min(45, Math.max(-45, angle));
-            
-            // Store for debug
             lastAngleValue = validAngle;
             angleUpdateCount++;
             
-            // Update angle value display
             const angleValueElem = document.getElementById('angleValue');
             if (angleValueElem) {
                 const angleFormatted = validAngle.toFixed(1);
                 angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
             }
             
-            // Get the track element to calculate positions
             const track = document.getElementById('angleBarTrack');
             if (track) {
                 const trackWidth = track.offsetWidth;
                 const centerX = trackWidth / 2;
-                const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
+                const maxOffset = (trackWidth / 2) - 14;
                 
-                // Calculate dot position - moves in SAME direction as angle
                 const dotOffset = (validAngle / 45) * maxOffset;
                 const dotLeft = centerX + dotOffset;
                 
-                // Update indicator dot position
                 const indicatorDot = document.getElementById('angleIndicatorDot');
                 if (indicatorDot) {
                     indicatorDot.style.left = `${dotLeft}px`;
                     
-                    // Change dot color based on severity
                     if (Math.abs(validAngle) > 25) {
                         indicatorDot.style.background = '#dc2626';
                         indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
@@ -1708,11 +1660,9 @@
                     }
                 }
                 
-                // Bar fill - goes in SAME direction as the dot
                 const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
                 const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
                 
-                // Update left fill (expands left from center) - for LEFT turn
                 const fillLeft = document.getElementById('angleFillLeft');
                 if (fillLeft) {
                     fillLeft.style.width = `${leftFillPercent}%`;
@@ -1725,7 +1675,6 @@
                     }
                 }
                 
-                // Update right fill (expands right from center) - for RIGHT turn
                 const fillRight = document.getElementById('angleFillRight');
                 if (fillRight) {
                     fillRight.style.width = `${rightFillPercent}%`;
@@ -1739,7 +1688,6 @@
                 }
             }
             
-            // Update direction text
             const angleDirectionElem = document.getElementById('angleDirection');
             const angleCard = document.getElementById('angleCard');
             const angleStatus = document.getElementById('angleStatus');
@@ -1768,12 +1716,10 @@
                 angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
             }
             
-            // Update tilt value in wheel popup
             if (tiltValueInWheel) {
                 tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
             }
             
-            // Update status and warnings
             if (Math.abs(validAngle) > 25) {
                 angleCard.classList.add('angle-warning');
                 if (angleStatus) {
@@ -1782,7 +1728,6 @@
                     angleStatus.style.color = '#dc2626';
                     angleStatus.style.fontWeight = 'bold';
                 }
-                
                 if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
                     addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
                 }
@@ -1812,28 +1757,22 @@
                 }
             }
             
-            // Update debug info
             const debugElem = document.getElementById('angleDebug');
             if (debugElem && angleUpdateCount % 10 === 0) {
-                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Speed: ${currentSpeedPercent}%`;
+                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Speed: ${currentMotorSpeed}`;
             }
             
             lastWheelState.angle = validAngle;
         }
 
-        // Fast angle fetch
         let angleFetchInterval = null;
         let lastFetchTime = 0;
 
         async function fetchAngleData() {
-            if (!esp32Connected) {
-                return null;
-            }
+            if (!esp32Connected) return null;
             
             const now = Date.now();
-            if (now - lastFetchTime < 30) {
-                return null;
-            }
+            if (now - lastFetchTime < 30) return null;
             lastFetchTime = now;
             
             try {
@@ -1865,10 +1804,8 @@
             return null;
         }
 
-        // Parse angle from Arduino serial data
         function parseAngleFromSerial(data) {
             if (!data) return null;
-            
             if (data.startsWith('ANGLE:')) {
                 const angleStr = data.substring(6).trim();
                 const angle = parseFloat(angleStr);
@@ -1880,16 +1817,14 @@
             return null;
         }
 
-        // Start angle monitoring
         function startAngleMonitoring() {
             if (angleFetchInterval) clearInterval(angleFetchInterval);
             angleFetchInterval = setInterval(() => {
                 fetchAngleData();
             }, 33);
-            console.log("Angle monitoring started at 33ms interval");
+            console.log("Angle monitoring started");
         }
 
-        // Calibrate angle sensor
         async function calibrateAngleSensor() {
             if (!esp32Connected) {
                 showToast("⚠️ ESP32 not connected!");
@@ -1926,7 +1861,6 @@
             return false;
         }
 
-        // Add window resize handler
         window.addEventListener('resize', () => {
             if (lastAngleValue !== undefined) {
                 setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
@@ -1956,8 +1890,6 @@
                         updateConnectionStatus(true);
                         lastPing = Date.now();
                         startAngleMonitoring();
-                        // Send initial speed to Arduino
-                        setTimeout(() => sendSpeedToArduino(), 500);
                         return true;
                     }
                 }
@@ -1973,7 +1905,7 @@
 
         async function sendCommand(command) {
             if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected! Check connection.");
+                showToast("⚠️ ESP32 not connected!");
                 return false;
             }
             
@@ -2087,6 +2019,11 @@
             if (connected) {
                 showToast("✅ Connected to ESP32 Bridge!");
                 addNotification("🔌 Connected", `Connected to ESP32 at ${esp32IP}`, false);
+                
+                // Send initial speed setting
+                setTimeout(() => {
+                    setMotorSpeed(currentMotorSpeed);
+                }, 500);
                 
                 if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
                 window.heartbeatInterval = setInterval(async () => {
@@ -2592,12 +2529,10 @@
             let battery = lastWheelState.battery - (Math.random() * 1.5);
             battery = Math.max(10, Math.min(100, battery));
             
-            // Adjust speed simulation based on current speed setting
-            let speed = (currentSpeedPercent / 100) * 2.5 + (Math.random() * 0.5);
-            speed = Math.min(3.5, Math.max(0.5, speed));
+            let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
             
             document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
-            document.getElementById('speedValue').innerText = speed.toFixed(1) + ' m/s';
+            document.getElementById('speedValue').innerText = speed + ' m/s';
             
             const r = Math.random();
             const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
@@ -2613,10 +2548,10 @@
             }
             
             const speedNum = parseFloat(speed);
-            if (speedNum > 2.5 && lastWheelState.speed <= 2.5) {
-                addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum.toFixed(1)} m/s - Please reduce speed`, true);
+            if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
+                addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
                 document.getElementById('speedDetail').classList.add('warning');
-            } else if (speedNum <= 2.5) {
+            } else if (speedNum <= 2.0) {
                 document.getElementById('speedDetail').classList.remove('warning');
             }
             
@@ -2668,21 +2603,6 @@
             }
         });
 
-        // Speed control event listeners
-        const speedSlider = document.getElementById('speedSlider');
-        if (speedSlider) {
-            speedSlider.addEventListener('input', (e) => {
-                setSpeed(parseInt(e.target.value));
-            });
-        }
-        
-        document.querySelectorAll('.preset-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const speed = parseInt(btn.dataset.speed);
-                setSpeed(speed);
-            });
-        });
-
         document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
         document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
         document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
@@ -2697,6 +2617,25 @@
         document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
         document.getElementById('connectBtn').onclick = connectToESP32;
         document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
+
+        // Speed control event handlers
+        const speedSlider = document.getElementById('speedSlider');
+        speedSlider.addEventListener('input', (e) => {
+            const speed = parseInt(e.target.value);
+            document.getElementById('speedValue').innerText = speed;
+        });
+        
+        speedSlider.addEventListener('change', (e) => {
+            const speed = parseInt(e.target.value);
+            setMotorSpeed(speed);
+        });
+        
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const speed = parseInt(btn.dataset.speed);
+                setMotorSpeed(speed);
+            });
+        });
 
         document.querySelectorAll('.ctrl-btn').forEach(btn => {
             btn.onclick = () => sendControlCommand(btn.dataset.cmd);
@@ -2743,7 +2682,6 @@
         window.onload = () => {
             document.getElementById('controlPad').style.display = 'none';
             updateAngleDisplay(0);
-            updateSpeedDisplay();
             
             setTimeout(() => {
                 testESP32Connection();
