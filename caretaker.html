@@ -1206,39 +1206,39 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- FIXED Angle Sensing Card -->
-    <div class="angle-card" id="angleCard">
-        <div class="angle-header">
-            <h3>📐 Tilt Angle</h3>
-            <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
-        </div>
-        <div class="angle-value" id="angleValue">
-            0.0<span>°</span>
-        </div>
-        
-        <!-- Center-based bar visualization -->
-        <div class="angle-bar-wrapper">
-            <div class="angle-bar-track">
-                <div class="angle-bar-fill-left" id="angleFillLeft"></div>
-                <div class="angle-bar-fill-right" id="angleFillRight"></div>
-                <div class="angle-center-marker"></div>
-                <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
-            </div>
-            <div class="angle-markers">
-                <span>45° LEFT</span>
-                <span>CENTER</span>
-                <span>45° RIGHT</span>
-            </div>
-        </div>
-        
-        <div class="angle-direction" id="angleDirection">
-            ✓ STRAIGHT
-        </div>
-        <div class="angle-status" id="angleStatus">
-            Waiting for data...
-        </div>
-        <div class="angle-debug" id="angleDebug"></div>
+<!-- FIXED Angle Sensing Card with Working Fill Bars -->
+<div class="angle-card" id="angleCard">
+    <div class="angle-header">
+        <h3>📐 Tilt Angle</h3>
+        <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
     </div>
+    <div class="angle-value" id="angleValue">
+        0.0<span>°</span>
+    </div>
+    
+    <!-- Center-based bar visualization -->
+    <div class="angle-visualizer">
+        <div class="angle-track">
+            <div class="angle-fill-left" id="angleFillLeft"></div>
+            <div class="angle-fill-right" id="angleFillRight"></div>
+            <div class="angle-center-marker"></div>
+            <div class="angle-indicator" id="angleIndicator"></div>
+        </div>
+        <div class="angle-markers">
+            <span>45° LEFT</span>
+            <span>CENTER</span>
+            <span>45° RIGHT</span>
+        </div>
+    </div>
+    
+    <div class="angle-direction" id="angleDirection">
+        ✓ STRAIGHT
+    </div>
+    <div class="angle-status" id="angleStatus">
+        Waiting for data...
+    </div>
+    <div class="angle-debug" id="angleDebug"></div>
+</div>
 
     <div class="map-card">
         <div class="gps-header">
