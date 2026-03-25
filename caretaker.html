@@ -544,171 +544,189 @@
             border-radius: 40px;
         }
 
-        /* Fixed Angle Card Styles */
-        .angle-card {
-            background: white;
-            border-radius: 28px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            margin-bottom: 16px;
-            position: relative;
-        }
+     /* Fixed Angle Card Styles - Center-based Fill */
+.angle-card {
+    background: white;
+    border-radius: 28px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: var(--outline);
+    margin-bottom: 16px;
+    position: relative;
+}
 
-        .angle-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
+.angle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
 
-        .angle-header h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text);
-        }
+.angle-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+}
 
-        .angle-value {
-            font-size: 56px;
-            font-weight: 800;
-            text-align: center;
-            color: var(--blue);
-            margin: 10px 0;
-            font-family: monospace;
-            letter-spacing: 2px;
-        }
+.angle-value {
+    font-size: 56px;
+    font-weight: 800;
+    text-align: center;
+    color: var(--blue);
+    margin: 10px 0;
+    font-family: monospace;
+    letter-spacing: 2px;
+}
 
-        .angle-value span {
-            font-size: 32px;
-        }
+.angle-value span {
+    font-size: 32px;
+}
 
-        /* Fixed Center-based Bar */
-        .angle-bar-wrapper {
-            margin: 20px 0;
-            position: relative;
-        }
+/* Center-based bar visualization */
+.angle-visualizer {
+    margin: 25px 0;
+    position: relative;
+}
 
-        .angle-bar-track {
-            background: #e2e8f0;
-            border-radius: 20px;
-            height: 8px;
-            position: relative;
-            margin: 20px 0;
-        }
+.angle-track {
+    background: #e2e8f0;
+    border-radius: 30px;
+    height: 12px;
+    position: relative;
+    overflow: hidden;
+}
 
-        .angle-bar-fill-left {
-            position: absolute;
-            height: 100%;
-            background: linear-gradient(90deg, #dc2626, #f59e0b);
-            border-radius: 20px 0 0 20px;
-            right: 50%;
-            transition: width 0.05s linear;
-        }
+/* Left fill (expands from center to left) */
+.angle-fill-left {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, #dc2626, #f59e0b, #fbbf24);
+    border-radius: 30px 0 0 30px;
+    right: 50%;
+    transition: width 0.05s linear;
+    width: 0%;
+}
 
-        .angle-bar-fill-right {
-            position: absolute;
-            height: 100%;
-            background: linear-gradient(90deg, #f59e0b, #3b82f6);
-            border-radius: 0 20px 20px 0;
-            left: 50%;
-            transition: width 0.05s linear;
-        }
+/* Right fill (expands from center to right) */
+.angle-fill-right {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b, #3b82f6);
+    border-radius: 0 30px 30px 0;
+    left: 50%;
+    transition: width 0.05s linear;
+    width: 0%;
+}
 
-        .angle-center-marker {
-            position: absolute;
-            left: 50%;
-            top: -12px;
-            width: 4px;
-            height: 32px;
-            background: var(--danger);
-            transform: translateX(-50%);
-            border-radius: 2px;
-            z-index: 2;
-        }
+/* Center marker */
+.angle-center-marker {
+    position: absolute;
+    left: 50%;
+    top: -12px;
+    width: 4px;
+    height: 36px;
+    background: var(--danger);
+    transform: translateX(-50%);
+    border-radius: 2px;
+    z-index: 5;
+    box-shadow: 0 0 4px rgba(0,0,0,0.3);
+}
 
-        .angle-indicator-dot {
-            position: absolute;
-            top: -10px;
-            width: 28px;
-            height: 28px;
-            background: var(--blue);
-            border-radius: 50%;
-            transform: translateX(-50%);
-            transition: left 0.05s linear;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 3;
-            border: 2px solid white;
-        }
+/* Moving indicator dot */
+.angle-indicator {
+    position: absolute;
+    top: -10px;
+    width: 28px;
+    height: 28px;
+    background: #1d4ed8;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    transition: left 0.05s linear;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 6;
+    border: 2px solid white;
+}
 
-        .angle-markers {
-            display: flex;
-            justify-content: space-between;
-            padding: 0 10px;
-            margin-top: 5px;
-            color: var(--muted);
-            font-size: 10px;
-        }
+.angle-markers {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+}
 
-        .angle-direction {
-            text-align: center;
-            font-size: 16px;
-            font-weight: 700;
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 40px;
-            background: #f1f5f9;
-        }
+.angle-direction {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 40px;
+    background: #f1f5f9;
+    transition: all 0.2s ease;
+}
 
-        .angle-direction.left {
-            background: #dbeafe;
-            color: #1e3a8a;
-        }
+.angle-direction.left {
+    background: #dbeafe;
+    color: #1e3a8a;
+}
 
-        .angle-direction.right {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+.angle-direction.right {
+    background: #fee2e2;
+    color: #991b1b;
+}
 
-        .angle-direction.straight {
-            background: #dcfce7;
-            color: #166534;
-        }
+.angle-direction.straight {
+    background: #dcfce7;
+    color: #166534;
+}
 
-        .angle-warning {
-            border: 2px solid #dc2626;
-            animation: warning-pulse 1s ease-in-out;
-        }
+.angle-warning {
+    border: 2px solid #dc2626;
+    animation: warning-pulse 1s ease-in-out;
+}
 
-        @keyframes warning-pulse {
-            0%, 100% { border-color: #dc2626; }
-            50% { border-color: #ff6b6b; }
-        }
+@keyframes warning-pulse {
+    0%, 100% { border-color: #dc2626; }
+    50% { border-color: #ff6b6b; }
+}
 
-        .angle-status {
-            font-size: 11px;
-            text-align: center;
-            margin-top: 12px;
-            padding: 6px;
-            border-radius: 20px;
-            background: #f8fafc;
-        }
+.angle-status {
+    font-size: 11px;
+    text-align: center;
+    margin-top: 12px;
+    padding: 8px;
+    border-radius: 20px;
+    font-weight: 500;
+}
 
-        .calibrate-btn {
-            background: #eef2ff;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--blue);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+.calibrate-btn {
+    background: #eef2ff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--blue);
+    cursor: pointer;
+    transition: all 0.2s;
+}
 
-        .calibrate-btn:active {
-            transform: scale(0.95);
-        }
+.calibrate-btn:active {
+    transform: scale(0.95);
+}
 
+.angle-debug {
+    font-size: 9px;
+    text-align: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    color: #94a3b8;
+    font-family: monospace;
+    border-top: 1px solid #eef2ff;
+}
         .map-card {
             background: white;
             border-radius: 28px;
