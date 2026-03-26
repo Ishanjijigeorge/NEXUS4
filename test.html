@@ -1,17 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Nexus Care - Smart Wheelchair Control</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CareTaker · Wheelchair Control System with Speed Control</title>
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- DM Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- flatpickr for calendar & time -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+            authDomain: "nexus-org-6e7e9.firebaseapp.com",
+            projectId: "nexus-org-6e7e9",
+            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+            messagingSenderId: "989376914258",
+            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+            measurementId: "G-TP1CVNYHNE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.updateDoc = updateDoc;
+        window.arrayUnion = arrayUnion;
+        window.onSnapshot = onSnapshot;
+        window.getDoc = getDoc;
+        console.log("Firebase initialized");
+    </script>
     <style>
         * {
             margin: 0;
@@ -84,18 +114,9 @@
         }
 
         @keyframes pulse {
-            0% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(1.2);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         .connect-btn {
@@ -119,6 +140,11 @@
 
         .connect-btn.connected {
             background: var(--green);
+        }
+
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .serial-console {
@@ -244,7 +270,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        .contact-item.active {
+        .contact-item:hover {
             background: #e5edff;
             border-color: var(--blue);
         }
@@ -273,7 +299,7 @@
             transition: 0.1s;
         }
 
-        .profile-card.active {
+        .profile-card:active {
             background: #f0f4ff;
         }
 
@@ -323,11 +349,6 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            transition: 0.1s;
-        }
-
-        .icon-btn:active {
-            transform: scale(0.95);
         }
 
         .notification-badge {
@@ -372,10 +393,6 @@
             color: var(--blue);
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .edit-icon:active {
-            transform: scale(0.95);
         }
 
         .patient-row {
@@ -466,11 +483,6 @@
             justify-content: center;
             font-size: 24px;
             color: var(--blue);
-            transition: 0.1s;
-        }
-
-        .round-item:active .round-icon {
-            transform: scale(0.95);
         }
 
         .round-item span {
@@ -495,11 +507,6 @@
             justify-content: center;
             gap: 8px;
             margin-bottom: 12px;
-            transition: 0.1s;
-        }
-
-        .emergency-btn:active {
-            transform: scale(0.98);
         }
 
         .drive-mode-card {
@@ -528,7 +535,71 @@
             border-radius: 40px;
         }
 
-        /* Fixed Angle Card Styles - Synchronized Bar and Dot */
+        /* Speed Control Card */
+        .speed-control-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+        }
+
+        .speed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .speed-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .speed-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--blue);
+            background: #e5edff;
+            padding: 4px 16px;
+            border-radius: 40px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, #1d4ed8, #f59e0b, #dc2626);
+            margin: 20px 0;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .speed-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+
+        /* Angle Card Styles */
         .angle-card {
             background: white;
             border-radius: 28px;
@@ -566,7 +637,6 @@
             font-size: 32px;
         }
 
-        /* Center-based bar track */
         .angle-bar-track {
             background: #e2e8f0;
             border-radius: 20px;
@@ -576,7 +646,6 @@
             overflow: visible;
         }
 
-        /* Center marker line */
         .angle-center-marker {
             position: absolute;
             left: 50%;
@@ -589,7 +658,6 @@
             z-index: 2;
         }
 
-        /* Left fill - expands from center to left */
         .angle-bar-fill-left {
             position: absolute;
             height: 100%;
@@ -600,7 +668,6 @@
             transform-origin: right center;
         }
 
-        /* Right fill - expands from center to right */
         .angle-bar-fill-right {
             position: absolute;
             height: 100%;
@@ -611,7 +678,6 @@
             transform-origin: left center;
         }
 
-        /* Moving indicator dot */
         .angle-indicator-dot {
             position: absolute;
             top: -10px;
@@ -627,7 +693,6 @@
             cursor: pointer;
         }
 
-        /* Markers below the bar */
         .angle-markers {
             display: flex;
             justify-content: space-between;
@@ -791,12 +856,8 @@
             transition: 0.1s;
         }
 
-        .mode-option.active {
+        .mode-option:hover {
             background: #e5edff;
-        }
-
-        .mode-option:active {
-            transform: scale(0.98);
         }
 
         .shutdown-overlay {
@@ -829,27 +890,18 @@
             display: none;
         }
 
-        .ctrl-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            justify-items: center;
-            align-items: center;
-        }
-
         .ctrl-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
             background: #eef2ff;
             border: none;
-            font-size: 32px;
+            font-size: 28px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: 0.1s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .ctrl-btn:active {
@@ -864,59 +916,6 @@
 
         .ctrl-stop:active {
             background: #b91c1c;
-        }
-
-        .speed-control-card {
-            margin-top: 16px;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 32px;
-            border: 1px solid #eef2ff;
-        }
-
-        .speed-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .speed-slider {
-            width: 100%;
-            height: 8px;
-            border-radius: 4px;
-            background: #e2e8f0;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .speed-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--blue);
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            border: 2px solid white;
-        }
-
-        .speed-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 8px;
-            font-size: 11px;
-            color: #64748b;
-        }
-
-        .current-speed-badge {
-            margin-top: 12px;
-            text-align: center;
-            font-size: 12px;
-            color: #475569;
-            padding: 8px;
-            background: white;
-            border-radius: 20px;
         }
 
         .safety-check-item {
@@ -950,12 +949,8 @@
             font-size: 16px;
         }
 
-        .patient-option-item.active {
+        .patient-option-item:hover {
             background: #e5edff;
-        }
-
-        .patient-option-item:active {
-            transform: scale(0.98);
         }
 
         .patient-option-item span {
@@ -1188,90 +1183,100 @@
             padding: 12px 0;
             border-bottom: 1px solid #eef2ff;
         }
-
-        @media (max-width: 480px) {
-            .ctrl-btn {
-                width: 60px;
-                height: 60px;
-                font-size: 28px;
-            }
-        }
     </style>
 </head>
+
 <body>
 
-    <!-- Header -->
     <div class="header-row">
         <div class="profile-card" id="caretakerProfileBtn">
-            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-img" alt="profile">
+            <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver">
             <div class="profile-details">
                 <div class="profile-name">John Doe</div>
                 <div class="profile-role">caretaker</div>
             </div>
         </div>
         <div class="icon-group">
-            <button class="icon-btn" id="notificationBtn">🔔<span class="notification-badge" id="notificationBadge" style="display:none;">0</span></button>
+            <button class="icon-btn" id="notificationBtn" style="position: relative;">
+                🔔
+                <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+            </button>
             <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
             <button class="icon-btn" id="openLogBtn">📋</button>
             <button class="icon-btn" id="serialConsoleBtn">📟</button>
         </div>
     </div>
 
-    <!-- Patient Card -->
-    <div class="patient-full-card">
+    <div class="patient-full-card" id="patientCard">
         <button class="edit-icon" id="editPatientBtn">✎</button>
         <div class="patient-row">
-            <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" id="patientPhoto" class="patient-photo" alt="patient" onclick="document.getElementById('patientPhotoInput').click()">
+            <img class="patient-photo" id="patientPhoto" src="" alt="patient" onclick="triggerPhotoUpload()">
             <div class="patient-name-id">
                 <h2 id="patientNameDisplay">Loading...</h2>
-                <div class="light" id="patientIdDisplay">ID ---</div>
+                <span class="light" id="patientIdDisplay"></span>
             </div>
         </div>
         <div class="details-grid" id="patientDetailsGrid"></div>
-        <input type="file" id="patientPhotoInput" accept="image/*" style="display:none">
     </div>
 
-    <!-- Quick Action Buttons -->
+    <input type="file" id="patientPhotoInput" accept="image/*" style="display:none;">
+
     <div class="round-row">
         <button class="round-item" id="callIcon">
-            <div class="round-icon">📞</div>
-            <span>Call</span>
+            <div class="round-icon">📞</div><span>Call</span>
         </button>
         <button class="round-item" id="healthIcon">
-            <div class="round-icon">❤️</div>
-            <span>Health</span>
+            <div class="round-icon">❤️</div><span>Health</span>
         </button>
         <button class="round-item" id="wheelIcon">
-            <div class="round-icon">🦽</div>
-            <span>Wheel</span>
+            <div class="round-icon">🦽</div><span>Wheel</span>
         </button>
         <button class="round-item" id="patientIcon">
-            <div class="round-icon">👤</div>
-            <span>Patient</span>
+            <div class="round-icon">👤</div><span>Patient</span>
         </button>
     </div>
 
-    <!-- Emergency Button -->
     <button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
 
-    <!-- Drive Mode Card -->
     <div class="drive-mode-card">
         <span class="mode-label">Drive mode</span>
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- Angle Card -->
+    <!-- Speed Control Card -->
+    <div class="speed-control-card">
+        <div class="speed-header">
+            <h3>⚡ Motor Speed Control</h3>
+            <span class="speed-value" id="speedPercentDisplay">20%</span>
+        </div>
+        <input type="range" id="speedSlider" min="0" max="255" value="20" step="1">
+        <div class="speed-labels">
+            <span>0 (Stop/Brake)</span>
+            <span>64 (Slow)</span>
+            <span>128 (Medium)</span>
+            <span>192 (Fast)</span>
+            <span>255 (Max)</span>
+        </div>
+        <div style="font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px;">
+            💡 Speed applies to forward/backward/left/right movements
+        </div>
+    </div>
+
+    <!-- Angle Sensing Card -->
     <div class="angle-card" id="angleCard">
         <div class="angle-header">
             <h3>📐 Tilt Angle</h3>
             <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
         </div>
-        <div class="angle-value" id="angleValue">0.0<span>°</span></div>
+        <div class="angle-value" id="angleValue">
+            0.0<span>°</span>
+        </div>
+        
         <div class="angle-bar-track" id="angleBarTrack">
+            <div class="angle-bar-fill-left" id="angleFillLeft"></div>
+            <div class="angle-bar-fill-right" id="angleFillRight"></div>
             <div class="angle-center-marker"></div>
-            <div class="angle-bar-fill-left" id="angleFillLeft" style="width: 0%;"></div>
-            <div class="angle-bar-fill-right" id="angleFillRight" style="width: 0%;"></div>
-            <div class="angle-indicator-dot" id="angleIndicatorDot" style="left: 50%;"></div>
+            <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
         </div>
         <div class="angle-markers">
             <span>45° LEFT</span>
@@ -1280,50 +1285,16 @@
             <span>|</span>
             <span>45° RIGHT</span>
         </div>
-        <div class="angle-direction" id="angleDirection">✓ STRAIGHT</div>
-        <div class="angle-status" id="angleStatus">Waiting for data...</div>
+        
+        <div class="angle-direction" id="angleDirection">
+            ✓ STRAIGHT
+        </div>
+        <div class="angle-status" id="angleStatus">
+            Waiting for data...
+        </div>
         <div class="angle-debug" id="angleDebug"></div>
     </div>
 
-    <!-- Control Pad (visible only in Control mode) -->
-    <div id="controlPad">
-        <div class="ctrl-grid">
-            <div></div>
-            <button class="ctrl-btn" data-cmd="forward">⬆️</button>
-            <div></div>
-            <button class="ctrl-btn" data-cmd="left">⬅️</button>
-            <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
-            <button class="ctrl-btn" data-cmd="right">➡️</button>
-            <div></div>
-            <button class="ctrl-btn" data-cmd="back">⬇️</button>
-            <div></div>
-        </div>
-        
-        <!-- SPEED CONTROL SLIDER (NEW) -->
-        <div class="speed-control-card">
-            <div class="speed-header">
-                <span>⚡ Motor Speed Control</span>
-                <span id="speedDisplay" style="color: var(--blue); font-weight: 800;">120</span>
-            </div>
-            <input type="range" id="motorSpeedSlider" class="speed-slider" min="0" max="255" value="120">
-            <div class="speed-labels">
-                <span>0 (Stop)</span>
-                <span>64</span>
-                <span>128</span>
-                <span>192</span>
-                <span>255 (Max)</span>
-            </div>
-            <div class="current-speed-badge">
-                🎮 Current speed: <strong id="currentSpeedValue">120</strong>/255
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 12px; font-size: 11px; color: #64748b;">
-            Control active · tap to move
-        </div>
-    </div>
-
-    <!-- Map Card -->
     <div class="map-card">
         <div class="gps-header">
             <h3>📍 Live GPS</h3>
@@ -1332,20 +1303,30 @@
         <div id="map"></div>
     </div>
 
-    <!-- Connect Button -->
+    <div id="controlPad">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <button class="ctrl-btn" data-cmd="forward">⬆️</button>
+            <div style="display: flex; gap: 20px;">
+                <button class="ctrl-btn" data-cmd="left">⬅️</button>
+                <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
+                <button class="ctrl-btn" data-cmd="right">➡️</button>
+            </div>
+            <button class="ctrl-btn" data-cmd="back">⬇️</button>
+        </div>
+        <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
+    </div>
+
     <button class="connect-btn" id="connectBtn">🔌 Connect to ESP32</button>
 
-    <!-- Serial Console -->
     <div class="serial-console" id="serialConsole">
         <div class="console-header">
             <span>📟 Command Log</span>
-            <button onclick="toggleSerialConsole()" style="background:none;border:none;color:white;">✕</button>
+            <button onclick="toggleSerialConsole()" style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
         </div>
         <div class="console-content" id="consoleContent"></div>
     </div>
 
-    <!-- Mode Popup -->
-    <div class="popup-panel" id="modePopup">
+    <div id="modePopup" class="popup-panel">
         <div class="popup-header">
             <h3>⚙️ Select mode</h3>
             <button class="close-popup" onclick="closeModePopup()">×</button>
@@ -1355,19 +1336,17 @@
         <div class="mode-option" data-mode="Self Drive">🤖 Self Drive</div>
     </div>
 
-    <!-- Call Popup -->
-    <div class="popup-panel" id="callPopup">
+    <div id="callPopup" class="popup-panel">
         <div class="popup-header">
             <h3>📞 Emergency</h3>
             <button class="close-popup" onclick="closePopup('call')">×</button>
         </div>
-        <div class="contact-item">🚑 Ambulance 108</div>
-        <div class="contact-item">👨‍⚕️ Dr. Adams +1 555 1234</div>
-        <div class="contact-item">🏠 Michael +1 555 8723</div>
+        <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
+        <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
+        <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
     </div>
 
-    <!-- Health Popup -->
-    <div class="popup-panel" id="healthPopup">
+    <div id="healthPopup" class="popup-panel">
         <div class="popup-header">
             <h3>❤️ Health Monitoring</h3>
             <button class="close-popup" onclick="closePopup('health')">×</button>
@@ -1376,28 +1355,27 @@
             <div class="health-item" id="healthHeartItem">
                 <span>Heart Rate</span>
                 <div class="value" id="hrValue">84</div>
-                <span>bpm</span>
+                <small>bpm</small>
             </div>
             <div class="health-item" id="healthBPItem">
                 <span>Blood Pressure</span>
                 <div class="value" id="bpValue">130/80</div>
-                <span>mmHg</span>
+                <small>mmHg</small>
             </div>
             <div class="health-item" id="healthTempItem">
                 <span>Temperature</span>
                 <div class="value" id="tempValue">36.8</div>
-                <span>°C</span>
+                <small>°C</small>
             </div>
             <div class="health-item" id="healthO2Item">
                 <span>SpO₂</span>
                 <div class="value" id="o2Value">98</div>
-                <span>%</span>
+                <small>%</small>
             </div>
         </div>
     </div>
 
-    <!-- Wheelchair Popup -->
-    <div class="popup-panel" id="wheelPopup">
+    <div id="wheelPopup" class="popup-panel">
         <div class="popup-header">
             <h3>🦽 Wheelchair Status</h3>
             <button class="close-popup" onclick="closePopup('wheel')">×</button>
@@ -1424,21 +1402,19 @@
         </div>
     </div>
 
-    <!-- Patient Main Menu -->
-    <div class="popup-panel" id="patientMainMenu">
+    <div id="patientMainMenu" class="popup-panel">
         <div class="popup-header">
             <h3>👤 Patient menu</h3>
             <button class="close-popup" onclick="closePatientMainMenu()">×</button>
         </div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('message')">💬 Send message</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('calendar')">📅 Mark calendar</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('appointment')">📋 Book appointment</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('media')">🎵 Media & music</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('alarm')">⏰ Set alarm</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('message')"><span>💬</span> Send message</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('calendar')"><span>📅</span> Mark calendar</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('appointment')"><span>📋</span> Book appointment</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('media')"><span>🎵</span> Media & music</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('alarm')"><span>⏰</span> Set alarm</div>
     </div>
 
-    <!-- Patient Submenu -->
-    <div class="popup-panel" id="patientSubmenu">
+    <div id="patientSubmenu" class="popup-panel" style="display: none;">
         <div class="popup-header">
             <h3 id="submenuTitle">Title</h3>
             <button class="close-popup" onclick="closePatientSubmenu()">×</button>
@@ -1446,82 +1422,60 @@
         <div id="submenuContent"></div>
     </div>
 
-    <!-- Notification Popup -->
-    <div class="popup-panel" id="notificationPopup">
+    <div id="notificationPopup" class="popup-panel" style="max-width: 400px;">
         <div class="popup-header">
             <h3>🔔 Notifications</h3>
             <button class="close-popup" onclick="closeNotificationPopup()">×</button>
         </div>
-        <div id="notificationList"></div>
-        <button class="btn-primary" style="width:100%; margin-top:12px;" onclick="clearAllNotifications()">Clear All</button>
+        <div id="notificationList" style="max-height: 400px; overflow-y: auto;"></div>
+        <button class="btn-secondary" style="margin-top: 16px; width: 100%;" onclick="clearAllNotifications()">Clear All</button>
     </div>
 
-    <!-- Caretaker Popup -->
-    <div class="popup-panel" id="caretakerPopup">
+    <div id="caretakerPopup" class="popup-panel caretaker-popup">
         <div class="popup-header">
             <h3>👤 Caretaker</h3>
             <button class="close-popup" onclick="closeCaretakerPopup()">×</button>
         </div>
-        <div class="detail-row"><span>John Doe</span><span>ID: CT-2210</span></div>
-        <div class="detail-row">📧 Email john.d@care.com</div>
-        <div class="detail-row">📞 Phone +1 555 7700</div>
-        <div class="detail-row">🏥 Facility HomeCare Plus</div>
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
+            <div><strong>John Doe</strong><br><span style="color:var(--muted);">ID: CT-2210</span></div>
+        </div>
+        <div class="detail-row"><span>📧 Email</span> <span>john.d@care.com</span></div>
+        <div class="detail-row"><span>📞 Phone</span> <span>+1 555 7700</span></div>
+        <div class="detail-row"><span>🏥 Facility</span> <span>HomeCare Plus</span></div>
     </div>
 
-    <!-- Edit Patient Popup -->
-    <div class="popup-panel" id="editPatientPopup">
+    <div id="editPatientPopup" class="popup-panel" style="max-width: 420px;">
         <div class="popup-header">
             <h3>✏️ Edit Patient Details</h3>
             <button class="close-popup" onclick="closeEditPatientPopup()">×</button>
         </div>
-        <div id="editPatientForm"></div>
-        <div class="button-group">
+        <div id="editPatientForm" class="edit-fields-container"></div>
+        <div class="button-group" style="margin-top: 20px;">
             <button class="btn-primary" id="savePatientEditBtn">💾 Save Changes</button>
             <button class="btn-secondary" onclick="closeEditPatientPopup()">Cancel</button>
         </div>
     </div>
 
-    <!-- Shutdown Overlay -->
     <div class="shutdown-overlay" id="shutdownOverlay">
         <div class="shutdown-card">
-            <div style="font-size:48px;">⚠️</div>
-            <div style="font-size:20px; font-weight:800; margin:12px 0;">EMERGENCY HALT</div>
-            <div style="margin-bottom:20px;">Emergency stop activated</div>
-            <button onclick="closeShutdown()" style="background:white; color:#0f172a; border:none; border-radius:40px; padding:10px 20px; font-weight:700;">Dismiss</button>
+            <div style="font-size:40px;">⚠️</div>
+            <div style="font-size:22px; font-weight:700;">EMERGENCY HALT</div>
+            <p style="margin:12px 0;">Emergency stop activated</p>
+            <button onclick="closeShutdown()" style="background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
         </div>
     </div>
 
-    <!-- Connection Status -->
     <div class="connection-status disconnected" id="connectionStatus">
-        <div class="status-dot"></div>
-        <span id="connectionText">ESP32 Disconnected</span>
+        <span class="status-dot"></span>
+        <span id="connectionText">Disconnected</span>
+        <span id="baudRate" class="baud-rate">(ESP32 Bridge)</span>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
-            }
-        }
-    </script>
-
     <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "firebase/firestore";
+        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
-            authDomain: "nexus-org-6e7e9.firebaseapp.com",
-            projectId: "nexus-org-6e7e9",
-            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
-            messagingSenderId: "989376914258",
-            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
-            measurementId: "G-TP1CVNYHNE"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        const db = window.db;
         const PATIENT_ID = "patient_main";
         const MODE_ID = "drive_mode";
         const EMERGENCY_ID = "emergency_status";
@@ -1549,9 +1503,7 @@
         let lastCommandTime = 0;
         let lastAngleValue = 0;
         let angleUpdateCount = 0;
-
-        // Speed Control Variables
-        let currentMotorSpeed = 120;
+        let currentSpeed = 20;
 
         // Health monitoring state
         let lastHealthState = {
@@ -1589,29 +1541,43 @@
         };
 
         // =============== SPEED CONTROL FUNCTIONS ===============
-        
-        function updateSpeedDisplay() {
-            const speedDisplay = document.getElementById('speedDisplay');
-            const currentSpeedValue = document.getElementById('currentSpeedValue');
-            if (speedDisplay) speedDisplay.innerText = currentMotorSpeed;
-            if (currentSpeedValue) currentSpeedValue.innerText = currentMotorSpeed;
-        }
-
-        function initSpeedControl() {
-            const speedSlider = document.getElementById('motorSpeedSlider');
-            if (speedSlider) {
-                speedSlider.value = currentMotorSpeed;
-                speedSlider.addEventListener('input', function(e) {
-                    currentMotorSpeed = parseInt(e.target.value);
-                    updateSpeedDisplay();
-                    showToast(`⚡ Speed set to ${currentMotorSpeed}/255`);
-                });
+        async function setMotorSpeed(speed) {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
+                return false;
             }
-            updateSpeedDisplay();
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const response = await fetch(`http://${esp32IP}/speed?speed=${speed}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    currentSpeed = speed;
+                    const percent = Math.round((speed / 255) * 100);
+                    document.getElementById('speedPercentDisplay').innerText = `${percent}%`;
+                    showToast(`⚡ Speed set to ${percent}%`);
+                    addToSerialConsole(`→ SPEED:${speed} (${percent}%)`, true);
+                    return true;
+                } else {
+                    throw new Error("HTTP " + response.status);
+                }
+            } catch (error) {
+                console.error("Speed set error:", error);
+                showToast("❌ Failed to set speed");
+                return false;
+            }
         }
 
-        // =============== ANGLE DISPLAY FUNCTIONS ===============
-        
+        // =============== ANGLE SENSING FUNCTIONS ===============
         function updateAngleDisplay(angle) {
             let validAngle = Math.min(45, Math.max(-45, angle));
             lastAngleValue = validAngle;
@@ -1654,25 +1620,11 @@
                 const fillLeft = document.getElementById('angleFillLeft');
                 if (fillLeft) {
                     fillLeft.style.width = `${leftFillPercent}%`;
-                    if (validAngle > 25) {
-                        fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
-                    } else if (validAngle > 18) {
-                        fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-                    } else if (validAngle > 0) {
-                        fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
-                    }
                 }
                 
                 const fillRight = document.getElementById('angleFillRight');
                 if (fillRight) {
                     fillRight.style.width = `${rightFillPercent}%`;
-                    if (validAngle < -25) {
-                        fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
-                    } else if (validAngle < -18) {
-                        fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
-                    } else if (validAngle < 0) {
-                        fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
-                    }
                 }
             }
             
@@ -1716,7 +1668,6 @@
                     angleStatus.style.color = '#dc2626';
                     angleStatus.style.fontWeight = 'bold';
                 }
-                
                 if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
                     addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
                 }
@@ -1754,8 +1705,6 @@
             lastWheelState.angle = validAngle;
         }
 
-        // =============== ESP32 BRIDGE FUNCTIONS ===============
-        
         let angleFetchInterval = null;
         let lastFetchTime = 0;
 
@@ -1780,31 +1729,14 @@
                 clearTimeout(timeoutId);
                 
                 if (response.ok) {
-                    const data = await response.text();
-                    const angle = parseFloat(data);
+                    const angle = parseFloat(await response.text());
                     if (!isNaN(angle) && isFinite(angle)) {
                         updateAngleDisplay(angle);
                         return angle;
                     }
                 }
             } catch (error) {
-                if (error.name !== 'AbortError' && Math.random() < 0.02) {
-                    console.log("Angle fetch:", error.message);
-                }
-            }
-            return null;
-        }
-
-        function parseAngleFromSerial(data) {
-            if (!data) return null;
-            
-            if (data.startsWith('ANGLE:')) {
-                const angleStr = data.substring(6).trim();
-                const angle = parseFloat(angleStr);
-                if (!isNaN(angle) && isFinite(angle)) {
-                    updateAngleDisplay(angle);
-                    return angle;
-                }
+                // Silent fail
             }
             return null;
         }
@@ -1824,7 +1756,7 @@
             }
             
             try {
-                const response = await fetch(`http://${esp32IP}/calibrate`, {
+                const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
                     method: 'GET',
                     mode: 'cors',
                     cache: 'no-cache'
@@ -1853,6 +1785,7 @@
             return false;
         }
 
+        // =============== ESP32 BRIDGE FUNCTIONS ===============
         async function testESP32Connection() {
             try {
                 const controller = new AbortController();
@@ -2016,24 +1949,7 @@
             }
         }
 
-        // =============== CONTROL COMMAND WITH SPEED ===============
-        
-        function sendControlCommand(cmd) {
-            if (currentMode !== 'Control') {
-                showToast("⚠️ Not in Control mode");
-                return;
-            }
-            
-            const now = Date.now();
-            if (now - lastCommandTime < 100) return;
-            lastCommandTime = now;
-            
-            // Send command with current speed
-            sendCommand(`CMD:${cmd}:${currentMotorSpeed}`);
-        }
-
         // =============== UI FUNCTIONS ===============
-
         function showToast(message) {
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -2061,11 +1977,6 @@
             const line = document.createElement('div');
             line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
             consoleContent.appendChild(line);
-            
-            if (!isOutgoing) {
-                parseAngleFromSerial(message);
-            }
-            
             line.scrollIntoView();
             
             while (consoleContent.children.length > 200) {
@@ -2131,7 +2042,7 @@
             if (!container) return;
             
             if (notifications.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;">No notifications yet</div>';
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No notifications yet</div>';
                 return;
             }
             
@@ -2163,7 +2074,6 @@
         }
 
         // =============== MODE CONTROL ===============
-
         function confirmModeSwitch(mode) {
             const checks = safetyChecks[mode];
             if (!checks) return;
@@ -2178,12 +2088,7 @@
             modal.innerHTML = `
                 <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
                 <div style="margin: 16px 0;">
-                    ${checks.map((text, index) => `
-                        <div class="safety-check-item">
-                            <input type="checkbox" class="safety-checkbox" id="check_${index}">
-                            <label for="check_${index}">${escapeHtml(text)}</label>
-                        </div>
-                    `).join('')}
+                    ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
                 </div>
                 <div style="display: flex; gap: 12px;">
                     <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
@@ -2202,6 +2107,8 @@
                     return;
                 }
                 
+                await sendCommand("CMD:stop");
+                
                 if (await sendCommand(`MODE:${mode}`)) {
                     currentMode = mode;
                     document.getElementById('modeDisplay').innerText = currentMode;
@@ -2218,8 +2125,20 @@
             await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
         }
 
-        // =============== EMERGENCY FUNCTIONS ===============
+        function sendControlCommand(cmd) {
+            if (currentMode !== 'Control') {
+                showToast("Not in Control mode");
+                return;
+            }
+            
+            const now = Date.now();
+            if (now - lastCommandTime < 100) return;
+            lastCommandTime = now;
+            
+            sendCommand(`CMD:${cmd}`);
+        }
 
+        // =============== EMERGENCY FUNCTIONS ===============
         async function triggerEmergency() {
             emergencyActive = true;
             await sendEmergency();
@@ -2264,7 +2183,6 @@
         }
 
         // =============== PATIENT MANAGEMENT ===============
-
         async function loadPatientFromFirestore() {
             const patientRef = doc(db, "patients", PATIENT_ID);
             const docSnap = await getDoc(patientRef);
@@ -2295,7 +2213,8 @@
             fields.forEach(f => {
                 const div = document.createElement('div');
                 div.className = 'detail-item';
-                div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${patientData[f.key] || '—'}</div>`;
+                div.innerHTML = `<span class="detail-label">${f.label}</span>
+                <div class="detail-value">${patientData[f.key] || '—'}</div>`;
                 grid.appendChild(div);
             });
             document.getElementById('patientNameDisplay').innerText = patientData.fullName;
@@ -2336,7 +2255,6 @@
         }
 
         // =============== PATIENT ACTIONS ===============
-
         async function saveActionToFirestore(type, data) {
             const actionsRef = doc(db, "patientActions", "feed");
             try {
@@ -2359,7 +2277,7 @@
             const msg = document.getElementById('messageText')?.value;
             if (!msg) return showToast('Please enter a message');
             await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleString() });
-            showToast('💬 Message sent to patient');
+            showToast(`💬 Message sent to patient`);
             document.getElementById('messageText').value = '';
             closePatientSubmenu();
         };
@@ -2369,7 +2287,7 @@
             const dt = document.getElementById('calendarDateTime')?.value;
             if (!event) return showToast('Please enter an event');
             await saveActionToFirestore("calendar", { title: event, detail: dt || "No time set", time: dt });
-            showToast('📅 Calendar event added');
+            showToast(`📅 Calendar event added`);
             closePatientSubmenu();
         };
 
@@ -2385,7 +2303,7 @@
 
         window.playMedia = async () => {
             await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
-            showToast('🎵 Media player started');
+            showToast(`🎵 Media player started`);
             closePatientSubmenu();
         };
 
@@ -2404,26 +2322,26 @@
             if (option === 'message') {
                 title = '💬 Send message';
                 content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
-                           <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+                <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
             } else if (option === 'calendar') {
                 title = '📅 Mark calendar';
                 content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
-                           <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-                           <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
             } else if (option === 'appointment') {
                 title = '📋 Book appointment';
                 content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
-                           <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
-                           <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-                           <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+                <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
+                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
             } else if (option === 'media') {
                 title = '🎵 Media & music';
                 content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
             } else if (option === 'alarm') {
                 title = '⏰ Set alarm';
                 content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
-                           <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-                           <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
             }
             document.getElementById('submenuTitle').innerText = title;
             document.getElementById('submenuContent').innerHTML = content;
@@ -2448,7 +2366,6 @@
         };
 
         // =============== HEALTH MONITORING (SIMULATION) ===============
-
         function simulateHealthMonitoring() {
             let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
             hr = Math.min(120, Math.max(55, hr));
@@ -2543,7 +2460,6 @@
         }
 
         // =============== POPUP FUNCTIONS ===============
-
         function closeAllPopups() {
             document.querySelectorAll('.popup-panel').forEach(p => p.style.display = 'none');
             document.getElementById('safetyPopup')?.remove();
@@ -2571,23 +2487,7 @@
         window.toggleSerialConsole = toggleSerialConsole;
         window.calibrateAngleSensor = calibrateAngleSensor;
 
-        // =============== MAP INITIALIZATION ===============
-        
-        const map = L.map('map').setView([12.9716, 77.5946], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
-
-        window.toggleGpsFullscreen = () => {
-            const card = document.querySelector('.map-card');
-            if (!document.fullscreenElement) card.requestFullscreen();
-            else document.exitFullscreen();
-        };
-
-        document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
-
         // =============== INITIALIZATION ===============
-
-        // Photo upload handler
         document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -2602,7 +2502,6 @@
             }
         });
 
-        // Button event listeners
         document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
         document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
         document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
@@ -2617,24 +2516,33 @@
         document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
         document.getElementById('connectBtn').onclick = connectToESP32;
         document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
-
-        // Control buttons with speed
-        document.querySelectorAll('.ctrl-btn').forEach(btn => {
-            btn.onclick = () => {
-                const cmd = btn.dataset.cmd;
-                sendControlCommand(cmd);
-            };
+        
+        // Speed control event listener
+        document.getElementById('speedSlider').addEventListener('input', function(e) {
+            const speed = parseInt(e.target.value);
+            setMotorSpeed(speed);
         });
 
-        // Mode options
+        document.querySelectorAll('.ctrl-btn').forEach(btn => {
+            btn.onclick = () => sendControlCommand(btn.dataset.cmd);
+        });
+
         document.querySelectorAll('.mode-option').forEach(opt => {
             opt.onclick = () => setMode(opt.dataset.mode);
         });
 
-        // Initialize speed control
-        initSpeedControl();
+        const map = L.map('map').setView([12.9716, 77.5946], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
 
-        // Load data and start monitoring
+        window.toggleGpsFullscreen = () => {
+            const card = document.querySelector('.map-card');
+            if (!document.fullscreenElement) card.requestFullscreen();
+            else document.exitFullscreen();
+        };
+
+        document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
+
         await loadPatientFromFirestore();
         listenDriveMode();
         listenEmergencyFromPatient();
@@ -2667,4 +2575,5 @@
         };
     </script>
 </body>
+
 </html>
