@@ -1,190 +1,2670 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Motor Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nexus Care - Smart Wheelchair Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
     <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            background: #f0f0f0;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'DM Sans', sans-serif;
         }
-        .button {
-            padding: 20px;
-            margin: 10px;
+
+        :root {
+            --bg: #f4f7fd;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #5b687c;
+            --blue: #1d4ed8;
+            --danger: #dc2626;
+            --amber: #f59e0b;
+            --green: #10b981;
+            --radius: 24px;
+            --shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+            --outline: 1px solid rgba(29, 78, 216, 0.1);
+        }
+
+        body {
+            background: var(--bg);
+            padding: 12px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        /* Connection Status Indicator */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #dc2626;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.connected {
+            background: #10b981;
+        }
+
+        .connection-status.disconnected {
+            background: #dc2626;
+        }
+
+        .connection-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .connection-status .baud-rate {
+            font-size: 9px;
+            opacity: 0.8;
+            margin-left: 8px;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .connect-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .connect-btn.connected {
+            background: var(--green);
+        }
+
+        .serial-console {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            max-width: 400px;
+            background: #1e293b;
+            color: #a5f3c3;
+            border-radius: 16px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 11px;
+            z-index: 1000;
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .serial-console.show {
+            display: block;
+        }
+
+        .serial-console .console-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 10px;
+        }
+
+        .serial-console .console-content {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .health-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .health-item {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid #eef2ff;
+        }
+
+        .health-item span {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .health-item .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        .health-item.warning {
+            background: #fff5f5;
+            border-color: var(--danger);
+        }
+
+        .health-item.warning .value {
+            color: var(--danger);
+        }
+
+        .wheel-detail {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border: 1px solid #eef2ff;
+        }
+
+        .wheel-detail.warning {
+            background: #fff5f5;
+            border-color: var(--danger);
+        }
+
+        .wheel-detail.warning strong {
+            color: var(--danger);
+        }
+
+        .wheel-detail span {
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .wheel-detail strong {
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .contact-item {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .contact-item.active {
+            background: #e5edff;
+            border-color: var(--blue);
+        }
+
+        body.emergency-shutdown .shutdown-overlay {
+            display: flex;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 40px;
+            padding: 6px 16px 6px 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .profile-card.active {
+            background: #f0f4ff;
+        }
+
+        .profile-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 30px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #cbd5e1;
+        }
+
+        .profile-details {
+            text-align: left;
+        }
+
+        .profile-name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .profile-role {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .icon-group {
+            display: flex;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            gap: 6px;
+            position: relative;
+        }
+
+        .icon-btn {
+            background: #f0f4fe;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
             font-size: 18px;
             cursor: pointer;
-            border: none;
-            border-radius: 10px;
-            background: #007bff;
-            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: 0.1s;
         }
-        .button:active {
+
+        .icon-btn:active {
             transform: scale(0.95);
         }
-        .emergency {
-            background: #dc3545;
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .speed-control {
-            margin: 20px 0;
-            padding: 20px;
+
+        .patient-full-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 28px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 14px;
+            position: relative;
         }
-        input[type="range"] {
+
+        .edit-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #eef2ff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .edit-icon:active {
+            transform: scale(0.95);
+        }
+
+        .patient-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .patient-photo {
+            width: 70px;
+            height: 70px;
+            border-radius: 24px;
+            object-fit: cover;
+            background: #cbd5e1;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        .patient-name-id {
+            flex: 1;
+        }
+
+        .patient-name-id h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .patient-name-id .light {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 2px;
+        }
+
+        .round-row {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 12px 8px;
+            border-radius: 60px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 14px;
+        }
+
+        .round-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 60px;
+        }
+
+        .round-icon {
+            width: 50px;
+            height: 50px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29, 78, 216, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+            transition: 0.1s;
+        }
+
+        .round-item:active .round-icon {
+            transform: scale(0.95);
+        }
+
+        .round-item span {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .emergency-btn {
             width: 100%;
-            margin: 10px 0;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            transition: 0.1s;
         }
-        .status {
-            padding: 10px;
-            margin: 10px 0;
+
+        .emergency-btn:active {
+            transform: scale(0.98);
+        }
+
+        .drive-mode-card {
             background: white;
-            border-radius: 5px;
+            border-radius: 40px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .mode-label {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .mode-value {
+            font-weight: 700;
+            color: var(--blue);
+            background: #e5edff;
+            padding: 6px 24px;
+            border-radius: 40px;
+        }
+
+        /* Fixed Angle Card Styles - Synchronized Bar and Dot */
+        .angle-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .angle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .angle-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .angle-value {
+            font-size: 56px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--blue);
+            margin: 10px 0;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+
+        .angle-value span {
+            font-size: 32px;
+        }
+
+        /* Center-based bar track */
+        .angle-bar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 8px;
+            position: relative;
+            margin: 20px 0;
+            overflow: visible;
+        }
+
+        /* Center marker line */
+        .angle-center-marker {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            width: 3px;
+            height: 32px;
+            background: #dc2626;
+            transform: translateX(-50%);
+            border-radius: 2px;
+            z-index: 2;
+        }
+
+        /* Left fill - expands from center to left */
+        .angle-bar-fill-left {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6);
+            border-radius: 20px 0 0 20px;
+            right: 50%;
+            transition: width 0.05s linear;
+            transform-origin: right center;
+        }
+
+        /* Right fill - expands from center to right */
+        .angle-bar-fill-right {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626);
+            border-radius: 0 20px 20px 0;
+            left: 50%;
+            transition: width 0.05s linear;
+            transform-origin: left center;
+        }
+
+        /* Moving indicator dot */
+        .angle-indicator-dot {
+            position: absolute;
+            top: -10px;
+            width: 28px;
+            height: 28px;
+            background: #1d4ed8;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 3;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        /* Markers below the bar */
+        .angle-markers {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .angle-direction {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 40px;
+            background: #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .angle-direction.left {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .angle-direction.right {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .angle-direction.straight {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .angle-warning {
+            border: 2px solid #dc2626;
+            animation: warning-pulse 1s ease-in-out;
+        }
+
+        @keyframes warning-pulse {
+            0%, 100% { border-color: #dc2626; }
+            50% { border-color: #ff6b6b; }
+        }
+
+        .angle-status {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+            padding: 8px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .angle-debug {
+            font-size: 9px;
+            text-align: center;
+            margin-top: 8px;
+            color: #94a3b8;
             font-family: monospace;
         }
-        .connected {
-            background: #28a745;
+
+        .calibrate-btn {
+            background: #eef2ff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--blue);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calibrate-btn:active {
+            transform: scale(0.95);
+        }
+
+        .map-card {
+            background: white;
+            border-radius: 28px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+
+        .gps-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .gps-header h3 {
+            font-size: 16px;
+        }
+
+        .fullscreen-btn {
+            border: none;
+            background: #eef2ff;
+            color: #1e3a8a;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #map {
+            height: 170px;
+            border-radius: 20px;
+            background: #e2e8f0;
+        }
+
+        .popup-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 36px;
+            padding: 22px;
+            width: calc(100% - 32px);
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .popup-header h3 {
+            font-size: 20px;
+        }
+
+        .close-popup {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .mode-option {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .mode-option.active {
+            background: #e5edff;
+        }
+
+        .mode-option:active {
+            transform: scale(0.98);
+        }
+
+        .shutdown-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .shutdown-card {
+            background: #0f172a;
+            padding: 24px;
+            border-radius: 40px;
+            color: white;
+            text-align: center;
+            width: 280px;
+        }
+
+        #controlPad {
+            margin-top: 16px;
+            background: white;
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            display: none;
+        }
+
+        .ctrl-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .ctrl-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50px;
+            background: #eef2ff;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .ctrl-btn:active {
+            background: #d0dbff;
+            transform: scale(0.95);
+        }
+
+        .ctrl-stop {
+            background: #dc2626;
             color: white;
         }
-        .disconnected {
-            background: #dc3545;
+
+        .ctrl-stop:active {
+            background: #b91c1c;
+        }
+
+        .speed-control-card {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 32px;
+            border: 1px solid #eef2ff;
+        }
+
+        .speed-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .speed-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid white;
+        }
+
+        .speed-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .current-speed-badge {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 12px;
+            color: #475569;
+            padding: 8px;
+            background: white;
+            border-radius: 20px;
+        }
+
+        .safety-check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 30px;
+        }
+
+        .safety-check-item input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--blue);
+        }
+
+        .patient-option-item {
+            background: #f1f5f9;
+            border-radius: 30px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 16px;
+        }
+
+        .patient-option-item.active {
+            background: #e5edff;
+        }
+
+        .patient-option-item:active {
+            transform: scale(0.98);
+        }
+
+        .patient-option-item span {
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 30px;
+            border: 1px solid #dbe0e8;
+            background: #f9fcff;
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .btn-primary {
+            background: var(--blue);
             color: white;
+        }
+
+        .btn-secondary {
+            background: #eef2ff;
+            color: var(--text);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            text-align: center;
+            z-index: 3000;
+            animation: slideUp 0.3s ease;
+            max-width: 320px;
+            margin: 0 auto;
+            pointer-events: none;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .edit-fields-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .edit-field-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .edit-field-row label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .edit-field-row input {
+            padding: 10px 14px;
+            border-radius: 16px;
+            border: 1px solid #d0d5dd;
+            font-size: 14px;
+        }
+
+        .alert-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 32px;
+            padding: 28px 24px;
+            min-width: 280px;
+            max-width: 340px;
+            text-align: center;
+            z-index: 3500;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: popIn 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .alert-popup .alert-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .alert-popup .alert-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .alert-popup .alert-message {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .alert-popup button {
+            background: white;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .notification-log-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--blue);
+        }
+
+        .notification-log-item.warning {
+            border-left-color: var(--danger);
+            background: #fff5f5;
+        }
+
+        .notification-log-item .log-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .notification-log-item .log-message {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .notification-log-item .log-time {
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .command-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: fadeOut 2s ease forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            70% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eef2ff;
+        }
+
+        @media (max-width: 480px) {
+            .ctrl-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🎮 Wheelchair Motor Test</h1>
-    
-    <div class="status" id="status">Disconnected</div>
-    
-    <div class="speed-control">
-        <h3>⚡ Motor Speed: <span id="speedValue">20</span>%</h3>
-        <input type="range" id="speedSlider" min="0" max="100" value="20">
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button class="button" onclick="setSpeed(0)">0%</button>
-            <button class="button" onclick="setSpeed(20)">20%</button>
-            <button class="button" onclick="setSpeed(40)">40%</button>
-            <button class="button" onclick="setSpeed(60)">60%</button>
-            <button class="button" onclick="setSpeed(80)">80%</button>
-            <button class="button" onclick="setSpeed(100)">100%</button>
+
+    <!-- Header -->
+    <div class="header-row">
+        <div class="profile-card" id="caretakerProfileBtn">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-img" alt="profile">
+            <div class="profile-details">
+                <div class="profile-name">John Doe</div>
+                <div class="profile-role">caretaker</div>
+            </div>
+        </div>
+        <div class="icon-group">
+            <button class="icon-btn" id="notificationBtn">🔔<span class="notification-badge" id="notificationBadge" style="display:none;">0</span></button>
+            <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
+            <button class="icon-btn" id="openLogBtn">📋</button>
+            <button class="icon-btn" id="serialConsoleBtn">📟</button>
         </div>
     </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
-        <button class="button" onclick="sendCommand('forward')">⬆️ FORWARD</button>
-        <button class="button" onclick="sendCommand('left')">⬅️ LEFT</button>
-        <button class="button" onclick="sendCommand('stop')">⏹️ STOP</button>
-        <button class="button" onclick="sendCommand('right')">➡️ RIGHT</button>
-        <button class="button" onclick="sendCommand('back')">⬇️ BACK</button>
-        <button class="button emergency" onclick="emergency()">🚨 EMERGENCY</button>
-    </div>
-    
-    <div class="status" id="log" style="height: 200px; overflow-y: auto; font-size: 12px;">
-        Log will appear here...
+
+    <!-- Patient Card -->
+    <div class="patient-full-card">
+        <button class="edit-icon" id="editPatientBtn">✎</button>
+        <div class="patient-row">
+            <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" id="patientPhoto" class="patient-photo" alt="patient" onclick="document.getElementById('patientPhotoInput').click()">
+            <div class="patient-name-id">
+                <h2 id="patientNameDisplay">Loading...</h2>
+                <div class="light" id="patientIdDisplay">ID ---</div>
+            </div>
+        </div>
+        <div class="details-grid" id="patientDetailsGrid"></div>
+        <input type="file" id="patientPhotoInput" accept="image/*" style="display:none">
     </div>
 
-    <script>
-        let esp32IP = "192.168.234.126"; // CHANGE THIS TO YOUR ESP32 IP
-        let connected = false;
+    <!-- Quick Action Buttons -->
+    <div class="round-row">
+        <button class="round-item" id="callIcon">
+            <div class="round-icon">📞</div>
+            <span>Call</span>
+        </button>
+        <button class="round-item" id="healthIcon">
+            <div class="round-icon">❤️</div>
+            <span>Health</span>
+        </button>
+        <button class="round-item" id="wheelIcon">
+            <div class="round-icon">🦽</div>
+            <span>Wheel</span>
+        </button>
+        <button class="round-item" id="patientIcon">
+            <div class="round-icon">👤</div>
+            <span>Patient</span>
+        </button>
+    </div>
+
+    <!-- Emergency Button -->
+    <button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
+
+    <!-- Drive Mode Card -->
+    <div class="drive-mode-card">
+        <span class="mode-label">Drive mode</span>
+        <span class="mode-value" id="modeDisplay">Line Following</span>
+    </div>
+
+    <!-- Angle Card -->
+    <div class="angle-card" id="angleCard">
+        <div class="angle-header">
+            <h3>📐 Tilt Angle</h3>
+            <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
+        </div>
+        <div class="angle-value" id="angleValue">0.0<span>°</span></div>
+        <div class="angle-bar-track" id="angleBarTrack">
+            <div class="angle-center-marker"></div>
+            <div class="angle-bar-fill-left" id="angleFillLeft" style="width: 0%;"></div>
+            <div class="angle-bar-fill-right" id="angleFillRight" style="width: 0%;"></div>
+            <div class="angle-indicator-dot" id="angleIndicatorDot" style="left: 50%;"></div>
+        </div>
+        <div class="angle-markers">
+            <span>45° LEFT</span>
+            <span>|</span>
+            <span>CENTER</span>
+            <span>|</span>
+            <span>45° RIGHT</span>
+        </div>
+        <div class="angle-direction" id="angleDirection">✓ STRAIGHT</div>
+        <div class="angle-status" id="angleStatus">Waiting for data...</div>
+        <div class="angle-debug" id="angleDebug"></div>
+    </div>
+
+    <!-- Control Pad (visible only in Control mode) -->
+    <div id="controlPad">
+        <div class="ctrl-grid">
+            <div></div>
+            <button class="ctrl-btn" data-cmd="forward">⬆️</button>
+            <div></div>
+            <button class="ctrl-btn" data-cmd="left">⬅️</button>
+            <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
+            <button class="ctrl-btn" data-cmd="right">➡️</button>
+            <div></div>
+            <button class="ctrl-btn" data-cmd="back">⬇️</button>
+            <div></div>
+        </div>
         
-        function addLog(msg, isError = false) {
-            const log = document.getElementById('log');
-            const time = new Date().toLocaleTimeString();
-            const color = isError ? 'red' : 'black';
-            log.innerHTML += `<div style="color: ${color}">[${time}] ${msg}</div>`;
-            log.scrollTop = log.scrollHeight;
+        <!-- SPEED CONTROL SLIDER (NEW) -->
+        <div class="speed-control-card">
+            <div class="speed-header">
+                <span>⚡ Motor Speed Control</span>
+                <span id="speedDisplay" style="color: var(--blue); font-weight: 800;">120</span>
+            </div>
+            <input type="range" id="motorSpeedSlider" class="speed-slider" min="0" max="255" value="120">
+            <div class="speed-labels">
+                <span>0 (Stop)</span>
+                <span>64</span>
+                <span>128</span>
+                <span>192</span>
+                <span>255 (Max)</span>
+            </div>
+            <div class="current-speed-badge">
+                🎮 Current speed: <strong id="currentSpeedValue">120</strong>/255
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 12px; font-size: 11px; color: #64748b;">
+            Control active · tap to move
+        </div>
+    </div>
+
+    <!-- Map Card -->
+    <div class="map-card">
+        <div class="gps-header">
+            <h3>📍 Live GPS</h3>
+            <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <!-- Connect Button -->
+    <button class="connect-btn" id="connectBtn">🔌 Connect to ESP32</button>
+
+    <!-- Serial Console -->
+    <div class="serial-console" id="serialConsole">
+        <div class="console-header">
+            <span>📟 Command Log</span>
+            <button onclick="toggleSerialConsole()" style="background:none;border:none;color:white;">✕</button>
+        </div>
+        <div class="console-content" id="consoleContent"></div>
+    </div>
+
+    <!-- Mode Popup -->
+    <div class="popup-panel" id="modePopup">
+        <div class="popup-header">
+            <h3>⚙️ Select mode</h3>
+            <button class="close-popup" onclick="closeModePopup()">×</button>
+        </div>
+        <div class="mode-option" data-mode="Line Following">➖ Line Following</div>
+        <div class="mode-option" data-mode="Control">🎮 Control</div>
+        <div class="mode-option" data-mode="Self Drive">🤖 Self Drive</div>
+    </div>
+
+    <!-- Call Popup -->
+    <div class="popup-panel" id="callPopup">
+        <div class="popup-header">
+            <h3>📞 Emergency</h3>
+            <button class="close-popup" onclick="closePopup('call')">×</button>
+        </div>
+        <div class="contact-item">🚑 Ambulance 108</div>
+        <div class="contact-item">👨‍⚕️ Dr. Adams +1 555 1234</div>
+        <div class="contact-item">🏠 Michael +1 555 8723</div>
+    </div>
+
+    <!-- Health Popup -->
+    <div class="popup-panel" id="healthPopup">
+        <div class="popup-header">
+            <h3>❤️ Health Monitoring</h3>
+            <button class="close-popup" onclick="closePopup('health')">×</button>
+        </div>
+        <div class="health-grid">
+            <div class="health-item" id="healthHeartItem">
+                <span>Heart Rate</span>
+                <div class="value" id="hrValue">84</div>
+                <span>bpm</span>
+            </div>
+            <div class="health-item" id="healthBPItem">
+                <span>Blood Pressure</span>
+                <div class="value" id="bpValue">130/80</div>
+                <span>mmHg</span>
+            </div>
+            <div class="health-item" id="healthTempItem">
+                <span>Temperature</span>
+                <div class="value" id="tempValue">36.8</div>
+                <span>°C</span>
+            </div>
+            <div class="health-item" id="healthO2Item">
+                <span>SpO₂</span>
+                <div class="value" id="o2Value">98</div>
+                <span>%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wheelchair Popup -->
+    <div class="popup-panel" id="wheelPopup">
+        <div class="popup-header">
+            <h3>🦽 Wheelchair Status</h3>
+            <button class="close-popup" onclick="closePopup('wheel')">×</button>
+        </div>
+        <div class="wheel-detail" id="batteryDetail">
+            <span>🔋 Battery</span>
+            <strong id="batteryValue">82%</strong>
+        </div>
+        <div class="wheel-detail" id="speedDetail">
+            <span>⚡ Speed</span>
+            <strong id="speedValue">1.2 m/s</strong>
+        </div>
+        <div class="wheel-detail">
+            <span>🚧 Obstacle</span>
+            <strong id="obstacleValue">Clear</strong>
+        </div>
+        <div class="wheel-detail">
+            <span>📍 Range</span>
+            <strong id="rangeValue">5.2 km</strong>
+        </div>
+        <div class="wheel-detail">
+            <span>📐 Tilt Angle</span>
+            <strong id="tiltValue">0.0°</strong>
+        </div>
+    </div>
+
+    <!-- Patient Main Menu -->
+    <div class="popup-panel" id="patientMainMenu">
+        <div class="popup-header">
+            <h3>👤 Patient menu</h3>
+            <button class="close-popup" onclick="closePatientMainMenu()">×</button>
+        </div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('message')">💬 Send message</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('calendar')">📅 Mark calendar</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('appointment')">📋 Book appointment</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('media')">🎵 Media & music</div>
+        <div class="patient-option-item" onclick="showPatientSubmenu('alarm')">⏰ Set alarm</div>
+    </div>
+
+    <!-- Patient Submenu -->
+    <div class="popup-panel" id="patientSubmenu">
+        <div class="popup-header">
+            <h3 id="submenuTitle">Title</h3>
+            <button class="close-popup" onclick="closePatientSubmenu()">×</button>
+        </div>
+        <div id="submenuContent"></div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div class="popup-panel" id="notificationPopup">
+        <div class="popup-header">
+            <h3>🔔 Notifications</h3>
+            <button class="close-popup" onclick="closeNotificationPopup()">×</button>
+        </div>
+        <div id="notificationList"></div>
+        <button class="btn-primary" style="width:100%; margin-top:12px;" onclick="clearAllNotifications()">Clear All</button>
+    </div>
+
+    <!-- Caretaker Popup -->
+    <div class="popup-panel" id="caretakerPopup">
+        <div class="popup-header">
+            <h3>👤 Caretaker</h3>
+            <button class="close-popup" onclick="closeCaretakerPopup()">×</button>
+        </div>
+        <div class="detail-row"><span>John Doe</span><span>ID: CT-2210</span></div>
+        <div class="detail-row">📧 Email john.d@care.com</div>
+        <div class="detail-row">📞 Phone +1 555 7700</div>
+        <div class="detail-row">🏥 Facility HomeCare Plus</div>
+    </div>
+
+    <!-- Edit Patient Popup -->
+    <div class="popup-panel" id="editPatientPopup">
+        <div class="popup-header">
+            <h3>✏️ Edit Patient Details</h3>
+            <button class="close-popup" onclick="closeEditPatientPopup()">×</button>
+        </div>
+        <div id="editPatientForm"></div>
+        <div class="button-group">
+            <button class="btn-primary" id="savePatientEditBtn">💾 Save Changes</button>
+            <button class="btn-secondary" onclick="closeEditPatientPopup()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Shutdown Overlay -->
+    <div class="shutdown-overlay" id="shutdownOverlay">
+        <div class="shutdown-card">
+            <div style="font-size:48px;">⚠️</div>
+            <div style="font-size:20px; font-weight:800; margin:12px 0;">EMERGENCY HALT</div>
+            <div style="margin-bottom:20px;">Emergency stop activated</div>
+            <button onclick="closeShutdown()" style="background:white; color:#0f172a; border:none; border-radius:40px; padding:10px 20px; font-weight:700;">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="connection-status disconnected" id="connectionStatus">
+        <div class="status-dot"></div>
+        <span id="connectionText">ESP32 Disconnected</span>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+            }
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+            authDomain: "nexus-org-6e7e9.firebaseapp.com",
+            projectId: "nexus-org-6e7e9",
+            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+            messagingSenderId: "989376914258",
+            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+            measurementId: "G-TP1CVNYHNE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const PATIENT_ID = "patient_main";
+        const MODE_ID = "drive_mode";
+        const EMERGENCY_ID = "emergency_status";
+
+        let patientData = {
+            fullName: 'Rebecca Rowe',
+            patientId: 'PT-10234',
+            age: '67',
+            bloodGroup: 'A+',
+            doctor: 'Dr. Sarah Adams',
+            contactNo: '+1 555 0199',
+            photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+        };
+
+        let currentMode = 'Line Following';
+        let pendingMode = null;
+        let notifications = [];
+        let notificationCount = 0;
+        let emergencyActive = false;
+
+        // ESP32 Bridge Configuration
+        let esp32IP = "192.168.234.126";
+        let esp32Connected = false;
+        let lastPing = 0;
+        let lastCommandTime = 0;
+        let lastAngleValue = 0;
+        let angleUpdateCount = 0;
+
+        // Speed Control Variables
+        let currentMotorSpeed = 120;
+
+        // Health monitoring state
+        let lastHealthState = {
+            hr: 84,
+            bp: '130/80',
+            temp: 36.8,
+            o2: 98
+        };
+
+        let lastWheelState = {
+            battery: 82,
+            speed: 1.2,
+            angle: 0
+        };
+
+        const safetyChecks = {
+            'Line Following': [
+                'Ensure path is clear of obstacles',
+                'Check that line sensors are clean',
+                'Confirm maximum speed setting is safe',
+                'Verify emergency stop works'
+            ],
+            'Control': [
+                'Ensure joystick/control is responsive',
+                'Confirm user is ready to manual drive',
+                'Check area around wheelchair is clear',
+                'Verify speed limit is set to low'
+            ],
+            'Self Drive': [
+                'Ensure autonomy mode is enabled',
+                'Check map data is up-to-date',
+                'Confirm no passengers are in the way',
+                'Verify obstacle detection is active'
+            ]
+        };
+
+        // =============== SPEED CONTROL FUNCTIONS ===============
         
-        async function testConnection() {
+        function updateSpeedDisplay() {
+            const speedDisplay = document.getElementById('speedDisplay');
+            const currentSpeedValue = document.getElementById('currentSpeedValue');
+            if (speedDisplay) speedDisplay.innerText = currentMotorSpeed;
+            if (currentSpeedValue) currentSpeedValue.innerText = currentMotorSpeed;
+        }
+
+        function initSpeedControl() {
+            const speedSlider = document.getElementById('motorSpeedSlider');
+            if (speedSlider) {
+                speedSlider.value = currentMotorSpeed;
+                speedSlider.addEventListener('input', function(e) {
+                    currentMotorSpeed = parseInt(e.target.value);
+                    updateSpeedDisplay();
+                    showToast(`⚡ Speed set to ${currentMotorSpeed}/255`);
+                });
+            }
+            updateSpeedDisplay();
+        }
+
+        // =============== ANGLE DISPLAY FUNCTIONS ===============
+        
+        function updateAngleDisplay(angle) {
+            let validAngle = Math.min(45, Math.max(-45, angle));
+            lastAngleValue = validAngle;
+            angleUpdateCount++;
+            
+            const angleValueElem = document.getElementById('angleValue');
+            if (angleValueElem) {
+                const angleFormatted = validAngle.toFixed(1);
+                angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+            }
+            
+            const track = document.getElementById('angleBarTrack');
+            if (track) {
+                const trackWidth = track.offsetWidth;
+                const centerX = trackWidth / 2;
+                const maxOffset = (trackWidth / 2) - 14;
+                
+                const dotOffset = (validAngle / 45) * maxOffset;
+                const dotLeft = centerX + dotOffset;
+                
+                const indicatorDot = document.getElementById('angleIndicatorDot');
+                if (indicatorDot) {
+                    indicatorDot.style.left = `${dotLeft}px`;
+                    
+                    if (Math.abs(validAngle) > 25) {
+                        indicatorDot.style.background = '#dc2626';
+                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
+                    } else if (Math.abs(validAngle) > 18) {
+                        indicatorDot.style.background = '#f59e0b';
+                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
+                    } else {
+                        indicatorDot.style.background = '#3b82f6';
+                        indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                    }
+                }
+                
+                const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+                const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+                
+                const fillLeft = document.getElementById('angleFillLeft');
+                if (fillLeft) {
+                    fillLeft.style.width = `${leftFillPercent}%`;
+                    if (validAngle > 25) {
+                        fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
+                    } else if (validAngle > 18) {
+                        fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+                    } else if (validAngle > 0) {
+                        fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
+                    }
+                }
+                
+                const fillRight = document.getElementById('angleFillRight');
+                if (fillRight) {
+                    fillRight.style.width = `${rightFillPercent}%`;
+                    if (validAngle < -25) {
+                        fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
+                    } else if (validAngle < -18) {
+                        fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+                    } else if (validAngle < 0) {
+                        fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
+                    }
+                }
+            }
+            
+            const angleDirectionElem = document.getElementById('angleDirection');
+            const angleCard = document.getElementById('angleCard');
+            const angleStatus = document.getElementById('angleStatus');
+            const tiltValueInWheel = document.getElementById('tiltValue');
+            
+            let directionText = '';
+            let directionClass = '';
+            let directionIcon = '';
+            
+            if (validAngle > 5) {
+                directionIcon = '⬅️';
+                directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+                directionClass = 'left';
+            } else if (validAngle < -5) {
+                directionIcon = '➡️';
+                directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+                directionClass = 'right';
+            } else {
+                directionIcon = '✓';
+                directionText = 'STRAIGHT (centered)';
+                directionClass = 'straight';
+            }
+            
+            if (angleDirectionElem) {
+                angleDirectionElem.className = `angle-direction ${directionClass}`;
+                angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+            }
+            
+            if (tiltValueInWheel) {
+                tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+            }
+            
+            if (Math.abs(validAngle) > 25) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
+                    angleStatus.style.fontWeight = 'bold';
+                }
+                
+                if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+                    addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+                }
+            } else if (Math.abs(validAngle) > 18) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                    angleStatus.style.fontWeight = '500';
+                }
+            } else if (Math.abs(validAngle) > 10) {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                    angleStatus.style.fontWeight = 'normal';
+                }
+            } else {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                    angleStatus.style.fontWeight = 'normal';
+                }
+            }
+            
+            const debugElem = document.getElementById('angleDebug');
+            if (debugElem && angleUpdateCount % 10 === 0) {
+                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
+            }
+            
+            lastWheelState.angle = validAngle;
+        }
+
+        // =============== ESP32 BRIDGE FUNCTIONS ===============
+        
+        let angleFetchInterval = null;
+        let lastFetchTime = 0;
+
+        async function fetchAngleData() {
+            if (!esp32Connected) return null;
+            
+            const now = Date.now();
+            if (now - lastFetchTime < 30) return null;
+            lastFetchTime = now;
+            
             try {
-                const response = await fetch(`http://${esp32IP}/ping`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300);
+                
+                const response = await fetch(`http://${esp32IP}/angle`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    const angle = parseFloat(data);
+                    if (!isNaN(angle) && isFinite(angle)) {
+                        updateAngleDisplay(angle);
+                        return angle;
+                    }
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError' && Math.random() < 0.02) {
+                    console.log("Angle fetch:", error.message);
+                }
+            }
+            return null;
+        }
+
+        function parseAngleFromSerial(data) {
+            if (!data) return null;
+            
+            if (data.startsWith('ANGLE:')) {
+                const angleStr = data.substring(6).trim();
+                const angle = parseFloat(angleStr);
+                if (!isNaN(angle) && isFinite(angle)) {
+                    updateAngleDisplay(angle);
+                    return angle;
+                }
+            }
+            return null;
+        }
+
+        function startAngleMonitoring() {
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
+            angleFetchInterval = setInterval(() => {
+                fetchAngleData();
+            }, 33);
+            console.log("Angle monitoring started at 33ms interval");
+        }
+
+        async function calibrateAngleSensor() {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
+                return false;
+            }
+            
+            try {
+                const response = await fetch(`http://${esp32IP}/calibrate`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    showToast("📐 Calibration requested - keep wheelchair level");
+                    addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level for 5 seconds", false);
+                    updateAngleDisplay(0);
+                    
+                    const calibrateBtn = document.getElementById('calibrateAngleBtn');
+                    if (calibrateBtn) {
+                        calibrateBtn.textContent = 'Calibrating...';
+                        calibrateBtn.disabled = true;
+                        setTimeout(() => {
+                            calibrateBtn.textContent = 'Calibrate';
+                            calibrateBtn.disabled = false;
+                        }, 3000);
+                    }
+                    return true;
+                }
+            } catch (error) {
+                console.error("Calibration error:", error);
+                showToast("❌ Calibration failed");
+            }
+            return false;
+        }
+
+        async function testESP32Connection() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                
+                const response = await fetch(`http://${esp32IP}/ping`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (response.ok) {
                     const text = await response.text();
                     if (text === "PONG") {
-                        connected = true;
-                        document.getElementById('status').innerHTML = '✅ Connected to ESP32';
-                        document.getElementById('status').className = 'status connected';
-                        addLog('Connected to ESP32');
+                        esp32Connected = true;
+                        updateConnectionStatus(true);
+                        lastPing = Date.now();
+                        startAngleMonitoring();
                         return true;
                     }
                 }
             } catch (error) {
-                addLog('Connection failed: ' + error.message, true);
+                console.log("ESP32 not responding:", error);
             }
-            connected = false;
-            document.getElementById('status').innerHTML = '❌ Disconnected';
-            document.getElementById('status').className = 'status disconnected';
+            
+            esp32Connected = false;
+            updateConnectionStatus(false);
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
             return false;
         }
-        
-        async function sendCommand(cmd) {
-            if (!connected) {
-                addLog('Not connected!', true);
-                return;
+
+        async function sendCommand(command) {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected! Check connection.");
+                return false;
             }
             
             try {
-                addLog(`Sending: CMD:${cmd}`);
-                const response = await fetch(`http://${esp32IP}/cmd?data=CMD:${cmd}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(command)}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (response.ok) {
-                    addLog(`✓ Command sent: ${cmd}`);
+                    console.log("Command sent:", command);
+                    showCommandFeedback(command);
+                    addToSerialConsole("→ " + command, true);
+                    return true;
                 } else {
-                    addLog(`✗ Failed: ${response.status}`, true);
+                    throw new Error("HTTP " + response.status);
                 }
             } catch (error) {
-                addLog(`✗ Error: ${error.message}`, true);
-                connected = false;
+                console.error("Send error:", error);
+                showToast("❌ Failed to send command");
+                esp32Connected = false;
+                updateConnectionStatus(false);
+                return false;
             }
         }
-        
-        async function setSpeed(speed) {
-            if (!connected) {
-                addLog('Not connected!', true);
-                return;
+
+        async function sendEmergency() {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
+                return false;
             }
             
-            document.getElementById('speedValue').innerText = speed;
-            document.getElementById('speedSlider').value = speed;
-            
             try {
-                addLog(`Setting speed to ${speed}%`);
-                const response = await fetch(`http://${esp32IP}/speed?speed=${speed}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const response = await fetch(`http://${esp32IP}/emergency`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (response.ok) {
-                    addLog(`✓ Speed set to ${speed}%`);
-                } else {
-                    addLog(`✗ Speed set failed`, true);
+                    showToast("🚨 EMERGENCY STOP SENT");
+                    return true;
                 }
             } catch (error) {
-                addLog(`✗ Error: ${error.message}`, true);
-                connected = false;
+                console.error("Emergency send error:", error);
+            }
+            return false;
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('connectionText');
+            const connectBtn = document.getElementById('connectBtn');
+            const angleStatus = document.getElementById('angleStatus');
+            
+            if (connected) {
+                statusDiv.className = 'connection-status connected';
+                statusText.innerText = `ESP32 Bridge (${esp32IP})`;
+                if (connectBtn) {
+                    connectBtn.innerHTML = '🔌 Disconnect';
+                    connectBtn.classList.add('connected');
+                }
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Connected - Receiving angle data';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                }
+            } else {
+                statusDiv.className = 'connection-status disconnected';
+                statusText.innerText = 'ESP32 Disconnected';
+                if (connectBtn) {
+                    connectBtn.innerHTML = '🔌 Connect to ESP32';
+                    connectBtn.classList.remove('connected');
+                }
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ Disconnected - Waiting for ESP32';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
+                }
             }
         }
-        
-        async function emergency() {
-            if (!connected) {
-                addLog('Not connected!', true);
+
+        async function connectToESP32() {
+            if (esp32Connected) {
+                esp32Connected = false;
+                updateConnectionStatus(false);
+                showToast("Disconnected from ESP32");
+                if (angleFetchInterval) {
+                    clearInterval(angleFetchInterval);
+                }
                 return;
             }
             
-            try {
-                addLog('🚨 EMERGENCY STOP!');
-                await fetch(`http://${esp32IP}/emergency`);
-                addLog('✓ Emergency sent');
-            } catch (error) {
-                addLog(`✗ Error: ${error.message}`, true);
+            showToast("🔍 Connecting to ESP32...");
+            
+            const connected = await testESP32Connection();
+            
+            if (connected) {
+                showToast("✅ Connected to ESP32 Bridge!");
+                addNotification("🔌 Connected", `Connected to ESP32 at ${esp32IP}`, false);
+                
+                if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
+                window.heartbeatInterval = setInterval(async () => {
+                    if (Date.now() - lastPing > 5000) {
+                        await testESP32Connection();
+                    }
+                }, 3000);
+            } else {
+                showToast("❌ Cannot reach ESP32. Check IP and WiFi.");
+                addNotification("⚠️ Connection Failed", "Cannot reach ESP32 bridge", true);
             }
         }
+
+        // =============== CONTROL COMMAND WITH SPEED ===============
         
-        document.getElementById('speedSlider').onchange = (e) => {
-            setSpeed(parseInt(e.target.value));
+        function sendControlCommand(cmd) {
+            if (currentMode !== 'Control') {
+                showToast("⚠️ Not in Control mode");
+                return;
+            }
+            
+            const now = Date.now();
+            if (now - lastCommandTime < 100) return;
+            lastCommandTime = now;
+            
+            // Send command with current speed
+            sendCommand(`CMD:${cmd}:${currentMotorSpeed}`);
+        }
+
+        // =============== UI FUNCTIONS ===============
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showCommandFeedback(command) {
+            const feedback = document.createElement('div');
+            feedback.className = 'command-feedback';
+            feedback.textContent = `📡 ${command}`;
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 2000);
+        }
+
+        function addToSerialConsole(message, isOutgoing = false) {
+            const consoleContent = document.getElementById('consoleContent');
+            if (!consoleContent) return;
+            
+            const time = new Date().toLocaleTimeString();
+            const prefix = isOutgoing ? '→ ' : '← ';
+            const color = isOutgoing ? '#a5f3c3' : '#fbbf24';
+            
+            const line = document.createElement('div');
+            line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
+            consoleContent.appendChild(line);
+            
+            if (!isOutgoing) {
+                parseAngleFromSerial(message);
+            }
+            
+            line.scrollIntoView();
+            
+            while (consoleContent.children.length > 200) {
+                consoleContent.removeChild(consoleContent.firstChild);
+            }
+        }
+
+        function toggleSerialConsole() {
+            const consoleDiv = document.getElementById('serialConsole');
+            consoleDiv.classList.toggle('show');
+        }
+
+        function showAlertPopup(title, message) {
+            const existingPopup = document.querySelector('.alert-popup');
+            if (existingPopup) existingPopup.remove();
+            
+            const popup = document.createElement('div');
+            popup.className = 'alert-popup';
+            popup.innerHTML = `
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-title">${escapeHtml(title)}</div>
+                <div class="alert-message">${escapeHtml(message)}</div>
+                <button onclick="this.parentElement.remove()">Dismiss</button>
+            `;
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                if (popup.parentElement) popup.remove();
+            }, 8000);
+        }
+
+        function addNotification(title, message, isWarning = false) {
+            const notification = {
+                id: Date.now() + Math.random(),
+                title: title,
+                message: message,
+                time: new Date().toLocaleString(),
+                isWarning: isWarning
+            };
+            notifications.unshift(notification);
+            notificationCount++;
+            updateNotificationBadge();
+            updateNotificationList();
+            
+            if (isWarning) {
+                showAlertPopup(title, message);
+            }
+            showToast(`📢 ${title}`);
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (notificationCount > 0) {
+                badge.style.display = 'flex';
+                badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateNotificationList() {
+            const container = document.getElementById('notificationList');
+            if (!container) return;
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;">No notifications yet</div>';
+                return;
+            }
+            
+            container.innerHTML = notifications.map(n => `
+                <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
+                    <div class="log-title">${escapeHtml(n.title)}</div>
+                    <div class="log-message">${escapeHtml(n.message)}</div>
+                    <div class="log-time">${n.time}</div>
+                </div>
+            `).join('');
+        }
+
+        function clearAllNotifications() {
+            notifications = [];
+            notificationCount = 0;
+            updateNotificationBadge();
+            updateNotificationList();
+            showToast('All notifications cleared');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // =============== MODE CONTROL ===============
+
+        function confirmModeSwitch(mode) {
+            const checks = safetyChecks[mode];
+            if (!checks) return;
+            pendingMode = mode;
+            
+            const existingPopup = document.getElementById('safetyPopup');
+            if (existingPopup) existingPopup.remove();
+            
+            const modal = document.createElement('div');
+            modal.className = 'popup-panel';
+            modal.id = 'safetyPopup';
+            modal.innerHTML = `
+                <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
+                <div style="margin: 16px 0;">
+                    ${checks.map((text, index) => `
+                        <div class="safety-check-item">
+                            <input type="checkbox" class="safety-checkbox" id="check_${index}">
+                            <label for="check_${index}">${escapeHtml(text)}</label>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
+                    <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+            
+            document.getElementById('confirmSwitchBtn').onclick = async () => {
+                const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
+                let allChecked = true;
+                checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
+                if (!allChecked) {
+                    showToast('⚠️ Please tick all safety checkboxes');
+                    return;
+                }
+                
+                if (await sendCommand(`MODE:${mode}`)) {
+                    currentMode = mode;
+                    document.getElementById('modeDisplay').innerText = currentMode;
+                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                    modal.remove();
+                    await saveModeToFirestore(currentMode);
+                    addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
+                }
+            };
+        }
+
+        async function saveModeToFirestore(mode) {
+            const modeRef = doc(db, "settings", MODE_ID);
+            await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
+        }
+
+        // =============== EMERGENCY FUNCTIONS ===============
+
+        async function triggerEmergency() {
+            emergencyActive = true;
+            await sendEmergency();
+            
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
+            document.body.classList.add('emergency-shutdown');
+            document.getElementById('shutdownOverlay').style.display = 'flex';
+            addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
+            
+            setTimeout(async () => {
+                await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+                emergencyActive = false;
+            }, 5000);
+        }
+
+        function closeShutdown() {
+            if (emergencyActive) {
+                const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+                setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+                emergencyActive = false;
+            }
+            document.body.classList.remove('emergency-shutdown');
+            document.getElementById('shutdownOverlay').style.display = 'none';
+        }
+
+        function listenEmergencyFromPatient() {
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            onSnapshot(emergencyRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                    emergencyActive = true;
+                    sendEmergency();
+                    document.body.classList.add('emergency-shutdown');
+                    document.getElementById('shutdownOverlay').style.display = 'flex';
+                    addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
+                } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
+                    emergencyActive = false;
+                    document.body.classList.remove('emergency-shutdown');
+                    document.getElementById('shutdownOverlay').style.display = 'none';
+                }
+            });
+        }
+
+        // =============== PATIENT MANAGEMENT ===============
+
+        async function loadPatientFromFirestore() {
+            const patientRef = doc(db, "patients", PATIENT_ID);
+            const docSnap = await getDoc(patientRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                Object.assign(patientData, data);
+            } else {
+                await setDoc(patientRef, patientData);
+            }
+            renderPatientDetails();
+        }
+
+        async function syncPatientToFirestore() {
+            const patientRef = doc(db, "patients", PATIENT_ID);
+            await setDoc(patientRef, patientData, { merge: true });
+            showToast('✅ Patient data saved permanently');
+        }
+
+        function renderPatientDetails() {
+            const grid = document.getElementById('patientDetailsGrid');
+            const fields = [
+                { label: 'Blood Group', key: 'bloodGroup' },
+                { label: 'Age', key: 'age' },
+                { label: 'Doctor', key: 'doctor' },
+                { label: 'Contact', key: 'contactNo' }
+            ];
+            grid.innerHTML = '';
+            fields.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'detail-item';
+                div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${patientData[f.key] || '—'}</div>`;
+                grid.appendChild(div);
+            });
+            document.getElementById('patientNameDisplay').innerText = patientData.fullName;
+            document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.patientId} · ${patientData.age}y`;
+            document.getElementById('patientPhoto').src = patientData.photo;
+        }
+
+        function openEditPatientPopup() {
+            const formContainer = document.getElementById('editPatientForm');
+            formContainer.innerHTML = `
+                <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${escapeHtml(patientData.fullName)}"></div>
+                <div class="edit-field-row"><label>Patient ID</label><input type="text" id="editPatientId" value="${patientData.patientId}"></div>
+                <div class="edit-field-row"><label>Age</label><input type="text" id="editAge" value="${patientData.age}"></div>
+                <div class="edit-field-row"><label>Blood Group</label><input type="text" id="editBloodGroup" value="${patientData.bloodGroup}"></div>
+                <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${escapeHtml(patientData.doctor)}"></div>
+                <div class="edit-field-row"><label>Contact Number</label><input type="text" id="editContactNo" value="${patientData.contactNo}"></div>
+                <div class="edit-field-row"><label>Photo URL</label><input type="text" id="editPhotoUrl" value="${patientData.photo}"></div>
+            `;
+            document.getElementById('editPatientPopup').style.display = 'block';
+        }
+
+        async function savePatientEdits() {
+            const newData = {
+                fullName: document.getElementById('editFullName')?.value || patientData.fullName,
+                patientId: document.getElementById('editPatientId')?.value || patientData.patientId,
+                age: document.getElementById('editAge')?.value || patientData.age,
+                bloodGroup: document.getElementById('editBloodGroup')?.value || patientData.bloodGroup,
+                doctor: document.getElementById('editDoctor')?.value || patientData.doctor,
+                contactNo: document.getElementById('editContactNo')?.value || patientData.contactNo,
+                photo: document.getElementById('editPhotoUrl')?.value || patientData.photo
+            };
+            
+            Object.assign(patientData, newData);
+            renderPatientDetails();
+            await syncPatientToFirestore();
+            closeEditPatientPopup();
+            addNotification('✅ Patient Updated', 'Patient details have been updated successfully', false);
+        }
+
+        // =============== PATIENT ACTIONS ===============
+
+        async function saveActionToFirestore(type, data) {
+            const actionsRef = doc(db, "patientActions", "feed");
+            try {
+                const docSnap = await getDoc(actionsRef);
+                if (docSnap.exists()) {
+                    await updateDoc(actionsRef, {
+                        [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
+                    });
+                } else {
+                    await setDoc(actionsRef, { [type]: [data] });
+                }
+            } catch (error) {
+                console.error("Error saving action:", error);
+                await setDoc(actionsRef, { [type]: [data] });
+            }
+            addNotification('✅ Action Saved', `${type} saved to patient dashboard`, false);
+        }
+
+        window.sendMessage = async () => {
+            const msg = document.getElementById('messageText')?.value;
+            if (!msg) return showToast('Please enter a message');
+            await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleString() });
+            showToast('💬 Message sent to patient');
+            document.getElementById('messageText').value = '';
+            closePatientSubmenu();
         };
+
+        window.saveCalendar = async () => {
+            const event = document.getElementById('calendarEvent')?.value;
+            const dt = document.getElementById('calendarDateTime')?.value;
+            if (!event) return showToast('Please enter an event');
+            await saveActionToFirestore("calendar", { title: event, detail: dt || "No time set", time: dt });
+            showToast('📅 Calendar event added');
+            closePatientSubmenu();
+        };
+
+        window.bookAppointment = async () => {
+            const dr = document.getElementById('apptDoctor')?.value;
+            const hosp = document.getElementById('apptHospital')?.value;
+            const dt = document.getElementById('apptDateTime')?.value;
+            if (!dr) return showToast('Please enter doctor name');
+            await saveActionToFirestore("appointments", { title: dr, detail: hosp || "Clinic visit", time: dt });
+            showToast(`📋 Appointment booked with ${dr}`);
+            closePatientSubmenu();
+        };
+
+        window.playMedia = async () => {
+            await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
+            showToast('🎵 Media player started');
+            closePatientSubmenu();
+        };
+
+        window.setAlarm = async () => {
+            const label = document.getElementById('alarmLabel')?.value;
+            const dt = document.getElementById('alarmDateTime')?.value;
+            if (!label) return showToast('Please enter alarm label');
+            await saveActionToFirestore("alarms", { title: label, detail: dt || "Now", time: dt });
+            showToast(`⏰ Alarm set: ${label}`);
+            closePatientSubmenu();
+        };
+
+        window.showPatientSubmenu = (option) => {
+            document.getElementById('patientMainMenu').style.display = 'none';
+            let title = '', content = '';
+            if (option === 'message') {
+                title = '💬 Send message';
+                content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
+                           <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            } else if (option === 'calendar') {
+                title = '📅 Mark calendar';
+                content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
+                           <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                           <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            } else if (option === 'appointment') {
+                title = '📋 Book appointment';
+                content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
+                           <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
+                           <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                           <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            } else if (option === 'media') {
+                title = '🎵 Media & music';
+                content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
+            } else if (option === 'alarm') {
+                title = '⏰ Set alarm';
+                content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
+                           <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+                           <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+            }
+            document.getElementById('submenuTitle').innerText = title;
+            document.getElementById('submenuContent').innerHTML = content;
+            document.getElementById('patientSubmenu').style.display = 'block';
+            
+            setTimeout(() => {
+                if (option === 'message') document.getElementById('sendMsgBtn')?.addEventListener('click', window.sendMessage);
+                if (option === 'calendar') {
+                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                    document.getElementById('saveCalendarBtn')?.addEventListener('click', window.saveCalendar);
+                }
+                if (option === 'appointment') {
+                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                    document.getElementById('bookApptBtn')?.addEventListener('click', window.bookAppointment);
+                }
+                if (option === 'media') document.getElementById('playMediaBtn')?.addEventListener('click', window.playMedia);
+                if (option === 'alarm') {
+                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                    document.getElementById('setAlarmBtn')?.addEventListener('click', window.setAlarm);
+                }
+            }, 50);
+        };
+
+        // =============== HEALTH MONITORING (SIMULATION) ===============
+
+        function simulateHealthMonitoring() {
+            let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
+            hr = Math.min(120, Math.max(55, hr));
+            
+            let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
+            temp = Math.min(39, Math.max(35, temp));
+            
+            let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
+            o2 = Math.min(100, Math.max(90, o2));
+            
+            let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
+            let diastolic = 80 + (systolic - 120) * 0.6;
+            systolic = Math.min(160, Math.max(90, systolic));
+            diastolic = Math.min(100, Math.max(60, diastolic));
+            const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
+            
+            document.getElementById('hrValue').innerText = hr;
+            document.getElementById('tempValue').innerText = temp.toFixed(1);
+            document.getElementById('o2Value').innerText = o2;
+            document.getElementById('bpValue').innerText = bp;
+            
+            if (hr < 60 || hr > 100) {
+                if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
+                    addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
+                    document.getElementById('healthHeartItem').classList.add('warning');
+                }
+            } else {
+                document.getElementById('healthHeartItem').classList.remove('warning');
+            }
+            
+            if (temp < 36.1 || temp > 37.2) {
+                if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
+                    addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
+                    document.getElementById('healthTempItem').classList.add('warning');
+                }
+            } else {
+                document.getElementById('healthTempItem').classList.remove('warning');
+            }
+            
+            if (o2 < 95) {
+                if (lastHealthState.o2 >= 95) {
+                    addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
+                    document.getElementById('healthO2Item').classList.add('warning');
+                }
+            } else {
+                document.getElementById('healthO2Item').classList.remove('warning');
+            }
+            
+            if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
+                if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
+                    addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
+                    document.getElementById('healthBPItem').classList.add('warning');
+                }
+            } else {
+                document.getElementById('healthBPItem').classList.remove('warning');
+            }
+            
+            lastHealthState = { hr, temp, o2, bp };
+        }
+
+        function simulateWheelchairMonitoring() {
+            let battery = lastWheelState.battery - (Math.random() * 1.5);
+            battery = Math.max(10, Math.min(100, battery));
+            
+            let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
+            
+            document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
+            document.getElementById('speedValue').innerText = speed + ' m/s';
+            
+            const r = Math.random();
+            const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
+            const range = (Math.random() * 8 + 2).toFixed(1);
+            document.getElementById('obstacleValue').innerText = obstacle;
+            document.getElementById('rangeValue').innerText = range + ' km';
+            
+            if (battery < 20 && lastWheelState.battery >= 20) {
+                addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
+                document.getElementById('batteryDetail').classList.add('warning');
+            } else if (battery >= 20) {
+                document.getElementById('batteryDetail').classList.remove('warning');
+            }
+            
+            const speedNum = parseFloat(speed);
+            if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
+                addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
+                document.getElementById('speedDetail').classList.add('warning');
+            } else if (speedNum <= 2.0) {
+                document.getElementById('speedDetail').classList.remove('warning');
+            }
+            
+            lastWheelState = { battery, speed: speedNum, angle: lastWheelState.angle };
+        }
+
+        // =============== POPUP FUNCTIONS ===============
+
+        function closeAllPopups() {
+            document.querySelectorAll('.popup-panel').forEach(p => p.style.display = 'none');
+            document.getElementById('safetyPopup')?.remove();
+        }
+
+        window.setMode = function(mode) {
+            closeModePopup();
+            confirmModeSwitch(mode);
+        };
+
+        window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
+        window.closePopup = (type) => {
+            if (type === 'call') document.getElementById('callPopup').style.display = 'none';
+            if (type === 'health') document.getElementById('healthPopup').style.display = 'none';
+            if (type === 'wheel') document.getElementById('wheelPopup').style.display = 'none';
+        };
+        window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display = 'none';
+        window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display = 'none';
+        window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
+        window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
+        window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
+        window.closeShutdown = closeShutdown;
+        window.clearAllNotifications = clearAllNotifications;
+        window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
+        window.toggleSerialConsole = toggleSerialConsole;
+        window.calibrateAngleSensor = calibrateAngleSensor;
+
+        // =============== MAP INITIALIZATION ===============
         
-        // Auto-connect on load
-        setTimeout(testConnection, 1000);
-        
-        // Keep connection alive
-        setInterval(testConnection, 5000);
+        const map = L.map('map').setView([12.9716, 77.5946], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
+
+        window.toggleGpsFullscreen = () => {
+            const card = document.querySelector('.map-card');
+            if (!document.fullscreenElement) card.requestFullscreen();
+            else document.exitFullscreen();
+        };
+
+        document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
+
+        // =============== INITIALIZATION ===============
+
+        // Photo upload handler
+        document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    patientData.photo = ev.target.result;
+                    document.getElementById('patientPhoto').src = patientData.photo;
+                    await syncPatientToFirestore();
+                    addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Button event listeners
+        document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
+        document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
+        document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
+        document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); document.getElementById('caretakerPopup').style.display = 'block'; };
+        document.getElementById('callIcon').onclick = () => { closeAllPopups(); document.getElementById('callPopup').style.display = 'block'; };
+        document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display = 'block'; };
+        document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display = 'block'; };
+        document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display = 'block'; };
+        document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
+        document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
+        document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
+        document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
+        document.getElementById('connectBtn').onclick = connectToESP32;
+        document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
+
+        // Control buttons with speed
+        document.querySelectorAll('.ctrl-btn').forEach(btn => {
+            btn.onclick = () => {
+                const cmd = btn.dataset.cmd;
+                sendControlCommand(cmd);
+            };
+        });
+
+        // Mode options
+        document.querySelectorAll('.mode-option').forEach(opt => {
+            opt.onclick = () => setMode(opt.dataset.mode);
+        });
+
+        // Initialize speed control
+        initSpeedControl();
+
+        // Load data and start monitoring
+        await loadPatientFromFirestore();
+        listenDriveMode();
+        listenEmergencyFromPatient();
+
+        setInterval(simulateHealthMonitoring, 8000);
+        setInterval(simulateWheelchairMonitoring, 5000);
+
+        function listenDriveMode() {
+            const modeRef = doc(db, "settings", MODE_ID);
+            onSnapshot(modeRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().mode) {
+                    const newMode = docSnap.data().mode;
+                    if (newMode !== currentMode) {
+                        currentMode = newMode;
+                        document.getElementById('modeDisplay').innerText = currentMode;
+                        document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                        addNotification('🔄 Drive Mode Changed', `Mode changed to: ${currentMode}`, false);
+                    }
+                }
+            });
+        }
+
+        window.onload = () => {
+            document.getElementById('controlPad').style.display = 'none';
+            updateAngleDisplay(0);
+            
+            setTimeout(() => {
+                testESP32Connection();
+            }, 1000);
+        };
     </script>
 </body>
 </html>
