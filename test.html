@@ -1296,66 +1296,78 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- Speed Control Card -->
-    <div class="speed-control-card" id="speedControlCard">
-        <div class="speed-header">
-            <h3>⚡ Motor Speed Control</h3>
-            <span id="speedValue" class="speed-value-display">150</span>
-        </div>
-        <div class="speed-slider-container">
-            <input type="range" id="speedSlider" min="0" max="255" value="150" step="5">
-            <div class="speed-labels">
-                <span>STOP</span>
-                <span>SLOW</span>
-                <span>MEDIUM</span>
-                <span>FAST</span>
-                <span>MAX</span>
+   <!-- Combined Speed & Angle Card with Proper Separation -->
+<div class="combined-card" style="background: white; border-radius: 28px; padding: 20px; box-shadow: var(--shadow); border: var(--outline); margin-bottom: 16px;">
+    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch;">
+        
+        <!-- Left: Speed Control -->
+        <div class="speed-control-section" style="padding-right: 20px;">
+            <div class="speed-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span>⚡</span> Motor Speed
+                </h3>
+                <span id="speedValue" style="font-size: 28px; font-weight: 800; color: var(--blue); background: #eef2ff; padding: 4px 16px; border-radius: 40px;">150</span>
+            </div>
+            
+            <div class="speed-slider-container" style="margin: 16px 0;">
+                <input type="range" id="speedSlider" min="0" max="255" value="150" step="5" style="width: 100%; height: 6px; -webkit-appearance: none; background: linear-gradient(90deg, #dc2626, #f59e0b, #10b981, #3b82f6, #1d4ed8); border-radius: 3px;">
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: var(--muted);">
+                    <span>0</span><span>64</span><span>128</span><span>192</span><span>255</span>
+                </div>
+            </div>
+            
+            <div class="speed-presets" style="display: flex; gap: 8px; margin: 16px 0;">
+                <button class="speed-preset-btn" data-speed="0" style="flex: 1; padding: 8px; border: none; border-radius: 30px; background: #f1f5f9; font-size: 12px; font-weight: 600; cursor: pointer;">⏹️ Stop</button>
+                <button class="speed-preset-btn" data-speed="80" style="flex: 1; padding: 8px; border: none; border-radius: 30px; background: #f1f5f9; font-size: 12px; font-weight: 600; cursor: pointer;">🐢 Slow</button>
+                <button class="speed-preset-btn" data-speed="150" style="flex: 1; padding: 8px; border: none; border-radius: 30px; background: #f1f5f9; font-size: 12px; font-weight: 600; cursor: pointer;">⚡ Med</button>
+                <button class="speed-preset-btn" data-speed="200" style="flex: 1; padding: 8px; border: none; border-radius: 30px; background: #f1f5f9; font-size: 12px; font-weight: 600; cursor: pointer;">🏃 Fast</button>
+                <button class="speed-preset-btn" data-speed="255" style="flex: 1; padding: 8px; border: none; border-radius: 30px; background: #f1f5f9; font-size: 12px; font-weight: 600; cursor: pointer;">🚀 Max</button>
+            </div>
+            
+            <div id="speedStatus" style="text-align: center; font-size: 12px; color: var(--muted); padding: 8px; background: #f8fafc; border-radius: 20px; margin-top: 8px;">
+                Current speed: 150/255
             </div>
         </div>
-        <div class="speed-presets">
-            <button class="speed-preset-btn" data-speed="0">⏹️ Stop</button>
-            <button class="speed-preset-btn" data-speed="80">🐢 Slow</button>
-            <button class="speed-preset-btn" data-speed="150">⚡ Medium</button>
-            <button class="speed-preset-btn" data-speed="200">🏃 Fast</button>
-            <button class="speed-preset-btn" data-speed="255">🚀 Max</button>
-        </div>
-        <div class="speed-status" id="speedStatus">
-            Current speed: 150/255
+        
+        <!-- Vertical Divider -->
+        <div style="width: 2px; background: linear-gradient(to bottom, #e2e8f0, #cbd5e1, #e2e8f0); margin: 0 16px;"></div>
+        
+        <!-- Right: Tilt Angle -->
+        <div class="angle-control-section" style="padding-left: 20px;">
+            <div class="angle-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span>📐</span> Tilt Angle
+                </h3>
+                <button class="calibrate-btn" id="calibrateAngleBtn" style="background: #eef2ff; border: none; padding: 6px 14px; border-radius: 30px; font-size: 11px; font-weight: 600; color: var(--blue); cursor: pointer;">Calibrate</button>
+            </div>
+            
+            <div class="angle-value" id="angleValue" style="font-size: 48px; font-weight: 800; text-align: center; color: var(--blue); margin: 8px 0;">
+                0.0<span style="font-size: 24px;">°</span>
+            </div>
+            
+            <div class="angle-bar-track" id="angleBarTrack" style="background: #e2e8f0; border-radius: 20px; height: 8px; position: relative; margin: 20px 0;">
+                <div class="angle-bar-fill-left" id="angleFillLeft" style="position: absolute; height: 100%; background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6); border-radius: 20px 0 0 20px; right: 50%; transition: width 0.05s linear;"></div>
+                <div class="angle-bar-fill-right" id="angleFillRight" style="position: absolute; height: 100%; background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626); border-radius: 0 20px 20px 0; left: 50%; transition: width 0.05s linear;"></div>
+                <div class="angle-center-marker" style="position: absolute; left: 50%; top: -12px; width: 3px; height: 32px; background: #dc2626; transform: translateX(-50%); border-radius: 2px;"></div>
+                <div class="angle-indicator-dot" id="angleIndicatorDot" style="position: absolute; top: -10px; width: 28px; height: 28px; background: #1d4ed8; border-radius: 50%; transform: translateX(-50%); transition: left 0.05s linear; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 2px solid white; cursor: pointer;"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; padding: 0 10px; margin-top: 12px; color: var(--muted); font-size: 10px; font-weight: 600;">
+                <span>45° LEFT</span>
+                <span>CENTER</span>
+                <span>45° RIGHT</span>
+            </div>
+            
+            <div class="angle-direction" id="angleDirection" style="text-align: center; font-size: 14px; font-weight: 700; margin-top: 15px; padding: 10px; border-radius: 40px; background: #f1f5f9; transition: all 0.2s ease;">
+                ✓ STRAIGHT
+            </div>
+            
+            <div class="angle-status" id="angleStatus" style="font-size: 11px; text-align: center; margin-top: 10px; padding: 6px; border-radius: 20px;">
+                Waiting for data...
+            </div>
         </div>
     </div>
-
-    <!-- Angle Sensing Card -->
-    <div class="angle-card" id="angleCard">
-        <div class="angle-header">
-            <h3>📐 Tilt Angle</h3>
-            <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
-        </div>
-        <div class="angle-value" id="angleValue">
-            0.0<span>°</span>
-        </div>
-        
-        <div class="angle-bar-track" id="angleBarTrack">
-            <div class="angle-bar-fill-left" id="angleFillLeft"></div>
-            <div class="angle-bar-fill-right" id="angleFillRight"></div>
-            <div class="angle-center-marker"></div>
-            <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
-        </div>
-        <div class="angle-markers">
-            <span>45° LEFT</span>
-            <span>|</span>
-            <span>CENTER</span>
-            <span>|</span>
-            <span>45° RIGHT</span>
-        </div>
-        
-        <div class="angle-direction" id="angleDirection">
-            ✓ STRAIGHT
-        </div>
-        <div class="angle-status" id="angleStatus">
-            Waiting for data...
-        </div>
-        <div class="angle-debug" id="angleDebug"></div>
-    </div>
+</div>
 
     <div class="map-card">
         <div class="gps-header">
@@ -1528,11 +1540,6 @@
         </div>
     </div>
 
-    <div class="connection-status disconnected" id="connectionStatus">
-        <span class="status-dot"></span>
-        <span id="connectionText">Disconnected</span>
-        <span id="baudRate" class="baud-rate">(ESP32 Bridge)</span>
-    </div>
 
     <script type="module">
         import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
