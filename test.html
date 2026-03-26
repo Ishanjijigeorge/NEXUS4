@@ -1540,6 +1540,11 @@
         </div>
     </div>
 
+    <div class="connection-status disconnected" id="connectionStatus">
+        <span class="status-dot"></span>
+        <span id="connectionText">Disconnected</span>
+        <span id="baudRate" class="baud-rate">(ESP32 Bridge)</span>
+    </div>
 
     <script type="module">
         import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
