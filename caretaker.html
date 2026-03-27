@@ -1247,7 +1247,17 @@
             <button class="ctrl-btn" data-cmd="back">⬇️</button>
         </div>
         <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
+    <div style="margin-top:20px; text-align:center;">
+    <label style="font-weight:600;">⚡ Speed Control</label><br>
+
+    <input type="range" id="speedSlider" min="0" max="100" value="20" style="width:90%;">
+
+    <div style="margin-top:6px;">
+        <span id="speedPercent">20%</span>
     </div>
+</div>
+</div>
+
 
     <button class="connect-btn" id="connectBtn">🔌 Connect to ESP32</button>
 
@@ -1412,6 +1422,28 @@
         const PATIENT_ID = "patient_main";
         const MODE_ID = "drive_mode";
         const EMERGENCY_ID = "emergency_status";
+        const speedSlider = document.getElementById("speedSlider");
+const speedPercent = document.getElementById("speedPercent");
+
+speedSlider.addEventListener("input", () => {
+    const value = speedSlider.value;
+    speedPercent.innerText = value + "%";
+});
+
+speedSlider.addEventListener("change", async () => {
+    const value = speedSlider.value;
+
+    try {
+        await fetch(`http://${esp32IP}/speed?speed=${value}`, {
+            method: "GET",
+            mode: "cors"
+        });
+
+        showToast(`⚡ Speed set to ${value}%`);
+    } catch (err) {
+        showToast("❌ Speed update failed");
+    }
+});
 
         let patientData = {
             fullName: 'Rebecca Rowe',
