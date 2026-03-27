@@ -71,34 +71,6 @@
             font-size: 14px;
         }
 
-        /* HTTPS Warning Banner */
-        .https-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #f59e0b;
-            color: #000;
-            padding: 12px;
-            text-align: center;
-            z-index: 10000;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .https-warning:hover {
-            background: #d97706;
-        }
-        
-        .https-warning a {
-            color: #000;
-            text-decoration: underline;
-            font-weight: bold;
-        }
-
         /* Connection Status Indicator */
         .connection-status {
             position: fixed;
@@ -221,94 +193,947 @@
             word-break: break-all;
         }
 
-        /* Rest of your CSS remains the same */
-        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-        .health-item { background: #f8fafc; border-radius: 20px; padding: 16px 12px; text-align: center; transition: all 0.2s ease; border: 1px solid #eef2ff; }
-        .health-item span { font-size: 12px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 8px; }
-        .health-item .value { font-size: 22px; font-weight: 700; color: var(--blue); }
-        .health-item.warning { background: #fff5f5; border-color: var(--danger); }
-        .health-item.warning .value { color: var(--danger); }
-        .wheel-detail { background: #f8fafc; border-radius: 20px; padding: 14px 18px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; border: 1px solid #eef2ff; }
-        .wheel-detail.warning { background: #fff5f5; border-color: var(--danger); }
-        .wheel-detail.warning strong { color: var(--danger); }
-        .wheel-detail span { color: var(--muted); font-weight: 500; }
-        .wheel-detail strong { color: var(--text); font-size: 16px; font-weight: 700; }
-        .contact-item { background: #f1f5f9; border-radius: 40px; padding: 14px 18px; margin-bottom: 10px; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: 0.2s; border: 1px solid #e2e8f0; }
-        .contact-item:hover { background: #e5edff; border-color: var(--blue); }
-        body.emergency-shutdown .shutdown-overlay { display: flex; }
-        .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; margin-top: 45px; }
-        .profile-card { background: white; border-radius: 40px; padding: 6px 16px 6px 6px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow); border: var(--outline); cursor: pointer; transition: 0.1s; }
-        .profile-card:active { background: #f0f4ff; }
-        .profile-img { width: 44px; height: 44px; border-radius: 30px; object-fit: cover; border: 2px solid white; background: #cbd5e1; }
-        .profile-details { text-align: left; }
-        .profile-name { font-weight: 700; font-size: 15px; }
-        .profile-role { font-size: 11px; color: var(--muted); }
-        .icon-group { display: flex; background: white; padding: 4px 8px; border-radius: 50px; box-shadow: var(--shadow); border: var(--outline); gap: 6px; position: relative; }
-        .icon-btn { background: #f0f4fe; border: none; width: 38px; height: 38px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; }
-        .notification-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .patient-full-card { background: white; border-radius: 28px; padding: 16px; box-shadow: var(--shadow); border: var(--outline); margin-bottom: 14px; position: relative; }
-        .edit-icon { position: absolute; top: 16px; right: 16px; background: #eef2ff; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; display: flex; align-items: center; justify-content: center; color: var(--blue); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-        .patient-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
-        .patient-photo { width: 70px; height: 70px; border-radius: 24px; object-fit: cover; background: #cbd5e1; border: 2px solid white; cursor: pointer; }
-        .patient-name-id { flex: 1; }
-        .patient-name-id h2 { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
-        .patient-name-id .light { color: var(--muted); font-size: 12px; }
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
-        .detail-item { display: flex; flex-direction: column; }
-        .detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
-        .detail-value { font-weight: 600; font-size: 15px; margin-top: 2px; }
-        .round-row { display: flex; justify-content: space-around; background: white; padding: 12px 8px; border-radius: 60px; box-shadow: var(--shadow); border: var(--outline); margin-bottom: 14px; }
-        .round-item { display: flex; flex-direction: column; align-items: center; background: transparent; border: none; cursor: pointer; width: 60px; }
-        .round-icon { width: 50px; height: 50px; background: #f0f5ff; border: 2px solid rgba(29, 78, 216, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--blue); }
-        .round-item span { font-size: 11px; font-weight: 600; margin-top: 4px; }
-        .emergency-btn { width: 100%; background: var(--danger); color: white; border: none; border-radius: 50px; padding: 16px; font-size: 20px; font-weight: 700; box-shadow: 0 8px 18px rgba(220, 38, 38, 0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
-        .drive-mode-card { background: white; border-radius: 40px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); border: var(--outline); margin-bottom: 16px; font-size: 14px; }
-        .mode-label { font-weight: 600; color: var(--muted); }
-        .mode-value { font-weight: 700; color: var(--blue); background: #e5edff; padding: 6px 24px; border-radius: 40px; }
-        .angle-card { background: white; border-radius: 28px; padding: 20px; box-shadow: var(--shadow); border: var(--outline); margin-bottom: 16px; position: relative; }
-        .angle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .angle-header h3 { font-size: 16px; font-weight: 600; color: var(--text); }
-        .angle-value { font-size: 56px; font-weight: 800; text-align: center; color: var(--blue); margin: 10px 0; font-family: monospace; letter-spacing: 2px; }
-        .angle-value span { font-size: 32px; }
-        .angle-bar-track { background: #e2e8f0; border-radius: 20px; height: 8px; position: relative; margin: 20px 0; overflow: visible; }
-        .angle-center-marker { position: absolute; left: 50%; top: -12px; width: 3px; height: 32px; background: #dc2626; transform: translateX(-50%); border-radius: 2px; z-index: 2; }
-        .angle-bar-fill-left { position: absolute; height: 100%; background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6); border-radius: 20px 0 0 20px; right: 50%; transition: width 0.05s linear; transform-origin: right center; }
-        .angle-bar-fill-right { position: absolute; height: 100%; background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626); border-radius: 0 20px 20px 0; left: 50%; transition: width 0.05s linear; transform-origin: left center; }
-        .angle-indicator-dot { position: absolute; top: -10px; width: 28px; height: 28px; background: #1d4ed8; border-radius: 50%; transform: translateX(-50%); transition: left 0.05s linear; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 3; border: 2px solid white; cursor: pointer; }
-        .angle-markers { display: flex; justify-content: space-between; padding: 0 10px; margin-top: 12px; color: var(--muted); font-size: 10px; font-weight: 600; }
-        .angle-direction { text-align: center; font-size: 16px; font-weight: 700; margin-top: 15px; padding: 12px; border-radius: 40px; background: #f1f5f9; transition: all 0.2s ease; }
-        .angle-direction.left { background: #dbeafe; color: #1e3a8a; }
-        .angle-direction.right { background: #fee2e2; color: #991b1b; }
-        .angle-direction.straight { background: #dcfce7; color: #166534; }
-        .angle-warning { border: 2px solid #dc2626; animation: warning-pulse 1s ease-in-out; }
-        @keyframes warning-pulse { 0%, 100% { border-color: #dc2626; } 50% { border-color: #ff6b6b; } }
-        .angle-status { font-size: 11px; text-align: center; margin-top: 12px; padding: 8px; border-radius: 20px; transition: all 0.2s ease; }
-        .angle-debug { font-size: 9px; text-align: center; margin-top: 8px; color: #94a3b8; font-family: monospace; }
-        .calibrate-btn { background: #eef2ff; border: none; padding: 6px 14px; border-radius: 30px; font-size: 11px; font-weight: 600; color: var(--blue); cursor: pointer; transition: all 0.2s; }
-        .calibrate-btn:active { transform: scale(0.95); }
-        .map-card { background: white; border-radius: 28px; padding: 14px; box-shadow: var(--shadow); border: var(--outline); }
-        .gps-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .gps-header h3 { font-size: 16px; }
-        .fullscreen-btn { border: none; background: #eef2ff; color: #1e3a8a; padding: 6px 14px; border-radius: 30px; font-weight: 600; font-size: 12px; cursor: pointer; }
-        #map { height: 170px; border-radius: 20px; background: #e2e8f0; }
-        .popup-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 36px; padding: 22px; width: calc(100% - 32px); max-width: 380px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); z-index: 1000; display: none; max-height: 85vh; overflow-y: auto; }
-        .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .popup-header h3 { font-size: 20px; }
-        .close-popup { background: none; border: none; font-size: 28px; cursor: pointer; }
-        .mode-option { background: #f1f5f9; border-radius: 40px; padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px; font-weight: 600; cursor: pointer; transition: 0.1s; }
-        .mode-option:hover { background: #e5edff; }
-        .shutdown-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); align-items: center; justify-content: center; z-index: 2000; }
-        .shutdown-card { background: #0f172a; padding: 24px; border-radius: 40px; color: white; text-align: center; width: 280px; }
-        #controlPad { margin-top: 16px; background: white; border-radius: 40px; padding: 20px; box-shadow: var(--shadow); border: var(--outline); display: none; }
-        .ctrl-btn { width: 60px; height: 60px; border-radius: 30px; background: #eef2ff; border: none; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
-        .ctrl-btn:active { background: #d0dbff; transform: scale(0.95); }
-        .ctrl-stop { background: #dc2626; color: white; }
-        .ctrl-stop:active { background: #b91c1c; }
-        .toast { position: fixed; bottom: 30px; left: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 50px; font-size: 13px; text-align: center; z-index: 3000; animation: slideUp 0.3s ease; max-width: 320px; margin: 0 auto; pointer-events: none; }
-        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .command-feedback { position: fixed; top: 20px; right: 20px; background: var(--blue); color: white; padding: 8px 16px; border-radius: 30px; font-size: 12px; font-weight: 600; z-index: 1000; animation: fadeOut 2s ease forwards; pointer-events: none; }
-        @keyframes fadeOut { 0% { opacity: 1; transform: translateY(0); } 70% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
-        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eef2ff; }
+        .health-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .health-item {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid #eef2ff;
+        }
+
+        .health-item span {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .health-item .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        .health-item.warning {
+            background: #fff5f5;
+            border-color: var(--danger);
+        }
+
+        .health-item.warning .value {
+            color: var(--danger);
+        }
+
+        .wheel-detail {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border: 1px solid #eef2ff;
+        }
+
+        .wheel-detail.warning {
+            background: #fff5f5;
+            border-color: var(--danger);
+        }
+
+        .wheel-detail.warning strong {
+            color: var(--danger);
+        }
+
+        .wheel-detail span {
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .wheel-detail strong {
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .contact-item {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .contact-item:hover {
+            background: #e5edff;
+            border-color: var(--blue);
+        }
+
+        body.emergency-shutdown .shutdown-overlay {
+            display: flex;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 40px;
+            padding: 6px 16px 6px 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .profile-card:active {
+            background: #f0f4ff;
+        }
+
+        .profile-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 30px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #cbd5e1;
+        }
+
+        .profile-details {
+            text-align: left;
+        }
+
+        .profile-name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .profile-role {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .icon-group {
+            display: flex;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            gap: 6px;
+            position: relative;
+        }
+
+        .icon-btn {
+            background: #f0f4fe;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .patient-full-card {
+            background: white;
+            border-radius: 28px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .edit-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #eef2ff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .patient-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .patient-photo {
+            width: 70px;
+            height: 70px;
+            border-radius: 24px;
+            object-fit: cover;
+            background: #cbd5e1;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        .patient-name-id {
+            flex: 1;
+        }
+
+        .patient-name-id h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .patient-name-id .light {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 2px;
+        }
+
+        .round-row {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 12px 8px;
+            border-radius: 60px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 14px;
+        }
+
+        .round-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 60px;
+        }
+
+        .round-icon {
+            width: 50px;
+            height: 50px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29, 78, 216, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+        }
+
+        .round-item span {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .emergency-btn {
+            width: 100%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .drive-mode-card {
+            background: white;
+            border-radius: 40px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .mode-label {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .mode-value {
+            font-weight: 700;
+            color: var(--blue);
+            background: #e5edff;
+            padding: 6px 24px;
+            border-radius: 40px;
+        }
+
+        /* Fixed Angle Card Styles - Synchronized Bar and Dot */
+        .angle-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .angle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .angle-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .angle-value {
+            font-size: 56px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--blue);
+            margin: 10px 0;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+
+        .angle-value span {
+            font-size: 32px;
+        }
+
+        /* Center-based bar track */
+        .angle-bar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 8px;
+            position: relative;
+            margin: 20px 0;
+            overflow: visible;
+        }
+
+        /* Center marker line */
+        .angle-center-marker {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            width: 3px;
+            height: 32px;
+            background: #dc2626;
+            transform: translateX(-50%);
+            border-radius: 2px;
+            z-index: 2;
+        }
+
+        /* Left fill - expands from center to left */
+        .angle-bar-fill-left {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6);
+            border-radius: 20px 0 0 20px;
+            right: 50%;
+            transition: width 0.05s linear;
+            transform-origin: right center;
+        }
+
+        /* Right fill - expands from center to right */
+        .angle-bar-fill-right {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626);
+            border-radius: 0 20px 20px 0;
+            left: 50%;
+            transition: width 0.05s linear;
+            transform-origin: left center;
+        }
+
+        /* Moving indicator dot */
+        .angle-indicator-dot {
+            position: absolute;
+            top: -10px;
+            width: 28px;
+            height: 28px;
+            background: #1d4ed8;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 3;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        /* Markers below the bar */
+        .angle-markers {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .angle-direction {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 40px;
+            background: #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .angle-direction.left {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .angle-direction.right {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .angle-direction.straight {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .angle-warning {
+            border: 2px solid #dc2626;
+            animation: warning-pulse 1s ease-in-out;
+        }
+
+        @keyframes warning-pulse {
+            0%, 100% { border-color: #dc2626; }
+            50% { border-color: #ff6b6b; }
+        }
+
+        .angle-status {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+            padding: 8px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .angle-debug {
+            font-size: 9px;
+            text-align: center;
+            margin-top: 8px;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .calibrate-btn {
+            background: #eef2ff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--blue);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calibrate-btn:active {
+            transform: scale(0.95);
+        }
+
+        .map-card {
+            background: white;
+            border-radius: 28px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+
+        .gps-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .gps-header h3 {
+            font-size: 16px;
+        }
+
+        .fullscreen-btn {
+            border: none;
+            background: #eef2ff;
+            color: #1e3a8a;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #map {
+            height: 170px;
+            border-radius: 20px;
+            background: #e2e8f0;
+        }
+
+        .popup-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 36px;
+            padding: 22px;
+            width: calc(100% - 32px);
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .popup-header h3 {
+            font-size: 20px;
+        }
+
+        .close-popup {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .mode-option {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .mode-option:hover {
+            background: #e5edff;
+        }
+
+        .shutdown-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .shutdown-card {
+            background: #0f172a;
+            padding: 24px;
+            border-radius: 40px;
+            color: white;
+            text-align: center;
+            width: 280px;
+        }
+
+        #controlPad {
+            margin-top: 16px;
+            background: white;
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            display: none;
+        }
+
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: #eef2ff;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+        }
+
+        .ctrl-btn:active {
+            background: #d0dbff;
+            transform: scale(0.95);
+        }
+
+        .ctrl-stop {
+            background: #dc2626;
+            color: white;
+        }
+
+        .ctrl-stop:active {
+            background: #b91c1c;
+        }
+
+        .safety-check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 30px;
+        }
+
+        .safety-check-item input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--blue);
+        }
+
+        .patient-option-item {
+            background: #f1f5f9;
+            border-radius: 30px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 16px;
+        }
+
+        .patient-option-item:hover {
+            background: #e5edff;
+        }
+
+        .patient-option-item span {
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 30px;
+            border: 1px solid #dbe0e8;
+            background: #f9fcff;
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 40px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .btn-primary {
+            background: var(--blue);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #eef2ff;
+            color: var(--text);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            text-align: center;
+            z-index: 3000;
+            animation: slideUp 0.3s ease;
+            max-width: 320px;
+            margin: 0 auto;
+            pointer-events: none;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .edit-fields-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .edit-field-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .edit-field-row label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .edit-field-row input {
+            padding: 10px 14px;
+            border-radius: 16px;
+            border: 1px solid #d0d5dd;
+            font-size: 14px;
+        }
+
+        .alert-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 32px;
+            padding: 28px 24px;
+            min-width: 280px;
+            max-width: 340px;
+            text-align: center;
+            z-index: 3500;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: popIn 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .alert-popup .alert-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .alert-popup .alert-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .alert-popup .alert-message {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .alert-popup button {
+            background: white;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .notification-log-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--blue);
+        }
+
+        .notification-log-item.warning {
+            border-left-color: var(--danger);
+            background: #fff5f5;
+        }
+
+        .notification-log-item .log-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .notification-log-item .log-message {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .notification-log-item .log-time {
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .command-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: fadeOut 2s ease forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            70% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eef2ff;
+        }
     </style>
 </head>
 
@@ -369,12 +1194,17 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
+    <!-- Angle Sensing Card - Synchronized Bar and Dot -->
     <div class="angle-card" id="angleCard">
         <div class="angle-header">
             <h3>📐 Tilt Angle</h3>
             <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
         </div>
-        <div class="angle-value" id="angleValue">0.0<span>°</span></div>
+        <div class="angle-value" id="angleValue">
+            0.0<span>°</span>
+        </div>
+        
+        <!-- Center-based bar visualization -->
         <div class="angle-bar-track" id="angleBarTrack">
             <div class="angle-bar-fill-left" id="angleFillLeft"></div>
             <div class="angle-bar-fill-right" id="angleFillRight"></div>
@@ -388,8 +1218,13 @@
             <span>|</span>
             <span>45° RIGHT</span>
         </div>
-        <div class="angle-direction" id="angleDirection">✓ STRAIGHT</div>
-        <div class="angle-status" id="angleStatus">Waiting for data...</div>
+        
+        <div class="angle-direction" id="angleDirection">
+            ✓ STRAIGHT
+        </div>
+        <div class="angle-status" id="angleStatus">
+            Waiting for data...
+        </div>
         <div class="angle-debug" id="angleDebug"></div>
     </div>
 
@@ -573,44 +1408,11 @@
     <script type="module">
         import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+
         const db = window.db;
         const PATIENT_ID = "patient_main";
         const MODE_ID = "drive_mode";
         const EMERGENCY_ID = "emergency_status";
-
-        // =============== HTTPS WARNING HANDLER ===============
-        function checkHTTPSAndShowWarning() {
-            if (window.location.protocol === 'https:') {
-                const warningDiv = document.createElement('div');
-                warningDiv.className = 'https-warning';
-                warningDiv.innerHTML = '⚠️ HTTPS Mixed Content: ESP32 HTTP connections may be blocked. ';
-                warningDiv.innerHTML += 'For full functionality, <a href="#" onclick="switchToHTTP()">click here to try HTTP version</a> or use the IP address directly.';
-                warningDiv.onclick = function() {
-                    if (confirm('Switch to HTTP? This may not work if GitHub Pages forces HTTPS.\n\nAlternatively, you can:\n1. Open the ESP32 IP directly in browser\n2. Use a local server\n3. Check your ESP32 connection manually')) {
-                        window.location.href = window.location.href.replace('https:', 'http:');
-                    }
-                };
-                document.body.insertBefore(warningDiv, document.body.firstChild);
-                
-                // Adjust header margin to accommodate warning
-                const headerRow = document.querySelector('.header-row');
-                if (headerRow) {
-                    headerRow.style.marginTop = '45px';
-                }
-                
-                console.warn('⚠️ Running on HTTPS - ESP32 HTTP connections will be blocked by mixed content policy');
-                console.warn('📝 To fix: Either:');
-                console.warn('   1. Access this page via HTTP instead of HTTPS');
-                console.warn('   2. Use the ESP32 IP address directly: http://' + esp32IP);
-                console.warn('   3. Check ESP32 connection manually via browser');
-            }
-        }
-
-        function switchToHTTP() {
-            window.location.href = window.location.href.replace('https:', 'http:');
-        }
-
-        window.switchToHTTP = switchToHTTP;
 
         let patientData = {
             fullName: 'Rebecca Rowe',
@@ -629,13 +1431,12 @@
         let emergencyActive = false;
 
         // ESP32 Bridge Configuration
-        let esp32IP = "192.168.234.126";
-        let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
         let lastAngleValue = 0;
         let angleUpdateCount = 0;
 
+        // Health monitoring state
         let lastHealthState = {
             hr: 84,
             bp: '130/80',
@@ -670,181 +1471,389 @@
             ]
         };
 
-        // =============== ANGLE DISPLAY FUNCTIONS ===============
+        // =============== FIXED ANGLE SENSING FUNCTIONS - SYNCHRONIZED ===============
         
-        function updateAngleDisplay(angle) {
-            let validAngle = Math.min(45, Math.max(-45, angle));
-            lastAngleValue = validAngle;
-            angleUpdateCount++;
+       function updateAngleDisplay(angle) {
+    // Validate and clamp angle to -45 to 45 degrees
+    let validAngle = Math.min(45, Math.max(-45, angle));
+    
+    // Store for debug
+    lastAngleValue = validAngle;
+    angleUpdateCount++;
+    
+    // Update angle value display
+    const angleValueElem = document.getElementById('angleValue');
+    if (angleValueElem) {
+        const angleFormatted = validAngle.toFixed(1);
+        angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+    }
+    
+    // Get the track element to calculate positions
+    const track = document.getElementById('angleBarTrack');
+    if (track) {
+        const trackWidth = track.offsetWidth;
+        const centerX = trackWidth / 2;
+        const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
+        
+        // Calculate dot position - moves in SAME direction as angle
+        // Positive angle = LEFT turn (dot moves LEFT)
+        // Negative angle = RIGHT turn (dot moves RIGHT)
+        const dotOffset = (validAngle / 45) * maxOffset;
+        const dotLeft = centerX + dotOffset;
+        
+        // Update indicator dot position
+        const indicatorDot = document.getElementById('angleIndicatorDot');
+        if (indicatorDot) {
+            indicatorDot.style.left = `${dotLeft}px`;
             
-            const angleValueElem = document.getElementById('angleValue');
-            if (angleValueElem) {
-                const angleFormatted = validAngle.toFixed(1);
-                angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
-            }
-            
-            const track = document.getElementById('angleBarTrack');
-            if (track) {
-                const trackWidth = track.offsetWidth;
-                const centerX = trackWidth / 2;
-                const maxOffset = (trackWidth / 2) - 14;
-                
-                const dotOffset = (validAngle / 45) * maxOffset;
-                const dotLeft = centerX + dotOffset;
-                
-                const indicatorDot = document.getElementById('angleIndicatorDot');
-                if (indicatorDot) {
-                    indicatorDot.style.left = `${dotLeft}px`;
-                    
-                    if (Math.abs(validAngle) > 25) {
-                        indicatorDot.style.background = '#dc2626';
-                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
-                    } else if (Math.abs(validAngle) > 18) {
-                        indicatorDot.style.background = '#f59e0b';
-                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
-                    } else {
-                        indicatorDot.style.background = '#3b82f6';
-                        indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                    }
-                }
-                
-                const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
-                const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
-                
-                const fillLeft = document.getElementById('angleFillLeft');
-                if (fillLeft) {
-                    fillLeft.style.width = `${leftFillPercent}%`;
-                }
-                
-                const fillRight = document.getElementById('angleFillRight');
-                if (fillRight) {
-                    fillRight.style.width = `${rightFillPercent}%`;
-                }
-            }
-            
-            const angleDirectionElem = document.getElementById('angleDirection');
-            const angleCard = document.getElementById('angleCard');
-            const angleStatus = document.getElementById('angleStatus');
-            const tiltValueInWheel = document.getElementById('tiltValue');
-            
-            let directionText = '';
-            let directionClass = '';
-            let directionIcon = '';
-            
-            if (validAngle > 5) {
-                directionIcon = '⬅️';
-                directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
-                directionClass = 'left';
-            } else if (validAngle < -5) {
-                directionIcon = '➡️';
-                directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
-                directionClass = 'right';
-            } else {
-                directionIcon = '✓';
-                directionText = 'STRAIGHT (centered)';
-                directionClass = 'straight';
-            }
-            
-            if (angleDirectionElem) {
-                angleDirectionElem.className = `angle-direction ${directionClass}`;
-                angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
-            }
-            
-            if (tiltValueInWheel) {
-                tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
-            }
-            
+            // Change dot color based on severity
             if (Math.abs(validAngle) > 25) {
-                angleCard.classList.add('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
-                    angleStatus.style.background = '#fee2e2';
-                    angleStatus.style.color = '#dc2626';
-                    angleStatus.style.fontWeight = 'bold';
-                }
-                if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
-                    addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
-                }
+                indicatorDot.style.background = '#dc2626';
+                indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
             } else if (Math.abs(validAngle) > 18) {
-                angleCard.classList.add('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
-                    angleStatus.style.background = '#fffbeb';
-                    angleStatus.style.color = '#f59e0b';
-                    angleStatus.style.fontWeight = '500';
-                }
-            } else if (Math.abs(validAngle) > 10) {
-                angleCard.classList.remove('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
-                    angleStatus.style.background = '#fffbeb';
-                    angleStatus.style.color = '#f59e0b';
-                }
+                indicatorDot.style.background = '#f59e0b';
+                indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
             } else {
-                angleCard.classList.remove('angle-warning');
-                if (angleStatus) {
-                    angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
-                    angleStatus.style.background = '#dcfce7';
-                    angleStatus.style.color = '#166534';
-                }
+                indicatorDot.style.background = '#3b82f6';
+                indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
             }
-            
-            const debugElem = document.getElementById('angleDebug');
-            if (debugElem && angleUpdateCount % 10 === 0) {
-                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
-            }
-            
-            lastWheelState.angle = validAngle;
         }
+        
+        // FIXED: Bar fill - MUST go in SAME direction as the dot
+        // LEFT fill (positive angle): expands from center to left
+        // RIGHT fill (negative angle): expands from center to right
+    const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+        
+        // Update left fill (expands left from center) - for LEFT turn
+        const fillLeft = document.getElementById('angleFillLeft');
+        if (fillLeft) {
+            fillLeft.style.width = `${leftFillPercent}%`;
+            // Change color based on angle severity
+            if (validAngle > 25) {
+                fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
+            } else if (validAngle > 18) {
+                fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+            } else if (validAngle > 0) {
+                fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
+            }
+        }
+        
+        // Update right fill (expands right from center) - for RIGHT turn
+        const fillRight = document.getElementById('angleFillRight');
+        if (fillRight) {
+            fillRight.style.width = `${rightFillPercent}%`;
+            // Change color based on angle severity
+            if (validAngle < -25) {
+                fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
+            } else if (validAngle < -18) {
+                fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+            } else if (validAngle < 0) {
+                fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
+            }
+        }
+    }
+    
+    // =============== ESP32 CONNECTION WITH HTTPS PROXY ===============
+// Since GitHub Pages uses HTTPS, we need to proxy HTTP requests
+// Add this code right after Firebase initialization
 
+let esp32IP = "192.168.234.126";
+let esp32Connected = false;
+let useProxy = true; // Set to false if you have HTTPS on ESP32
+
+// Create a proxy endpoint using a free CORS proxy service
+// You can also use a local proxy if you have one
+function getESP32Url(endpoint) {
+    if (useProxy && window.location.protocol === 'https:') {
+        // Use a CORS proxy to bypass mixed content restrictions
+        // Note: For production, you should set up your own proxy server
+        return `https://cors-anywhere.herokuapp.com/http://${esp32IP}${endpoint}`;
+    }
+    return `http://${esp32IP}${endpoint}`;
+}
+
+// Modified fetch functions to handle HTTPS proxy
+async function testESP32Connection() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const url = getESP32Url('/ping');
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const text = await response.text();
+            if (text === "PONG") {
+                esp32Connected = true;
+                updateConnectionStatus(true);
+                lastPing = Date.now();
+                startAngleMonitoring();
+                return true;
+            }
+        }
+    } catch (error) {
+        console.log("ESP32 not responding:", error);
+        // If proxy fails, try direct connection (for local development)
+        if (useProxy) {
+            console.log("Trying direct connection...");
+            useProxy = false;
+            return testESP32Connection();
+        }
+    }
+    
+    esp32Connected = false;
+    updateConnectionStatus(false);
+    if (angleFetchInterval) clearInterval(angleFetchInterval);
+    return false;
+}
+
+async function sendCommand(command) {
+    if (!esp32Connected) {
+        showToast("⚠️ ESP32 not connected! Check connection.");
+        return false;
+    }
+    
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
+        
+        const url = getESP32Url(`/cmd?data=${encodeURIComponent(command)}`);
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            console.log("Command sent:", command);
+            showCommandFeedback(command);
+            addToSerialConsole("→ " + command, true);
+            return true;
+        } else {
+            throw new Error("HTTP " + response.status);
+        }
+    } catch (error) {
+        console.error("Send error:", error);
+        showToast("❌ Failed to send command");
+        esp32Connected = false;
+        updateConnectionStatus(false);
+        return false;
+    }
+}
+
+async function sendEmergency() {
+    if (!esp32Connected) {
+        showToast("⚠️ ESP32 not connected!");
+        return false;
+    }
+    
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
+        
+        const url = getESP32Url('/emergency');
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            showToast("🚨 EMERGENCY STOP SENT");
+            return true;
+        }
+    } catch (error) {
+        console.error("Emergency send error:", error);
+    }
+    return false;
+}
+
+async function fetchAngleData() {
+    if (!esp32Connected) {
+        return null;
+    }
+    
+    // Rate limit to prevent overwhelming the ESP32
+    const now = Date.now();
+    if (now - lastFetchTime < 30) {
+        return null;
+    }
+    lastFetchTime = now;
+    
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300);
+        
+        const url = getESP32Url('/angle');
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const data = await response.text();
+            const angle = parseFloat(data);
+            if (!isNaN(angle) && isFinite(angle)) {
+                updateAngleDisplay(angle);
+                return angle;
+            }
+        }
+    } catch (error) {
+        // Silent fail for connection issues
+        if (error.name !== 'AbortError' && Math.random() < 0.02) {
+            console.log("Angle fetch:", error.message);
+        }
+    }
+    return null;
+}
+    
+    // Update direction text (using actual angle)
+    const angleDirectionElem = document.getElementById('angleDirection');
+    const angleCard = document.getElementById('angleCard');
+    const angleStatus = document.getElementById('angleStatus');
+    const tiltValueInWheel = document.getElementById('tiltValue');
+    
+    let directionText = '';
+    let directionClass = '';
+    let directionIcon = '';
+    
+    // Positive angle = LEFT turn
+    if (validAngle > 5) {
+        directionIcon = '⬅️';
+        directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+        directionClass = 'left';
+    } else if (validAngle < -5) {
+        directionIcon = '➡️';
+        directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+        directionClass = 'right';
+    } else {
+        directionIcon = '✓';
+        directionText = 'STRAIGHT (centered)';
+        directionClass = 'straight';
+    }
+    
+    if (angleDirectionElem) {
+        angleDirectionElem.className = `angle-direction ${directionClass}`;
+        angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+    }
+    
+    // Update tilt value in wheel popup
+    if (tiltValueInWheel) {
+        tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+    }
+    
+    // Update status and warnings
+    if (Math.abs(validAngle) > 25) {
+        angleCard.classList.add('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+            angleStatus.style.background = '#fee2e2';
+            angleStatus.style.color = '#dc2626';
+            angleStatus.style.fontWeight = 'bold';
+        }
+        
+        // Add notification on threshold crossing
+        if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+            addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+        }
+    } else if (Math.abs(validAngle) > 18) {
+        angleCard.classList.add('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+            angleStatus.style.background = '#fffbeb';
+            angleStatus.style.color = '#f59e0b';
+            angleStatus.style.fontWeight = '500';
+        }
+    } else if (Math.abs(validAngle) > 10) {
+        angleCard.classList.remove('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
+            angleStatus.style.background = '#fffbeb';
+            angleStatus.style.color = '#f59e0b';
+            angleStatus.style.fontWeight = 'normal';
+        }
+    } else {
+        angleCard.classList.remove('angle-warning');
+        if (angleStatus) {
+            angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+            angleStatus.style.background = '#dcfce7';
+            angleStatus.style.color = '#166534';
+            angleStatus.style.fontWeight = 'normal';
+        }
+    }
+    
+    // Update debug info every 10 updates
+    const debugElem = document.getElementById('angleDebug');
+    if (debugElem && angleUpdateCount % 10 === 0) {
+        debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
+    }
+    
+    lastWheelState.angle = validAngle;
+}
+
+        // Fast angle fetch with optimized polling
         let angleFetchInterval = null;
         let lastFetchTime = 0;
 
-        async function fetchAngleData() {
-            if (!esp32Connected) return null;
+
+        // Parse angle from Arduino serial data
+        function parseAngleFromSerial(data) {
+            if (!data) return null;
             
-            const now = Date.now();
-            if (now - lastFetchTime < 30) return null;
-            lastFetchTime = now;
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 500);
-                
-                const response = await fetch(`http://${esp32IP}/angle`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.text();
-                    const angle = parseFloat(data);
-                    if (!isNaN(angle) && isFinite(angle)) {
-                        updateAngleDisplay(angle);
-                        return angle;
-                    }
-                }
-            } catch (error) {
-                // Silent fail - don't spam console with mixed content errors
-                if (error.name !== 'AbortError' && !error.message.includes('Failed to fetch')) {
-                    console.log("Angle fetch:", error.message);
+            // Handle ANGLE: format
+            if (data.startsWith('ANGLE:')) {
+                const angleStr = data.substring(6).trim();
+                const angle = parseFloat(angleStr);
+                if (!isNaN(angle) && isFinite(angle)) {
+                    updateAngleDisplay(angle);
+                    return angle;
                 }
             }
             return null;
         }
 
+        // Start fast angle monitoring (33ms for smooth animation - ~30fps)
         function startAngleMonitoring() {
             if (angleFetchInterval) clearInterval(angleFetchInterval);
             angleFetchInterval = setInterval(() => {
                 fetchAngleData();
-            }, 33);
+            }, 33); // 33ms = ~30fps for smooth animation
             console.log("Angle monitoring started at 33ms interval");
         }
+        
+        
 
+        // Calibrate angle sensor
         async function calibrateAngleSensor() {
             if (!esp32Connected) {
                 showToast("⚠️ ESP32 not connected!");
@@ -861,8 +1870,10 @@
                 if (response.ok) {
                     showToast("📐 Calibration requested - keep wheelchair level");
                     addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level for 5 seconds", false);
+                    // Reset to 0 temporarily
                     updateAngleDisplay(0);
                     
+                    // Add visual feedback
                     const calibrateBtn = document.getElementById('calibrateAngleBtn');
                     if (calibrateBtn) {
                         calibrateBtn.textContent = 'Calibrating...';
@@ -881,114 +1892,15 @@
             return false;
         }
 
+        // Add window resize handler to recalculate positions
+        window.addEventListener('resize', () => {
+            // Re-fetch and update angle after resize to correct positions
+            if (lastAngleValue !== undefined) {
+                setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
+            }
+        });
+
         // =============== ESP32 BRIDGE FUNCTIONS ===============
-
-        async function testESP32Connection() {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                
-                const response = await fetch(`http://${esp32IP}/ping`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const text = await response.text();
-                    if (text === "PONG") {
-                        esp32Connected = true;
-                        updateConnectionStatus(true);
-                        lastPing = Date.now();
-                        startAngleMonitoring();
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.log("ESP32 not responding:", error.message);
-                if (!error.message.includes('Failed to fetch')) {
-                    // Only show toast for non-mixed-content errors
-                    if (!window.location.protocol === 'https:') {
-                        // showToast("⚠️ Cannot connect to ESP32");
-                    }
-                }
-            }
-            
-            esp32Connected = false;
-            updateConnectionStatus(false);
-            if (angleFetchInterval) clearInterval(angleFetchInterval);
-            return false;
-        }
-
-        async function sendCommand(command) {
-            if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected! Check connection.");
-                return false;
-            }
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
-                
-                const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(command)}`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    console.log("Command sent:", command);
-                    showCommandFeedback(command);
-                    addToSerialConsole("→ " + command, true);
-                    return true;
-                } else {
-                    throw new Error("HTTP " + response.status);
-                }
-            } catch (error) {
-                console.error("Send error:", error);
-                if (!error.message.includes('Failed to fetch')) {
-                    showToast("❌ Failed to send command");
-                }
-                esp32Connected = false;
-                updateConnectionStatus(false);
-                return false;
-            }
-        }
-
-        async function sendEmergency() {
-            if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected!");
-                return false;
-            }
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
-                
-                const response = await fetch(`http://${esp32IP}/emergency`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    showToast("🚨 EMERGENCY STOP SENT");
-                    return true;
-                }
-            } catch (error) {
-                console.error("Emergency send error:", error);
-            }
-            return false;
-        }
 
         function updateConnectionStatus(connected) {
             const statusDiv = document.getElementById('connectionStatus');
@@ -1083,6 +1995,11 @@
             const line = document.createElement('div');
             line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
             consoleContent.appendChild(line);
+            
+            // Auto-parse angle data from serial
+            if (!isOutgoing) {
+                parseAngleFromSerial(message);
+            }
             
             line.scrollIntoView();
             
@@ -1651,9 +2568,6 @@
 
         document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
 
-        // Check for HTTPS and show warning
-        checkHTTPSAndShowWarning();
-        
         await loadPatientFromFirestore();
         listenDriveMode();
         listenEmergencyFromPatient();
@@ -1687,4 +2601,4 @@
     </script>
 </body>
 
-</html>
+</html> 
