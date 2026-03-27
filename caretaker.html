@@ -1408,6 +1408,81 @@
     <script type="module">
         import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        
+
+        // Add this at the beginning of your script section
+// Detect if we're on HTTPS and show warning
+if (window.location.protocol === 'https:') {
+    console.warn('⚠️ Running on HTTPS - ESP32 HTTP connections will be blocked by mixed content policy');
+    console.warn('📝 To fix: Either:');
+    console.warn('   1. Access this page via HTTP instead of HTTPS');
+    console.warn('   2. Use a browser extension to allow mixed content');
+    console.warn('   3. Set up HTTPS on ESP32 (complex)');
+    
+    // Show user-friendly warning
+    const warningDiv = document.createElement('div');
+    warningDiv.style.position = 'fixed';
+    warningDiv.style.top = '0';
+    warningDiv.style.left = '0';
+    warningDiv.style.right = '0';
+    warningDiv.style.background = '#f59e0b';
+    warningDiv.style.color = '#000';
+    warningDiv.style.padding = '12px';
+    warningDiv.style.textAlign = 'center';
+    warningDiv.style.zIndex = '10000';
+    warningDiv.style.fontSize = '12px';
+    warningDiv.style.fontWeight = 'bold';
+    warningDiv.innerHTML = '⚠️ HTTPS Mixed Content Warning: ESP32 connection may be blocked. Please use HTTP instead of HTTPS for full functionality.';
+    document.body.insertBefore(warningDiv, document.body.firstChild);
+}
+
+// Modify the connection check to handle CORS better
+async function testESP32Connection() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        // Add mode: 'no-cors' for better compatibility
+        const response = await fetch(`http://${esp32IP}/ping`, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: {
+                'Accept': 'text/plain'
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const text = await response.text();
+            if (text === "PONG") {
+                esp32Connected = true;
+                updateConnectionStatus(true);
+                lastPing = Date.now();
+                startAngleMonitoring();
+                return true;
+            }
+        }
+    } catch (error) {
+        console.log("ESP32 not responding:", error.message);
+        // Don't show error for mixed content - it's expected
+        if (!error.message.includes('Failed to fetch') && !error.message.includes('NetworkError')) {
+            showToast("⚠️ Cannot connect to ESP32 - Check IP and network");
+        }
+    }
+    
+    esp32Connected = false;
+    updateConnectionStatus(false);
+    if (angleFetchInterval) clearInterval(angleFetchInterval);
+    return false;
+}
+
+
+
+        
+
         const db = window.db;
         const PATIENT_ID = "patient_main";
         const MODE_ID = "drive_mode";
