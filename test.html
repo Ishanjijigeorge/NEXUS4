@@ -43,6 +43,7 @@
         console.log("Firebase initialized");
     </script>
     <style>
+        /* Keep all existing CSS styles exactly as they were */
         * {
             margin: 0;
             padding: 0;
@@ -71,7 +72,6 @@
             font-size: 14px;
         }
 
-        /* Connection Status Indicator */
         .connection-status {
             position: fixed;
             bottom: 20px;
@@ -544,7 +544,6 @@
             border-radius: 40px;
         }
 
-        /* Fixed Angle Card Styles - Synchronized Bar and Dot */
         .angle-card {
             background: white;
             border-radius: 28px;
@@ -582,7 +581,6 @@
             font-size: 32px;
         }
 
-        /* Center-based bar track */
         .angle-bar-track {
             background: #e2e8f0;
             border-radius: 20px;
@@ -592,7 +590,6 @@
             overflow: visible;
         }
 
-        /* Center marker line */
         .angle-center-marker {
             position: absolute;
             left: 50%;
@@ -605,7 +602,6 @@
             z-index: 2;
         }
 
-        /* Left fill - expands from center to left */
         .angle-bar-fill-left {
             position: absolute;
             height: 100%;
@@ -616,7 +612,6 @@
             transform-origin: right center;
         }
 
-        /* Right fill - expands from center to right */
         .angle-bar-fill-right {
             position: absolute;
             height: 100%;
@@ -627,7 +622,6 @@
             transform-origin: left center;
         }
 
-        /* Moving indicator dot */
         .angle-indicator-dot {
             position: absolute;
             top: -10px;
@@ -643,7 +637,6 @@
             cursor: pointer;
         }
 
-        /* Markers below the bar */
         .angle-markers {
             display: flex;
             justify-content: space-between;
@@ -1194,7 +1187,6 @@
         <span class="mode-value" id="modeDisplay">Line Following</span>
     </div>
 
-    <!-- Angle Sensing Card - Synchronized Bar and Dot -->
     <div class="angle-card" id="angleCard">
         <div class="angle-header">
             <h3>📐 Tilt Angle</h3>
@@ -1204,7 +1196,6 @@
             0.0<span>°</span>
         </div>
         
-        <!-- Center-based bar visualization -->
         <div class="angle-bar-track" id="angleBarTrack">
             <div class="angle-bar-fill-left" id="angleFillLeft"></div>
             <div class="angle-bar-fill-right" id="angleFillRight"></div>
@@ -1408,450 +1399,206 @@
     <script type="module">
         import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-
         const db = window.db;
         const PATIENT_ID = "patient_main";
         const MODE_ID = "drive_mode";
         const EMERGENCY_ID = "emergency_status";
 
-        let patientData = {
-            fullName: 'Rebecca Rowe',
-            patientId: 'PT-10234',
-            age: '67',
-            bloodGroup: 'A+',
-            doctor: 'Dr. Sarah Adams',
-            contactNo: '+1 555 0199',
-            photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
-        };
-
-        let currentMode = 'Line Following';
-        let pendingMode = null;
-        let notifications = [];
-        let notificationCount = 0;
-        let emergencyActive = false;
-
-        // ESP32 Bridge Configuration
+        // =============== ESP32 CONNECTION WITH HTTPS FIX ===============
+        let esp32IP = "192.168.234.126";
+        let esp32Connected = false;
         let lastPing = 0;
-        let lastCommandTime = 0;
-        let lastAngleValue = 0;
-        let angleUpdateCount = 0;
-
-        // Health monitoring state
-        let lastHealthState = {
-            hr: 84,
-            bp: '130/80',
-            temp: 36.8,
-            o2: 98
-        };
-
-        let lastWheelState = {
-            battery: 82,
-            speed: 1.2,
-            angle: 0
-        };
-
-        const safetyChecks = {
-            'Line Following': [
-                'Ensure path is clear of obstacles',
-                'Check that line sensors are clean',
-                'Confirm maximum speed setting is safe',
-                'Verify emergency stop works'
-            ],
-            'Control': [
-                'Ensure joystick/control is responsive',
-                'Confirm user is ready to manual drive',
-                'Check area around wheelchair is clear',
-                'Verify speed limit is set to low'
-            ],
-            'Self Drive': [
-                'Ensure autonomy mode is enabled',
-                'Check map data is up-to-date',
-                'Confirm no passengers are in the way',
-                'Verify obstacle detection is active'
-            ]
-        };
-
-        // =============== FIXED ANGLE SENSING FUNCTIONS - SYNCHRONIZED ===============
-        
-       function updateAngleDisplay(angle) {
-    // Validate and clamp angle to -45 to 45 degrees
-    let validAngle = Math.min(45, Math.max(-45, angle));
-    
-    // Store for debug
-    lastAngleValue = validAngle;
-    angleUpdateCount++;
-    
-    // Update angle value display
-    const angleValueElem = document.getElementById('angleValue');
-    if (angleValueElem) {
-        const angleFormatted = validAngle.toFixed(1);
-        angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
-    }
-    
-    // Get the track element to calculate positions
-    const track = document.getElementById('angleBarTrack');
-    if (track) {
-        const trackWidth = track.offsetWidth;
-        const centerX = trackWidth / 2;
-        const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
-        
-        // Calculate dot position - moves in SAME direction as angle
-        // Positive angle = LEFT turn (dot moves LEFT)
-        // Negative angle = RIGHT turn (dot moves RIGHT)
-        const dotOffset = (validAngle / 45) * maxOffset;
-        const dotLeft = centerX + dotOffset;
-        
-        // Update indicator dot position
-        const indicatorDot = document.getElementById('angleIndicatorDot');
-        if (indicatorDot) {
-            indicatorDot.style.left = `${dotLeft}px`;
-            
-            // Change dot color based on severity
-            if (Math.abs(validAngle) > 25) {
-                indicatorDot.style.background = '#dc2626';
-                indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
-            } else if (Math.abs(validAngle) > 18) {
-                indicatorDot.style.background = '#f59e0b';
-                indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
-            } else {
-                indicatorDot.style.background = '#3b82f6';
-                indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-            }
-        }
-        
-        // FIXED: Bar fill - MUST go in SAME direction as the dot
-        // LEFT fill (positive angle): expands from center to left
-        // RIGHT fill (negative angle): expands from center to right
-    const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
-const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
-        
-        // Update left fill (expands left from center) - for LEFT turn
-        const fillLeft = document.getElementById('angleFillLeft');
-        if (fillLeft) {
-            fillLeft.style.width = `${leftFillPercent}%`;
-            // Change color based on angle severity
-            if (validAngle > 25) {
-                fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
-            } else if (validAngle > 18) {
-                fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-            } else if (validAngle > 0) {
-                fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
-            }
-        }
-        
-        // Update right fill (expands right from center) - for RIGHT turn
-        const fillRight = document.getElementById('angleFillRight');
-        if (fillRight) {
-            fillRight.style.width = `${rightFillPercent}%`;
-            // Change color based on angle severity
-            if (validAngle < -25) {
-                fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
-            } else if (validAngle < -18) {
-                fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
-            } else if (validAngle < 0) {
-                fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
-            }
-        }
-    }
-    
-    // =============== ESP32 CONNECTION WITH HTTPS PROXY ===============
-// Since GitHub Pages uses HTTPS, we need to proxy HTTP requests
-// Add this code right after Firebase initialization
-
-let esp32IP = "192.168.234.126";
-let esp32Connected = false;
-let useProxy = true; // Set to false if you have HTTPS on ESP32
-
-// Create a proxy endpoint using a free CORS proxy service
-// You can also use a local proxy if you have one
-function getESP32Url(endpoint) {
-    if (useProxy && window.location.protocol === 'https:') {
-        // Use a CORS proxy to bypass mixed content restrictions
-        // Note: For production, you should set up your own proxy server
-        return `https://cors-anywhere.herokuapp.com/http://${esp32IP}${endpoint}`;
-    }
-    return `http://${esp32IP}${endpoint}`;
-}
-
-// Modified fetch functions to handle HTTPS proxy
-async function testESP32Connection() {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        
-        const url = getESP32Url('/ping');
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            signal: controller.signal,
-            headers: {
-                'Origin': window.location.origin
-            }
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            const text = await response.text();
-            if (text === "PONG") {
-                esp32Connected = true;
-                updateConnectionStatus(true);
-                lastPing = Date.now();
-                startAngleMonitoring();
-                return true;
-            }
-        }
-    } catch (error) {
-        console.log("ESP32 not responding:", error);
-        // If proxy fails, try direct connection (for local development)
-        if (useProxy) {
-            console.log("Trying direct connection...");
-            useProxy = false;
-            return testESP32Connection();
-        }
-    }
-    
-    esp32Connected = false;
-    updateConnectionStatus(false);
-    if (angleFetchInterval) clearInterval(angleFetchInterval);
-    return false;
-}
-
-async function sendCommand(command) {
-    if (!esp32Connected) {
-        showToast("⚠️ ESP32 not connected! Check connection.");
-        return false;
-    }
-    
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1000);
-        
-        const url = getESP32Url(`/cmd?data=${encodeURIComponent(command)}`);
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            signal: controller.signal,
-            headers: {
-                'Origin': window.location.origin
-            }
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            console.log("Command sent:", command);
-            showCommandFeedback(command);
-            addToSerialConsole("→ " + command, true);
-            return true;
-        } else {
-            throw new Error("HTTP " + response.status);
-        }
-    } catch (error) {
-        console.error("Send error:", error);
-        showToast("❌ Failed to send command");
-        esp32Connected = false;
-        updateConnectionStatus(false);
-        return false;
-    }
-}
-
-async function sendEmergency() {
-    if (!esp32Connected) {
-        showToast("⚠️ ESP32 not connected!");
-        return false;
-    }
-    
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1000);
-        
-        const url = getESP32Url('/emergency');
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            signal: controller.signal,
-            headers: {
-                'Origin': window.location.origin
-            }
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            showToast("🚨 EMERGENCY STOP SENT");
-            return true;
-        }
-    } catch (error) {
-        console.error("Emergency send error:", error);
-    }
-    return false;
-}
-
-async function fetchAngleData() {
-    if (!esp32Connected) {
-        return null;
-    }
-    
-    // Rate limit to prevent overwhelming the ESP32
-    const now = Date.now();
-    if (now - lastFetchTime < 30) {
-        return null;
-    }
-    lastFetchTime = now;
-    
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 300);
-        
-        const url = getESP32Url('/angle');
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            signal: controller.signal,
-            headers: {
-                'Origin': window.location.origin
-            }
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            const data = await response.text();
-            const angle = parseFloat(data);
-            if (!isNaN(angle) && isFinite(angle)) {
-                updateAngleDisplay(angle);
-                return angle;
-            }
-        }
-    } catch (error) {
-        // Silent fail for connection issues
-        if (error.name !== 'AbortError' && Math.random() < 0.02) {
-            console.log("Angle fetch:", error.message);
-        }
-    }
-    return null;
-}
-    
-    // Update direction text (using actual angle)
-    const angleDirectionElem = document.getElementById('angleDirection');
-    const angleCard = document.getElementById('angleCard');
-    const angleStatus = document.getElementById('angleStatus');
-    const tiltValueInWheel = document.getElementById('tiltValue');
-    
-    let directionText = '';
-    let directionClass = '';
-    let directionIcon = '';
-    
-    // Positive angle = LEFT turn
-    if (validAngle > 5) {
-        directionIcon = '⬅️';
-        directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
-        directionClass = 'left';
-    } else if (validAngle < -5) {
-        directionIcon = '➡️';
-        directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
-        directionClass = 'right';
-    } else {
-        directionIcon = '✓';
-        directionText = 'STRAIGHT (centered)';
-        directionClass = 'straight';
-    }
-    
-    if (angleDirectionElem) {
-        angleDirectionElem.className = `angle-direction ${directionClass}`;
-        angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
-    }
-    
-    // Update tilt value in wheel popup
-    if (tiltValueInWheel) {
-        tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
-    }
-    
-    // Update status and warnings
-    if (Math.abs(validAngle) > 25) {
-        angleCard.classList.add('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
-            angleStatus.style.background = '#fee2e2';
-            angleStatus.style.color = '#dc2626';
-            angleStatus.style.fontWeight = 'bold';
-        }
-        
-        // Add notification on threshold crossing
-        if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
-            addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
-        }
-    } else if (Math.abs(validAngle) > 18) {
-        angleCard.classList.add('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
-            angleStatus.style.background = '#fffbeb';
-            angleStatus.style.color = '#f59e0b';
-            angleStatus.style.fontWeight = '500';
-        }
-    } else if (Math.abs(validAngle) > 10) {
-        angleCard.classList.remove('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
-            angleStatus.style.background = '#fffbeb';
-            angleStatus.style.color = '#f59e0b';
-            angleStatus.style.fontWeight = 'normal';
-        }
-    } else {
-        angleCard.classList.remove('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
-            angleStatus.style.background = '#dcfce7';
-            angleStatus.style.color = '#166534';
-            angleStatus.style.fontWeight = 'normal';
-        }
-    }
-    
-    // Update debug info every 10 updates
-    const debugElem = document.getElementById('angleDebug');
-    if (debugElem && angleUpdateCount % 10 === 0) {
-        debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
-    }
-    
-    lastWheelState.angle = validAngle;
-}
-
-        // Fast angle fetch with optimized polling
+        let useCorsProxy = false; // Set to false for direct connection (ESP32 must support HTTPS)
         let angleFetchInterval = null;
         let lastFetchTime = 0;
-
-
-        // Parse angle from Arduino serial data
-        function parseAngleFromSerial(data) {
-            if (!data) return null;
+        
+        // Function to get ESP32 URL with HTTPS compatibility
+        function getESP32Url(endpoint) {
+            // If using a CORS proxy (for development)
+            if (useCorsProxy) {
+                return `https://cors-anywhere.herokuapp.com/http://${esp32IP}${endpoint}`;
+            }
             
-            // Handle ANGLE: format
-            if (data.startsWith('ANGLE:')) {
-                const angleStr = data.substring(6).trim();
-                const angle = parseFloat(angleStr);
-                if (!isNaN(angle) && isFinite(angle)) {
-                    updateAngleDisplay(angle);
-                    return angle;
+            // If page is loaded over HTTPS, try HTTPS on ESP32 first
+            if (window.location.protocol === 'https:' && !useCorsProxy) {
+                // Try HTTPS first, then fallback to HTTP with CORS proxy
+                return `https://${esp32IP}${endpoint}`;
+            }
+            
+            // Default HTTP (for local development)
+            return `http://${esp32IP}${endpoint}`;
+        }
+
+        // Test ESP32 connection with fallback
+        async function testESP32Connection() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                
+                const url = getESP32Url('/ping');
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal,
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    if (text === "PONG") {
+                        esp32Connected = true;
+                        updateConnectionStatus(true);
+                        lastPing = Date.now();
+                        startAngleMonitoring();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.log("ESP32 connection attempt failed:", error.message);
+                
+                // If direct HTTPS failed, try with CORS proxy
+                if (!useCorsProxy && window.location.protocol === 'https:') {
+                    console.log("Trying with CORS proxy...");
+                    useCorsProxy = true;
+                    return testESP32Connection();
+                }
+            }
+            
+            esp32Connected = false;
+            updateConnectionStatus(false);
+            if (angleFetchInterval) clearInterval(angleFetchInterval);
+            return false;
+        }
+
+        // Send command to ESP32
+        async function sendCommand(command) {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected! Check connection.");
+                return false;
+            }
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const url = getESP32Url(`/cmd?data=${encodeURIComponent(command)}`);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal,
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    console.log("Command sent:", command);
+                    showCommandFeedback(command);
+                    addToSerialConsole("→ " + command, true);
+                    return true;
+                } else {
+                    throw new Error("HTTP " + response.status);
+                }
+            } catch (error) {
+                console.error("Send error:", error);
+                showToast("❌ Failed to send command");
+                esp32Connected = false;
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+
+        // Send emergency stop
+        async function sendEmergency() {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected!");
+                return false;
+            }
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const url = getESP32Url('/emergency');
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    showToast("🚨 EMERGENCY STOP SENT");
+                    return true;
+                }
+            } catch (error) {
+                console.error("Emergency send error:", error);
+            }
+            return false;
+        }
+
+        // Fetch angle data from ESP32
+        async function fetchAngleData() {
+            if (!esp32Connected) {
+                return null;
+            }
+            
+            // Rate limit to 33ms (30fps)
+            const now = Date.now();
+            if (now - lastFetchTime < 33) {
+                return null;
+            }
+            lastFetchTime = now;
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300);
+                
+                const url = getESP32Url('/angle');
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    const angle = parseFloat(data);
+                    if (!isNaN(angle) && isFinite(angle)) {
+                        updateAngleDisplay(angle);
+                        return angle;
+                    }
+                }
+            } catch (error) {
+                // Silent fail for connection issues
+                if (error.name !== 'AbortError' && Math.random() < 0.02) {
+                    console.log("Angle fetch:", error.message);
                 }
             }
             return null;
         }
 
-        // Start fast angle monitoring (33ms for smooth animation - ~30fps)
+        // Start angle monitoring
         function startAngleMonitoring() {
             if (angleFetchInterval) clearInterval(angleFetchInterval);
             angleFetchInterval = setInterval(() => {
                 fetchAngleData();
-            }, 33); // 33ms = ~30fps for smooth animation
+            }, 33); // 33ms = ~30fps
             console.log("Angle monitoring started at 33ms interval");
         }
-        
-        
 
         // Calibrate angle sensor
         async function calibrateAngleSensor() {
@@ -1861,7 +1608,8 @@ async function fetchAngleData() {
             }
             
             try {
-                const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
+                const url = getESP32Url('/calibrate');
+                const response = await fetch(url, {
                     method: 'GET',
                     mode: 'cors',
                     cache: 'no-cache'
@@ -1870,10 +1618,8 @@ async function fetchAngleData() {
                 if (response.ok) {
                     showToast("📐 Calibration requested - keep wheelchair level");
                     addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level for 5 seconds", false);
-                    // Reset to 0 temporarily
                     updateAngleDisplay(0);
                     
-                    // Add visual feedback
                     const calibrateBtn = document.getElementById('calibrateAngleBtn');
                     if (calibrateBtn) {
                         calibrateBtn.textContent = 'Calibrating...';
@@ -1892,16 +1638,7 @@ async function fetchAngleData() {
             return false;
         }
 
-        // Add window resize handler to recalculate positions
-        window.addEventListener('resize', () => {
-            // Re-fetch and update angle after resize to correct positions
-            if (lastAngleValue !== undefined) {
-                setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
-            }
-        });
-
-        // =============== ESP32 BRIDGE FUNCTIONS ===============
-
+        // Update connection status UI
         function updateConnectionStatus(connected) {
             const statusDiv = document.getElementById('connectionStatus');
             const statusText = document.getElementById('connectionText');
@@ -1935,6 +1672,7 @@ async function fetchAngleData() {
             }
         }
 
+        // Connect to ESP32
         async function connectToESP32() {
             if (esp32Connected) {
                 esp32Connected = false;
@@ -1942,12 +1680,13 @@ async function fetchAngleData() {
                 showToast("Disconnected from ESP32");
                 if (angleFetchInterval) {
                     clearInterval(angleFetchInterval);
+                    angleFetchInterval = null;
                 }
                 return;
             }
             
             showToast("🔍 Connecting to ESP32...");
-            
+            useCorsProxy = false; // Reset proxy setting
             const connected = await testESP32Connection();
             
             if (connected) {
@@ -1966,8 +1705,152 @@ async function fetchAngleData() {
             }
         }
 
-        // =============== UI FUNCTIONS ===============
+        // =============== ANGLE DISPLAY FUNCTION ===============
+        function updateAngleDisplay(angle) {
+            let validAngle = Math.min(45, Math.max(-45, angle));
+            lastAngleValue = validAngle;
+            angleUpdateCount++;
+            
+            const angleValueElem = document.getElementById('angleValue');
+            if (angleValueElem) {
+                const angleFormatted = validAngle.toFixed(1);
+                angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+            }
+            
+            const track = document.getElementById('angleBarTrack');
+            if (track) {
+                const trackWidth = track.offsetWidth;
+                const centerX = trackWidth / 2;
+                const maxOffset = (trackWidth / 2) - 14;
+                const dotOffset = (validAngle / 45) * maxOffset;
+                const dotLeft = centerX + dotOffset;
+                
+                const indicatorDot = document.getElementById('angleIndicatorDot');
+                if (indicatorDot) {
+                    indicatorDot.style.left = `${dotLeft}px`;
+                    
+                    if (Math.abs(validAngle) > 25) {
+                        indicatorDot.style.background = '#dc2626';
+                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
+                    } else if (Math.abs(validAngle) > 18) {
+                        indicatorDot.style.background = '#f59e0b';
+                        indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
+                    } else {
+                        indicatorDot.style.background = '#3b82f6';
+                        indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                    }
+                }
+                
+                const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+                const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+                
+                const fillLeft = document.getElementById('angleFillLeft');
+                if (fillLeft) {
+                    fillLeft.style.width = `${leftFillPercent}%`;
+                }
+                
+                const fillRight = document.getElementById('angleFillRight');
+                if (fillRight) {
+                    fillRight.style.width = `${rightFillPercent}%`;
+                }
+            }
+            
+            const angleDirectionElem = document.getElementById('angleDirection');
+            const angleCard = document.getElementById('angleCard');
+            const angleStatus = document.getElementById('angleStatus');
+            const tiltValueInWheel = document.getElementById('tiltValue');
+            
+            let directionText = '';
+            let directionClass = '';
+            let directionIcon = '';
+            
+            if (validAngle > 5) {
+                directionIcon = '⬅️';
+                directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+                directionClass = 'left';
+            } else if (validAngle < -5) {
+                directionIcon = '➡️';
+                directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+                directionClass = 'right';
+            } else {
+                directionIcon = '✓';
+                directionText = 'STRAIGHT (centered)';
+                directionClass = 'straight';
+            }
+            
+            if (angleDirectionElem) {
+                angleDirectionElem.className = `angle-direction ${directionClass}`;
+                angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+            }
+            
+            if (tiltValueInWheel) {
+                tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+            }
+            
+            if (Math.abs(validAngle) > 25) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+                    angleStatus.style.background = '#fee2e2';
+                    angleStatus.style.color = '#dc2626';
+                    angleStatus.style.fontWeight = 'bold';
+                }
+                if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
+                    addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
+                }
+            } else if (Math.abs(validAngle) > 18) {
+                angleCard.classList.add('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                    angleStatus.style.fontWeight = '500';
+                }
+            } else if (Math.abs(validAngle) > 10) {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
+                    angleStatus.style.background = '#fffbeb';
+                    angleStatus.style.color = '#f59e0b';
+                    angleStatus.style.fontWeight = 'normal';
+                }
+            } else {
+                angleCard.classList.remove('angle-warning');
+                if (angleStatus) {
+                    angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+                    angleStatus.style.background = '#dcfce7';
+                    angleStatus.style.color = '#166534';
+                    angleStatus.style.fontWeight = 'normal';
+                }
+            }
+            
+            const debugElem = document.getElementById('angleDebug');
+            if (debugElem && angleUpdateCount % 10 === 0) {
+                debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
+            }
+            
+            lastWheelState.angle = validAngle;
+        }
 
+        // Parse angle from serial data
+        function parseAngleFromSerial(data) {
+            if (!data) return null;
+            if (data.startsWith('ANGLE:')) {
+                const angleStr = data.substring(6).trim();
+                const angle = parseFloat(angleStr);
+                if (!isNaN(angle) && isFinite(angle)) {
+                    updateAngleDisplay(angle);
+                    return angle;
+                }
+            }
+            return null;
+        }
+
+        // =============== UI HELPER FUNCTIONS ===============
+        let lastAngleValue = 0;
+        let angleUpdateCount = 0;
+        let lastWheelState = { battery: 82, speed: 1.2, angle: 0 };
+        
         function showToast(message) {
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -1996,7 +1879,6 @@ async function fetchAngleData() {
             line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
             consoleContent.appendChild(line);
             
-            // Auto-parse angle data from serial
             if (!isOutgoing) {
                 parseAngleFromSerial(message);
             }
@@ -2031,6 +1913,9 @@ async function fetchAngleData() {
                 if (popup.parentElement) popup.remove();
             }, 8000);
         }
+
+        let notifications = [];
+        let notificationCount = 0;
 
         function addNotification(title, message, isWarning = false) {
             const notification = {
@@ -2098,11 +1983,33 @@ async function fetchAngleData() {
         }
 
         // =============== MODE CONTROL ===============
+        let currentMode = 'Line Following';
+        let emergencyActive = false;
+
+        const safetyChecks = {
+            'Line Following': [
+                'Ensure path is clear of obstacles',
+                'Check that line sensors are clean',
+                'Confirm maximum speed setting is safe',
+                'Verify emergency stop works'
+            ],
+            'Control': [
+                'Ensure joystick/control is responsive',
+                'Confirm user is ready to manual drive',
+                'Check area around wheelchair is clear',
+                'Verify speed limit is set to low'
+            ],
+            'Self Drive': [
+                'Ensure autonomy mode is enabled',
+                'Check map data is up-to-date',
+                'Confirm no passengers are in the way',
+                'Verify obstacle detection is active'
+            ]
+        };
 
         function confirmModeSwitch(mode) {
             const checks = safetyChecks[mode];
             if (!checks) return;
-            pendingMode = mode;
             
             const existingPopup = document.getElementById('safetyPopup');
             if (existingPopup) existingPopup.remove();
@@ -2155,16 +2062,10 @@ async function fetchAngleData() {
                 showToast("Not in Control mode");
                 return;
             }
-            
-            const now = Date.now();
-            if (now - lastCommandTime < 100) return;
-            lastCommandTime = now;
-            
             sendCommand(`CMD:${cmd}`);
         }
 
         // =============== EMERGENCY FUNCTIONS ===============
-
         async function triggerEmergency() {
             emergencyActive = true;
             await sendEmergency();
@@ -2209,6 +2110,15 @@ async function fetchAngleData() {
         }
 
         // =============== PATIENT MANAGEMENT ===============
+        let patientData = {
+            fullName: 'Rebecca Rowe',
+            patientId: 'PT-10234',
+            age: '67',
+            bloodGroup: 'A+',
+            doctor: 'Dr. Sarah Adams',
+            contactNo: '+1 555 0199',
+            photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+        };
 
         async function loadPatientFromFirestore() {
             const patientRef = doc(db, "patients", PATIENT_ID);
@@ -2282,7 +2192,6 @@ async function fetchAngleData() {
         }
 
         // =============== PATIENT ACTIONS ===============
-
         async function saveActionToFirestore(type, data) {
             const actionsRef = doc(db, "patientActions", "feed");
             try {
@@ -2394,6 +2303,7 @@ async function fetchAngleData() {
         };
 
         // =============== HEALTH MONITORING (SIMULATION) ===============
+        let lastHealthState = { hr: 84, bp: '130/80', temp: 36.8, o2: 98 };
 
         function simulateHealthMonitoring() {
             let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
@@ -2489,7 +2399,6 @@ async function fetchAngleData() {
         }
 
         // =============== POPUP FUNCTIONS ===============
-
         function closeAllPopups() {
             document.querySelectorAll('.popup-panel').forEach(p => p.style.display = 'none');
             document.getElementById('safetyPopup')?.remove();
@@ -2518,7 +2427,6 @@ async function fetchAngleData() {
         window.calibrateAngleSensor = calibrateAngleSensor;
 
         // =============== INITIALIZATION ===============
-
         document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -2569,12 +2477,7 @@ async function fetchAngleData() {
         document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
 
         await loadPatientFromFirestore();
-        listenDriveMode();
-        listenEmergencyFromPatient();
-
-        setInterval(simulateHealthMonitoring, 8000);
-        setInterval(simulateWheelchairMonitoring, 5000);
-
+        
         function listenDriveMode() {
             const modeRef = doc(db, "settings", MODE_ID);
             onSnapshot(modeRef, (docSnap) => {
@@ -2589,6 +2492,12 @@ async function fetchAngleData() {
                 }
             });
         }
+        
+        listenDriveMode();
+        listenEmergencyFromPatient();
+
+        setInterval(simulateHealthMonitoring, 8000);
+        setInterval(simulateWheelchairMonitoring, 5000);
 
         window.onload = () => {
             document.getElementById('controlPad').style.display = 'none';
@@ -2601,4 +2510,4 @@ async function fetchAngleData() {
     </script>
 </body>
 
-</html> 
+</html>
