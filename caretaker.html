@@ -2007,6 +2007,45 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             showToast(`📢 ${title}`);
         }
 
+        // Auto-detect ESP32 IP from current page URL
+function getESP32IP() {
+    // If page is loaded from ESP32 directly, use that IP
+    if (window.location.hostname !== 'localhost' && 
+        window.location.hostname !== '127.0.0.1' &&
+        !window.location.hostname.includes('github.io')) {
+        return window.location.hostname;
+    }
+    
+    // Otherwise, try to get from localStorage or use default
+    let savedIP = localStorage.getItem('esp32_ip');
+    if (savedIP) {
+        return savedIP;
+    }
+    
+    // Default - you can change this to your ESP32's typical IP
+    return "192.168.234.126";  // ESP32 default AP mode IP
+}
+
+// Allow user to manually set IP
+function setESP32IP(ip) {
+    localStorage.setItem('esp32_ip', ip);
+    esp32IP = ip;
+    showToast(`ESP32 IP set to ${ip}`);
+    // Reconnect with new IP
+    setTimeout(() => connectToESP32(), 1000);
+}
+
+// Use this in your code
+let esp32IP = getESP32IP();
+
+// Add a UI to change IP (optional - add this to your HTML)
+function showIPSettings() {
+    let currentIP = prompt("Enter ESP32 IP address:", esp32IP);
+    if (currentIP) {
+        setESP32IP(currentIP);
+    }
+}
+
         function updateNotificationBadge() {
             const badge = document.getElementById('notificationBadge');
             if (notificationCount > 0) {
