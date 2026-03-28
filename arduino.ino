@@ -109,6 +109,8 @@ void stopMotors() {
 void moveForward() {
   if (!tiltStopActive) {
 
+    safeTransition();  // 🔥 ADD THIS
+
     digitalWrite(A1, LOW); digitalWrite(A2, HIGH);
     digitalWrite(B1, HIGH); digitalWrite(B2, LOW);
 
@@ -125,6 +127,9 @@ void moveForward() {
 }
 
 void moveBackward() {
+
+  safeTransition();  // 🔥 ADD THIS
+
   digitalWrite(A1, HIGH); digitalWrite(A2, LOW);
   digitalWrite(B1, LOW); digitalWrite(B2, HIGH);
 
@@ -140,11 +145,38 @@ void moveBackward() {
 }
 
 void turnLeft() {
-  // A OFF, B forward
-  digitalWrite(A1, LOW); digitalWrite(A2, LOW);
+
+  safeTransition();
+
+  // 🔥 RUN MOTOR A instead of B
+  digitalWrite(B1, LOW); 
+  digitalWrite(B2, LOW);
+  analogWrite(PWM_B, 0);
+
+  digitalWrite(A1, LOW); 
+  digitalWrite(A2, HIGH);
+  analogWrite(PWM_A, MOTOR_SPEED);
+
+  motorB_forward = false;
+  motorB_backward = false;
+
+  motorA_forward = true;
+  motorA_backward = false;
+
+  motorRunning = true;
+}
+
+void turnRight() {
+
+  safeTransition();
+
+  // 🔥 RUN MOTOR B instead of A
+  digitalWrite(A1, LOW); 
+  digitalWrite(A2, LOW);
   analogWrite(PWM_A, 0);
 
-  digitalWrite(B1, HIGH); digitalWrite(B2, LOW);
+  digitalWrite(B1, HIGH); 
+  digitalWrite(B2, LOW);
   analogWrite(PWM_B, MOTOR_SPEED);
 
   motorA_forward = false;
@@ -156,22 +188,14 @@ void turnLeft() {
   motorRunning = true;
 }
 
-void turnRight() {
-  // B OFF, A forward
-  digitalWrite(B1, LOW); digitalWrite(B2, LOW);
-  analogWrite(PWM_B, 0);
-
-  digitalWrite(A1, LOW); digitalWrite(A2, HIGH);
-  analogWrite(PWM_A, MOTOR_SPEED);
-
-  motorB_forward = false;
-  motorB_backward = false;
-
-  motorA_forward = true;
-  motorA_backward = false;
-
-  motorRunning = true;
+void safeTransition() {
+  if (motorRunning) {
+    brakeMotorA();
+    brakeMotorB();
+    delay(50); // small settling time (important)
+  }
 }
+
 
 // =============== WEB COMMAND ================
 void handleWebSerial() {
