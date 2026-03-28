@@ -1235,10 +1235,6 @@
         </div>
         <div id="map"></div>
     </div>
-    
-    <div id="driveState" style="text-align:center; font-weight:600; margin-top:10px;">
-    Mode: HOLD
-</div>
 
     <div id="controlPad">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
@@ -1259,17 +1255,6 @@
     <div style="margin-top:6px;">
         <span id="speedPercent">20%</span>
     </div>
-    <div style="margin-top:15px; text-align:center;">
-    <button onclick="setFreeMode()" 
-        style="padding:10px 16px; border-radius:20px; background:#10b981; color:white; border:none; margin-right:10px;">
-        🟢 Free Ride
-    </button>
-
-    <button onclick="setHoldMode()" 
-        style="padding:10px 16px; border-radius:20px; background:#1d4ed8; color:white; border:none;">
-        🔒 Hold
-    </button>
-</div>
 </div>
 </div>
 
@@ -1803,41 +1788,6 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
                 setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
             }
         });
-        
-        async function setFreeMode() {
-
-    // safety: block on slope
-    if (Math.abs(lastAngleValue) > 5) {
-        showToast("⚠️ Cannot enable free mode on slope");
-        return;
-    }
-
-    const ok = await sendCommand("CMD:free");
-
-    if (ok) {
-        updateModeUI("FREE");
-        showToast("🟢 Free ride enabled");
-    } else {
-        showToast("❌ Failed to enable free mode");
-    }
-}
-
-async function setHoldMode() {
-
-    const ok = await sendCommand("CMD:hold");
-
-    if (ok) {
-        updateModeUI("HOLD");
-        showToast("🔒 Hold mode enabled");
-    } else {
-        showToast("❌ Failed to enable hold mode");
-    }
-}
-
-function updateModeUI(mode) {
-    const el = document.getElementById("driveState");
-    if (el) el.innerText = "Mode: " + mode;
-}
 
         // =============== ESP32 BRIDGE FUNCTIONS ===============
 
@@ -1875,31 +1825,42 @@ function updateModeUI(mode) {
             return false;
         }
 
-async function sendCommand(command) {
-
-    if (!esp32Connected) {
-        showToast("⚠️ ESP32 not connected!");
-        return false;
-    }
-
-    try {
-        const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(command)}`, {
-            method: 'GET',
-            mode: 'cors'
-        });
-
-        if (response.ok) {
-            showCommandFeedback(command);
-            return true;   // 🔥 IMPORTANT
-        } else {
-            return false;
+        async function sendCommand(command) {
+            if (!esp32Connected) {
+                showToast("⚠️ ESP32 not connected! Check connection.");
+                return false;
+            }
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                
+                const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(command)}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    console.log("Command sent:", command);
+                    showCommandFeedback(command);
+                    addToSerialConsole("→ " + command, true);
+                    return true;
+                } else {
+                    throw new Error("HTTP " + response.status);
+                }
+            } catch (error) {
+                console.error("Send error:", error);
+                showToast("❌ Failed to send command");
+                esp32Connected = false;
+                updateConnectionStatus(false);
+                return false;
+            }
         }
 
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
-}
         async function sendEmergency() {
             if (!esp32Connected) {
                 showToast("⚠️ ESP32 not connected!");
@@ -1972,8 +1933,6 @@ async function sendCommand(command) {
                 }
                 return;
             }
-            
-            updateModeUI("HOLD");
             
             showToast("🔍 Connecting to ESP32...");
             
@@ -2179,17 +2138,19 @@ async function sendCommand(command) {
             await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
         }
 
-function sendControlCommand(cmd) {
+        function sendControlCommand(cmd) {
+            if (currentMode !== 'Control') {
+                showToast("Not in Control mode");
+                return;
+            }
+            
+            const now = Date.now();
+            if (now - lastCommandTime < 100) return;
+            lastCommandTime = now;
+            
+            sendCommand(`CMD:${cmd}`);
+        }
 
-    if (currentMode !== 'Control') {
-        showToast("Not in Control mode");
-        return;
-    }
-
-    updateModeUI("DRIVE");  // 🔥 force DRIVE mode in UI
-
-    sendCommand(`CMD:${cmd}`);
-}
         // =============== EMERGENCY FUNCTIONS ===============
 
         async function triggerEmergency() {
@@ -2483,8 +2444,8 @@ function sendControlCommand(cmd) {
         }
 
         function simulateWheelchairMonitoring() {
-            let battery = lastWheelState.battery - (Math.random() * 1.5);
-            battery = Math.max(10, Math.min(100, battery));
+let battery = 89;
+battery = Math.max(10, Math.min(100, battery));
             
             let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
             
@@ -2511,9 +2472,40 @@ function sendControlCommand(cmd) {
             } else if (speedNum <= 2.0) {
                 document.getElementById('speedDetail').classList.remove('warning');
             }
-            
-            lastWheelState = { battery, speed: speedNum, angle: lastWheelState.angle };
+                    }
+                    
+async function fetchRealSpeed() {
+    if (!esp32Connected) return;
+
+    try {
+        const res = await fetch(`http://${esp32IP}/telemetry`, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-cache"
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+
+            const speed = data.speed || 0;
+
+            // 🔥 UPDATE UI
+            document.getElementById("speedValue").innerText = speed.toFixed(2) + " m/s";
+
+            // 🔥 OPTIONAL: warning logic
+            const speedDetail = document.getElementById("speedDetail");
+
+            if (speed > 1.2) {
+                speedDetail.classList.add("warning");
+            } else {
+                speedDetail.classList.remove("warning");
+            }
         }
+
+    } catch (err) {
+        console.log("Speed fetch error");
+    }
+}
 
         // =============== POPUP FUNCTIONS ===============
 
@@ -2600,7 +2592,7 @@ function sendControlCommand(cmd) {
         listenEmergencyFromPatient();
 
         setInterval(simulateHealthMonitoring, 8000);
-        setInterval(simulateWheelchairMonitoring, 5000);
+setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
 
         function listenDriveMode() {
             const modeRef = doc(db, "settings", MODE_ID);
