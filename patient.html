@@ -1037,11 +1037,7 @@
     let currentLocation = { lat: 12.9716, lng: 77.5946 };
     let gpsWatchId = null;
     
-    let emergencyContacts = [
-        { label: "🚑 Ambulance", number: "108" },
-        { label: "👨‍⚕️ Dr. Adams", number: "123-456-7890" },
-        { label: "🏠 Michael (Family)", number: "+1 555 8723" }
-    ];
+    let emergencyContacts = [];
     
     function renderEmergencyContacts() {
         const container = document.getElementById('emergencyContactsList');
@@ -1076,6 +1072,26 @@
         }
     }
     
+function listenEmergencyContacts() {
+    const refContacts = doc(db, "settings", "emergency_contacts");
+
+    onSnapshot(refContacts, (docSnap) => {
+        console.log("🔥 SNAPSHOT RECEIVED");
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log("🔥 DATA:", data);
+
+            if (data.contacts) {
+                emergencyContacts = data.contacts;
+                renderEmergencyContacts();
+            }
+        } else {
+            console.log("❌ No document found");
+        }
+    });
+}
+
     function updateAngleDisplay(angle) {
         let valid = Math.min(45, Math.max(-45, angle));
         document.getElementById('angleValue').innerHTML = valid.toFixed(1)+'<span>°</span>';
@@ -1289,6 +1305,8 @@
         renderPatientDetails(); 
     }
     
+    
+    
     function updatePatientDisplay(){ 
         document.getElementById('patientFirstName').innerText=patientData.fullName.split(' ')[0]; 
         document.getElementById('patientIdSmall').innerHTML=`ID: ${patientData.patientId} · ${patientData.age}y`; 
@@ -1425,6 +1443,8 @@
     window.closeLogPopup=()=>document.getElementById('logPopup').style.display='none';
     window.closeShutdown=closeShutdown;
     
+    
+    
     function init(){
         updateDateTime(); 
         setInterval(updateDateTime,1000);
@@ -1432,6 +1452,7 @@
         listenPatientProfileUpdates();
         listenESP32Status();
         listenEmergency();
+        listenEmergencyContacts();
         listenEmergencyStatus();
         listenDriveMode();
         listenCaretakerActions();
@@ -1454,6 +1475,7 @@
         
         updateModeUI(currentMode);
         renderEmergencyContacts();
+        
     }
     init();
 </script>
