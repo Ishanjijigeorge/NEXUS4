@@ -1906,47 +1906,6 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
         let angleFetchInterval = null;
         let lastFetchTime = 0;
 
-        async function fetchAngleData() {
-            if (!esp32Connected) {
-                return null;
-            }
-            
-            // Rate limit to prevent overwhelming the ESP32
-            const now = Date.now();
-            if (now - lastFetchTime < 30) {
-                return null;
-            }
-            lastFetchTime = now;
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 300);
-                
-                const response = await fetch(`http://${esp32IP}/angle`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.text();
-                    const angle = parseFloat(data);
-                    if (!isNaN(angle) && isFinite(angle)) {
-                        updateAngleDisplay(angle);
-                        return angle;
-                    }
-                }
-            } catch (error) {
-                // Silent fail for connection issues
-                if (error.name !== 'AbortError' && Math.random() < 0.02) {
-                    console.log("Angle fetch:", error.message);
-                }
-            }
-            return null;
-        }
 
         // Parse angle from Arduino serial data
         function parseAngleFromSerial(data) {
@@ -1964,14 +1923,7 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             return null;
         }
 
-        // Start fast angle monitoring (33ms for smooth animation - ~30fps)
-        function startAngleMonitoring() {
-            if (angleFetchInterval) clearInterval(angleFetchInterval);
-            angleFetchInterval = setInterval(() => {
-                fetchAngleData();
-            }, 33); // 33ms = ~30fps for smooth animation
-            console.log("Angle monitoring started at 33ms interval");
-        }
+ 
 
         // Calibrate angle sensor
         async function calibrateAngleSensor() {
@@ -2042,7 +1994,6 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
                         esp32Connected = true;
                         updateConnectionStatus(true);
                         lastPing = Date.now();
-                        startAngleMonitoring();
                         return true;
                     }
                 }
@@ -2202,6 +2153,36 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             document.body.appendChild(feedback);
             setTimeout(() => feedback.remove(), 2000);
         }
+        
+        async function fetchTelemetry() {
+    if (!esp32Connected) return;
+
+    try {
+        const res = await fetch(`http://${esp32IP}/telemetry`, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-cache"
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+
+            // ✅ Update Angle (MAIN FIX)
+            if (typeof data.angle === "number") {
+                updateAngleDisplay(data.angle);
+            }
+
+            // ✅ Update Speed
+            if (typeof data.speed === "number") {
+                document.getElementById("speedValue").innerText =
+                    data.speed.toFixed(2) + " m/s";
+            }
+        }
+
+    } catch (err) {
+        console.log("Telemetry error");
+    }
+}
 
         function addToSerialConsole(message, isOutgoing = false) {
             const consoleContent = document.getElementById('consoleContent');
@@ -2214,11 +2195,6 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             const line = document.createElement('div');
             line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
             consoleContent.appendChild(line);
-            
-            // Auto-parse angle data from serial
-            if (!isOutgoing) {
-                parseAngleFromSerial(message);
-            }
             
             line.scrollIntoView();
             
@@ -2379,7 +2355,7 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             if (now - lastCommandTime < 100) return;
             lastCommandTime = now;
             
-            sendCommand(`CMD:${cmd}`);
+    sendCommand(cmd);
         }
 
         // =============== EMERGENCY FUNCTIONS ===============
@@ -2887,7 +2863,7 @@ async function fetchRealSpeed() {
         listenEmergencyFromPatient();
 
         setInterval(simulateHealthMonitoring, 8000);
-setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
+setInterval(fetchTelemetry, 50); // smooth updates
 
         function listenDriveMode() {
             const modeRef = doc(db, "settings", MODE_ID);
@@ -2915,4 +2891,4 @@ setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
     </script>
 </body>
 
-</html>
+</html> 
