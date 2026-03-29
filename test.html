@@ -18,11 +18,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } 
-from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-import { getDatabase, ref, set, onValue } 
-from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
  apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
@@ -35,17 +31,10 @@ from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
   measurementId: "G-TP1CVNYHNE"
         };
 
-const app = initializeApp(firebaseConfig);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-const db = getFirestore(app);
-const realtimeDB = getDatabase(app);
-
-window.db = db;
-window.realtimeDB = realtimeDB;
-window.ref = ref;
-window.set = set;
-window.onValue = onValue;
-
+        window.db = db;
         window.doc = doc;
         window.setDoc = setDoc;
         window.updateDoc = updateDoc;
@@ -1545,8 +1534,8 @@ speedSlider.addEventListener("change", async () => {
         let emergencyActive = false;
 
         // ESP32 Bridge Configuration
-let esp32IP = "wheelchair.local";
-let esp32Connected = false;
+        let esp32IP = "192.168.234.126";
+        let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
         let lastAngleValue = 0;
@@ -2013,14 +2002,14 @@ async function fetchAngleData() {
             updateAngleDisplay(angle);
 
             // 🔥 PUSH TO FIREBASE (REALTIME DB)
-await set(ref(realtimeDB, "wheelchair/status"), {
-    angle,
-    speed,
-    battery,
-    obstacle,
-    direction,
-    timestamp: Date.now()
-});
+            await set(ref(dbRealtime, "status"), {
+                angle,
+                speed,
+                battery,
+                obstacle,
+                direction,
+                timestamp: Date.now()
+            });
         }
     } catch (e) {
         console.log("Telemetry error");
@@ -2981,7 +2970,7 @@ setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
 
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-const dbRealtime = window.realtimeDB;
+const dbRealtime = getDatabase();
 
 let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
 
