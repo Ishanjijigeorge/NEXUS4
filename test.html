@@ -753,10 +753,43 @@
             cursor: pointer;
         }
 
+        .patient-map-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(59, 130, 246, 0.9);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85);
+            background: white;
+        }
+
+        .patient-map-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         #map {
             height: 170px;
             border-radius: 20px;
             background: #e2e8f0;
+        }
+
+        .map-card:fullscreen,
+        .map-card:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            padding: 18px;
+        }
+
+        .map-card:fullscreen #map,
+        .map-card:-webkit-full-screen #map {
+            height: calc(100vh - 80px);
+            border-radius: 16px;
         }
 
         .popup-panel {
@@ -1134,6 +1167,21 @@
             padding: 12px 0;
             border-bottom: 1px solid #eef2ff;
         }
+
+        .editable-value {
+            min-width: 160px;
+            display: inline-block;
+            text-align: right;
+            transition: background 0.2s ease, border 0.2s ease;
+        }
+
+        .editable-value[contenteditable="true"] {
+            border: 1px solid rgba(37, 99, 235, 0.35);
+            background: #eff6ff;
+            border-radius: 14px;
+            padding: 8px 10px;
+            outline: none;
+        }
     </style>
 </head>
 
@@ -1282,11 +1330,21 @@
     <div id="callPopup" class="popup-panel">
         <div class="popup-header">
             <h3>📞 Emergency</h3>
-            <button class="close-popup" onclick="closePopup('call')">×</button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="btn-secondary" id="editEmergencyBtn" style="padding:8px 16px; font-size:12px;">✎ Edit</button>
+                <button class="close-popup" onclick="closePopup('call')">×</button>
+            </div>
         </div>
-        <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
-        <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
-        <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
+        <div id="emergencyViewFields">
+            <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
+            <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
+            <div class="contact-item">🏠 Michael <span>+1 555 8723</span></div>
+        </div>
+        <div id="emergencyEditForm" class="edit-fields-container" style="display:none; margin-top:12px;"></div>
+        <div class="button-group" style="margin-top:16px; gap:10px;">
+            <button class="btn-primary" id="saveEmergencyBtn" style="flex:1; display:none;">Save</button>
+            <button class="btn-secondary" id="cancelEmergencyBtn" style="flex:1; display:none;">Cancel</button>
+        </div>
     </div>
 
     <div id="healthPopup" class="popup-panel">
@@ -1379,13 +1437,24 @@
             <h3>👤 Caretaker</h3>
             <button class="close-popup" onclick="closeCaretakerPopup()">×</button>
         </div>
-        <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
-            <div><strong>John Doe</strong><br><span style="color:var(--muted);">ID: CT-2210</span></div>
+        <div id="caretakerViewFields">
+            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+                <img id="caretakerPhoto" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
+                <div>
+                    <strong id="caretakerName">John Doe</strong><br>
+                    <span id="caretakerIdDisplay" style="color:var(--muted);">ID: CT-2210</span>
+                </div>
+            </div>
+            <div class="detail-row"><span>📧 Email</span> <span id="caretakerEmail">john.d@care.com</span></div>
+            <div class="detail-row"><span>📞 Phone</span> <span id="caretakerPhone">+1 555 7700</span></div>
+            <div class="detail-row"><span>🏥 Facility</span> <span id="caretakerFacility">HomeCare Plus</span></div>
         </div>
-        <div class="detail-row"><span>📧 Email</span> <span>john.d@care.com</span></div>
-        <div class="detail-row"><span>📞 Phone</span> <span>+1 555 7700</span></div>
-        <div class="detail-row"><span>🏥 Facility</span> <span>HomeCare Plus</span></div>
+        <div id="caretakerEditForm" class="edit-fields-container" style="display:none; margin-top:12px;"></div>
+        <div class="button-group" style="margin-top:16px; gap:10px;">
+            <button class="btn-secondary" id="editCaretakerBtn" style="flex:1;">Edit profile</button>
+            <button class="btn-primary" id="saveCaretakerBtn" style="flex:1; display:none;">Save changes</button>
+            <button class="btn-secondary" id="cancelCaretakerEditBtn" style="flex:1; display:none;">Cancel</button>
+        </div>
     </div>
 
     <div id="editPatientPopup" class="popup-panel" style="max-width: 420px;">
@@ -1482,6 +1551,168 @@ speedSlider.addEventListener("change", async () => {
             speed: 1.2,
             angle: 0
         };
+
+        let caretakerData = {
+            name: 'John Doe',
+            id: 'CT-2210',
+            email: 'john.d@care.com',
+            phone: '+1 555 7700',
+            facility: 'HomeCare Plus',
+            photo: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+            role: 'caretaker'
+        };
+
+        let emergencyContacts = [
+            { icon: '🚑', label: 'Ambulance', value: '108' },
+            { icon: '👨‍⚕️', label: 'Dr. Adams', value: '+1 555 1234' },
+            { icon: '🏠', label: 'Michael', value: '+1 555 8723' }
+        ];
+
+        function renderEmergencyContacts() {
+            const viewFields = document.getElementById('emergencyViewFields');
+            const editForm = document.getElementById('emergencyEditForm');
+            const editBtn = document.getElementById('editEmergencyBtn');
+            const saveBtn = document.getElementById('saveEmergencyBtn');
+            const cancelBtn = document.getElementById('cancelEmergencyBtn');
+
+            if (viewFields) {
+                viewFields.innerHTML = emergencyContacts.map((contact, index) =>
+                    `<div class="contact-item emergency-contact" data-contact-index="${index}">${contact.icon} ${contact.label} <span style="margin-left:auto;">${contact.value}</span></div>`
+                ).join('');
+                viewFields.querySelectorAll('.emergency-contact').forEach(contactEl => {
+                    contactEl.style.cursor = 'pointer';
+                    contactEl.onclick = () => {
+                        const index = Number(contactEl.dataset.contactIndex);
+                        if (!Number.isNaN(index) && emergencyContacts[index]) {
+                            callEmergencyNumber(emergencyContacts[index].value);
+                        }
+                    };
+                });
+            }
+            if (editForm) editForm.style.display = 'none';
+            if (saveBtn) saveBtn.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            if (editBtn) editBtn.style.display = 'inline-flex';
+            if (viewFields) viewFields.style.display = 'block';
+        }
+
+        function openEmergencyEditForm() {
+            const editForm = document.getElementById('emergencyEditForm');
+            const viewFields = document.getElementById('emergencyViewFields');
+            const editBtn = document.getElementById('editEmergencyBtn');
+            const saveBtn = document.getElementById('saveEmergencyBtn');
+            const cancelBtn = document.getElementById('cancelEmergencyBtn');
+
+            if (!editForm || !viewFields) return;
+
+            editForm.innerHTML = emergencyContacts.map((contact, index) => `
+                <div class="edit-field-row"><label>Contact ${index + 1} Label</label><input type="text" id="editEmergencyLabel${index}" value="${escapeHtml(contact.label)}"></div>
+                <div class="edit-field-row"><label>Contact ${index + 1} Number</label><input type="text" id="editEmergencyValue${index}" value="${escapeHtml(contact.value)}"></div>
+            `).join('');
+
+            viewFields.style.display = 'none';
+            editForm.style.display = 'block';
+            if (editBtn) editBtn.style.display = 'none';
+            if (saveBtn) saveBtn.style.display = 'inline-flex';
+            if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        }
+
+        function cancelEmergencyEdit() {
+            renderEmergencyContacts();
+        }
+
+        function saveEmergencyContacts() {
+            emergencyContacts = emergencyContacts.map((contact, index) => ({
+                icon: contact.icon,
+                label: document.getElementById(`editEmergencyLabel${index}`)?.value.trim() || contact.label,
+                value: document.getElementById(`editEmergencyValue${index}`)?.value.trim() || contact.value
+            }));
+            renderEmergencyContacts();
+            addNotification('✅ Emergency contacts saved', 'Emergency section updated successfully', false);
+        }
+
+        function callEmergencyNumber(number) {
+            const normalized = String(number).replace(/[^0-9+]/g, '');
+            if (!normalized) return;
+            window.location.href = `tel:${normalized}`;
+        }
+
+        function renderCaretakerProfile() {
+            const nameEl = document.getElementById('caretakerName');
+            const idDisplayEl = document.getElementById('caretakerIdDisplay');
+            const idValueEl = document.getElementById('caretakerIdValue');
+            const emailEl = document.getElementById('caretakerEmail');
+            const phoneEl = document.getElementById('caretakerPhone');
+            const facilityEl = document.getElementById('caretakerFacility');
+            const photoEl = document.getElementById('caretakerPhoto');
+            const editForm = document.getElementById('caretakerEditForm');
+            const viewFields = document.getElementById('caretakerViewFields');
+            const editBtn = document.getElementById('editCaretakerBtn');
+            const saveBtn = document.getElementById('saveCaretakerBtn');
+            const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
+
+            if (nameEl) nameEl.textContent = caretakerData.name;
+            if (idDisplayEl) idDisplayEl.textContent = `ID: ${caretakerData.id}`;
+            if (idValueEl) idValueEl.textContent = caretakerData.id;
+            if (emailEl) emailEl.textContent = caretakerData.email;
+            if (phoneEl) phoneEl.textContent = caretakerData.phone;
+            if (facilityEl) facilityEl.textContent = caretakerData.facility;
+            if (photoEl) photoEl.src = caretakerData.photo;
+
+            const profileNameEl = document.querySelector('#caretakerProfileBtn .profile-name');
+            if (profileNameEl) profileNameEl.textContent = caretakerData.name;
+
+            const profileRoleEl = document.querySelector('#caretakerProfileBtn .profile-role');
+            if (profileRoleEl) profileRoleEl.textContent = caretakerData.role;
+
+            if (editForm) editForm.style.display = 'none';
+            if (viewFields) viewFields.style.display = 'block';
+            if (editBtn) editBtn.style.display = 'inline-flex';
+            if (saveBtn) saveBtn.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+        }
+
+        function openCaretakerEditForm() {
+            const editForm = document.getElementById('caretakerEditForm');
+            const viewFields = document.getElementById('caretakerViewFields');
+            const editBtn = document.getElementById('editCaretakerBtn');
+            const saveBtn = document.getElementById('saveCaretakerBtn');
+            const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
+
+            if (!editForm || !viewFields) return;
+
+            editForm.innerHTML = `
+                <div class="edit-field-row"><label>Full Name</label><input type="text" id="editCaretakerName" value="${escapeHtml(caretakerData.name)}"></div>
+                <div class="edit-field-row"><label>Caretaker ID</label><input type="text" id="editCaretakerId" value="${escapeHtml(caretakerData.id)}"></div>
+                <div class="edit-field-row"><label>Email</label><input type="email" id="editCaretakerEmail" value="${escapeHtml(caretakerData.email)}"></div>
+                <div class="edit-field-row"><label>Phone</label><input type="text" id="editCaretakerPhone" value="${escapeHtml(caretakerData.phone)}"></div>
+                <div class="edit-field-row"><label>Facility</label><input type="text" id="editCaretakerFacility" value="${escapeHtml(caretakerData.facility)}"></div>
+            `;
+
+            viewFields.style.display = 'none';
+            editForm.style.display = 'block';
+            if (editBtn) editBtn.style.display = 'none';
+            if (saveBtn) saveBtn.style.display = 'inline-flex';
+            if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        }
+
+        function cancelCaretakerEdit() {
+            renderCaretakerProfile();
+        }
+
+        function saveCaretakerEdit() {
+            const newData = {
+                name: document.getElementById('editCaretakerName')?.value.trim() || caretakerData.name,
+                id: document.getElementById('editCaretakerId')?.value.trim() || caretakerData.id,
+                email: document.getElementById('editCaretakerEmail')?.value.trim() || caretakerData.email,
+                phone: document.getElementById('editCaretakerPhone')?.value.trim() || caretakerData.phone,
+                facility: document.getElementById('editCaretakerFacility')?.value.trim() || caretakerData.facility
+            };
+
+            Object.assign(caretakerData, newData);
+            renderCaretakerProfile();
+            addNotification('✅ Caretaker Updated', 'Caretaker details updated successfully', false);
+        }
 
         const safetyChecks = {
             'Line Following': [
@@ -2235,6 +2466,7 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             document.getElementById('patientNameDisplay').innerText = patientData.fullName;
             document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.patientId} · ${patientData.age}y`;
             document.getElementById('patientPhoto').src = patientData.photo;
+            refreshPatientMarkerIcon();
         }
 
         function openEditPatientPopup() {
@@ -2528,7 +2760,10 @@ async function fetchRealSpeed() {
         window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display = 'none';
         window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display = 'none';
         window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
-        window.closeCaretakerPopup = () => document.getElementById('caretakerPopup').style.display = 'none';
+        window.closeCaretakerPopup = () => {
+            cancelCaretakerEdit();
+            document.getElementById('caretakerPopup').style.display = 'none';
+        };
         window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
         window.closeShutdown = closeShutdown;
         window.clearAllNotifications = clearAllNotifications;
@@ -2545,6 +2780,7 @@ async function fetchRealSpeed() {
                 reader.onload = async (ev) => {
                     patientData.photo = ev.target.result;
                     document.getElementById('patientPhoto').src = patientData.photo;
+                    refreshPatientMarkerIcon();
                     await syncPatientToFirestore();
                     addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
                 };
@@ -2555,8 +2791,8 @@ async function fetchRealSpeed() {
         document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
         document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
         document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
-        document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); document.getElementById('caretakerPopup').style.display = 'block'; };
-        document.getElementById('callIcon').onclick = () => { closeAllPopups(); document.getElementById('callPopup').style.display = 'block'; };
+        document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); renderCaretakerProfile(); document.getElementById('caretakerPopup').style.display = 'block'; };
+        document.getElementById('callIcon').onclick = () => { closeAllPopups(); renderEmergencyContacts(); document.getElementById('callPopup').style.display = 'block'; };
         document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display = 'block'; };
         document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display = 'block'; };
         document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display = 'block'; };
@@ -2566,6 +2802,12 @@ async function fetchRealSpeed() {
         document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
         document.getElementById('connectBtn').onclick = connectToESP32;
         document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
+        document.getElementById('editCaretakerBtn').onclick = openCaretakerEditForm;
+        document.getElementById('saveCaretakerBtn').onclick = saveCaretakerEdit;
+        document.getElementById('cancelCaretakerEditBtn').onclick = cancelCaretakerEdit;
+        document.getElementById('editEmergencyBtn').onclick = openEmergencyEditForm;
+        document.getElementById('saveEmergencyBtn').onclick = saveEmergencyContacts;
+        document.getElementById('cancelEmergencyBtn').onclick = cancelEmergencyEdit;
 
         document.querySelectorAll('.ctrl-btn').forEach(btn => {
             btn.onclick = () => sendControlCommand(btn.dataset.cmd);
@@ -2577,7 +2819,60 @@ async function fetchRealSpeed() {
 
         const map = L.map('map').setView([12.9716, 77.5946], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        L.marker([12.9716, 77.5946]).addTo(map).bindPopup('Wheelchair');
+
+        function createPatientMapIcon(photoUrl) {
+            const imageUrl = photoUrl || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+            return L.divIcon({
+                className: 'patient-map-icon',
+                html: `<img src="${imageUrl}" alt="Patient">`,
+                iconSize: [48, 48],
+                iconAnchor: [24, 24],
+                popupAnchor: [0, -26]
+            });
+        }
+
+        const currentLocationMarker = L.marker([12.9716, 77.5946], { icon: createPatientMapIcon(patientData.photo) }).addTo(map);
+        const currentLocationCircle = L.circle([12.9716, 77.5946], { radius: 50, color: '#3b82f6', fillColor: '#bfdbfe', fillOpacity: 0.2 }).addTo(map);
+
+        function refreshPatientMarkerIcon() {
+            if (typeof currentLocationMarker !== 'undefined' && currentLocationMarker && patientData.photo) {
+                currentLocationMarker.setIcon(createPatientMapIcon(patientData.photo));
+            }
+        }
+
+        function updateMapLocation(lat, lng, accuracy) {
+            const position = [lat, lng];
+            map.setView(position, 16);
+            currentLocationMarker.setLatLng(position);
+            currentLocationCircle.setLatLng(position);
+            if (accuracy) currentLocationCircle.setRadius(Math.max(accuracy, 20));
+            currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
+        }
+
+        function startLiveGpsTracking() {
+            if (!navigator.geolocation) {
+                showToast('⚠️ GPS not supported by this browser');
+                return;
+            }
+
+            navigator.geolocation.watchPosition(
+                position => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    updateMapLocation(latitude, longitude, accuracy);
+                },
+                error => {
+                    console.warn('GPS error', error);
+                    showToast('⚠️ Unable to get GPS location');
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 5000,
+                    timeout: 10000
+                }
+            );
+        }
+
+        startLiveGpsTracking();
 
         window.toggleGpsFullscreen = () => {
             const card = document.querySelector('.map-card');
