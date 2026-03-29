@@ -1279,9 +1279,8 @@
 
     <div class="map-card">
         <div class="gps-header">
-    <h3>📍 Live GPS</h3>
+    <h3>📍 Patient GPS</h3>
     <div style="display:flex; gap:8px;">
-        <button class="fullscreen-btn" onclick="recenterMap()">📍 Center</button>
         <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
     </div>
 </div>
@@ -2842,19 +2841,50 @@ async function fetchRealSpeed() {
         // =============== INITIALIZATION ===============
 
         document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    patientData.photo = ev.target.result;
-                    document.getElementById('patientPhoto').src = patientData.photo;
-                    refreshPatientMarkerIcon();
-                    await syncPatientToFirestore();
-                    addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (ev) => {
+        const img = new Image();
+        img.src = ev.target.result;
+
+        img.onload = async () => {
+            // 🔧 Create canvas for compression
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Resize settings
+            const maxWidth = 300;
+            const scale = maxWidth / img.width;
+
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+
+            // Draw resized image
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // 🔥 Compress image (very important for Firestore)
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+            // Save to patientData
+            patientData.photo = compressedBase64;
+
+            // Update UI instantly
+            document.getElementById('patientPhoto').src = compressedBase64;
+            refreshPatientMarkerIcon();
+
+            // Save to Firestore (permanent across devices)
+            await syncPatientToFirestore();
+
+            addNotification('📸 Photo Updated', 'Patient photo saved permanently', false);
+            showToast("✅ Image uploaded & synced");
+        };
+    };
+
+    reader.readAsDataURL(file);
+});
 
         document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
         document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
