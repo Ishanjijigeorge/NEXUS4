@@ -18,8 +18,10 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, onValue, set } 
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } 
+from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+import { getDatabase, ref, set, onValue } 
 from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -33,10 +35,17 @@ from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
   measurementId: "G-TP1CVNYHNE"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
 
-        window.db = db;
+const db = getFirestore(app);
+const realtimeDB = getDatabase(app);
+
+window.db = db;
+window.realtimeDB = realtimeDB;
+window.ref = ref;
+window.set = set;
+window.onValue = onValue;
+
         window.doc = doc;
         window.setDoc = setDoc;
         window.updateDoc = updateDoc;
@@ -1490,7 +1499,7 @@ from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     </div>
 
     <script type="module">
-            let esp32IP = "192.168.234.126";
+        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const db = window.db;
         const PATIENT_ID = "patient_main";
@@ -1536,7 +1545,8 @@ speedSlider.addEventListener("change", async () => {
         let emergencyActive = false;
 
         // ESP32 Bridge Configuration
-        let esp32Connected = false;
+let esp32IP = "wheelchair.local";
+let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
         let lastAngleValue = 0;
@@ -1771,7 +1781,8 @@ async function saveCaretakerEdit() {
     Object.assign(caretakerData, newData);
 
     // 🔥 SAVE TO FIRESTORE
-await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData, { merge: true });
+    await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData);
+
     renderCaretakerProfile();
     addNotification('✅ Caretaker Updated', 'Saved permanently', false);
 }
@@ -2002,14 +2013,14 @@ async function fetchAngleData() {
             updateAngleDisplay(angle);
 
             // 🔥 PUSH TO FIREBASE (REALTIME DB)
-            await set(ref(dbRealtime, "status"), {
-                angle,
-                speed,
-                battery,
-                obstacle,
-                direction,
-                timestamp: Date.now()
-            });
+await set(ref(realtimeDB, "wheelchair/status"), {
+    angle,
+    speed,
+    battery,
+    obstacle,
+    direction,
+    timestamp: Date.now()
+});
         }
     } catch (e) {
         console.log("Telemetry error");
@@ -2418,8 +2429,8 @@ async function fetchAngleData() {
                     return;
                 }
                 
-await sendCommand("stop");
-
+                await sendCommand("CMD:stop");
+                
                 if (await sendCommand(`MODE:${mode}`)) {
                     currentMode = mode;
                     document.getElementById('modeDisplay').innerText = currentMode;
@@ -2436,18 +2447,19 @@ await sendCommand("stop");
             await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
         }
 
-function sendControlCommand(cmd) {
-    if (currentMode !== 'Control') {
-        showToast("Not in Control mode");
-        return;
-    }
-    
-    const now = Date.now();
-    if (now - lastCommandTime < 100) return;
-    lastCommandTime = now;
-    
-    sendCommand(cmd);   // ✅ FIXED
-}
+        function sendControlCommand(cmd) {
+            if (currentMode !== 'Control') {
+                showToast("Not in Control mode");
+                return;
+            }
+            
+            const now = Date.now();
+            if (now - lastCommandTime < 100) return;
+            lastCommandTime = now;
+            
+            sendCommand(`CMD:${cmd}`);
+        }
+
         // =============== EMERGENCY FUNCTIONS ===============
 
         async function triggerEmergency() {
@@ -2865,7 +2877,8 @@ async function fetchRealSpeed() {
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
             // 🔥 Compress image (very important for Firestore)
-canvas.toDataURL("image/jpeg", 0.5);
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
             // Save to patientData
             patientData.photo = compressedBase64;
 
@@ -2913,7 +2926,7 @@ canvas.toDataURL("image/jpeg", 0.5);
             opt.onclick = () => setMode(opt.dataset.mode);
         });
 
-const map = window.map = L.map('map').setView([12.9716, 77.5946], 15);
+window.map = L.map('map').setView([12.9716, 77.5946], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         function createPatientMapIcon(photoUrl) {
@@ -2968,7 +2981,7 @@ setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
 
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-const dbRealtime = getDatabase(app);
+const dbRealtime = window.realtimeDB;
 
 let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
 
