@@ -1660,33 +1660,13 @@
             currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
         }
 
-        function updateConnectionStatus(connected) {
-            const statusDiv = document.getElementById('connectionStatus');
-            const statusText = document.getElementById('connectionText');
-            const connectBtn = document.getElementById('connectBtn');
-            const angleStatus = document.getElementById('angleStatus');
-
-            if (connected) {
-                statusDiv.className = 'connection-status connected';
-                statusText.innerText = 'ESP32 Bridge Online';
-                connectBtn.innerHTML = '🔌 Disconnect';
-                connectBtn.classList.add('connected');
-                if (angleStatus && lastBridgeSeen) {
-                    angleStatus.innerHTML = '✓ Connected - Receiving bridge telemetry';
-                    angleStatus.style.background = '#dcfce7';
-                    angleStatus.style.color = '#166534';
-                }
-            } else {
-                statusDiv.className = 'connection-status disconnected';
-                statusText.innerText = 'ESP32 Bridge Offline';
-                connectBtn.innerHTML = '🔌 Connect to Bridge';
-                connectBtn.classList.remove('connected');
-                if (angleStatus) {
-                    angleStatus.innerHTML = '⚠️ Waiting for Firebase bridge telemetry';
-                    angleStatus.style.background = '#fee2e2';
-                    angleStatus.style.color = '#dc2626';
-                }
-            }
+        function updateConnectionStatus(connected, text = '') {
+            const status = document.getElementById('connectionStatus');
+            const connectionText = document.getElementById('connectionText');
+            if (!status || !connectionText) return;
+            status.classList.toggle('connected', connected);
+            status.classList.toggle('disconnected', !connected);
+            connectionText.textContent = connected ? (text || 'Connected') : (text || 'Disconnected');
         }
 
         async function sendBridgeCommand(cmd) {
