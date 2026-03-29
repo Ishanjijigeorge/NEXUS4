@@ -19,15 +19,18 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, onValue, set } 
+from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
-            authDomain: "nexus-org-6e7e9.firebaseapp.com",
-            projectId: "nexus-org-6e7e9",
-            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
-            messagingSenderId: "989376914258",
-            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
-            measurementId: "G-TP1CVNYHNE"
+ apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+  authDomain: "nexus-org-6e7e9.firebaseapp.com",
+  databaseURL: "https://nexus-org-6e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "nexus-org-6e7e9",
+  storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+  messagingSenderId: "989376914258",
+  appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+  measurementId: "G-TP1CVNYHNE"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -1191,7 +1194,7 @@
         <div class="profile-card" id="caretakerProfileBtn">
             <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver">
             <div class="profile-details">
-                <div class="profile-name">John Doe</div>
+                <div class="profile-name"></div>
                 <div class="profile-role">caretaker</div>
             </div>
         </div>
@@ -1278,9 +1281,11 @@
 
     <div class="map-card">
         <div class="gps-header">
-            <h3>📍 Live GPS</h3>
-            <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
-        </div>
+    <h3>📍 Patient GPS</h3>
+    <div style="display:flex; gap:8px;">
+        <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
+    </div>
+</div>
         <div id="map"></div>
     </div>
 
@@ -1485,7 +1490,7 @@
     </div>
 
     <script type="module">
-        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+            let esp32IP = "192.168.234.126";
 
         const db = window.db;
         const PATIENT_ID = "patient_main";
@@ -1531,7 +1536,6 @@ speedSlider.addEventListener("change", async () => {
         let emergencyActive = false;
 
         // ESP32 Bridge Configuration
-        let esp32IP = "192.168.234.126";
         let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
@@ -1620,18 +1624,58 @@ speedSlider.addEventListener("change", async () => {
         function cancelEmergencyEdit() {
             renderEmergencyContacts();
         }
+        
+        function listenEmergencyContacts() {
+    const refDoc = doc(db, "settings", "emergency_contacts");
 
-        function saveEmergencyContacts() {
-            emergencyContacts = emergencyContacts.map((contact, index) => ({
-                icon: contact.icon,
-                label: document.getElementById(`editEmergencyLabel${index}`)?.value.trim() || contact.label,
-                value: document.getElementById(`editEmergencyValue${index}`)?.value.trim() || contact.value
-            }));
+    onSnapshot(refDoc, (snap) => {
+        if (snap.exists()) {
+            const data = snap.data();
+
+            emergencyContacts = data.contacts.map(c => {
+                const parts = c.label.split(" ");
+                return {
+                    icon: parts[0],
+                    label: parts.slice(1).join(" "),
+                    value: c.number
+                };
+            });
+
             renderEmergencyContacts();
-            addNotification('✅ Emergency contacts saved', 'Emergency section updated successfully', false);
         }
+    });
+}
 
-        function callEmergencyNumber(number) {
+async function saveEmergencyContacts() {
+    emergencyContacts = emergencyContacts.map((contact, index) => ({
+        icon: contact.icon,
+        label: document.getElementById(`editEmergencyLabel${index}`)?.value.trim() || contact.label,
+        value: document.getElementById(`editEmergencyValue${index}`)?.value.trim() || contact.value
+    }));
+
+    // 🔥 SAVE TO FIRESTORE
+    const formatted = emergencyContacts.map(c => ({
+        label: `${c.icon} ${c.label}`,
+        number: c.value
+    }));
+
+    try {
+        await setDoc(doc(db, "settings", "emergency_contacts"), {
+            contacts: formatted
+        });
+
+        console.log("✅ Saved to Firestore:", formatted);
+
+        renderEmergencyContacts();
+        addNotification('✅ Emergency contacts saved', 'Saved permanently', false);
+        showToast("💾 Saved successfully");
+
+    } catch (error) {
+        console.error("❌ Save failed:", error);
+        showToast("❌ Failed to save contacts");
+    }
+}
+function callEmergencyNumber(number) {
             const normalized = String(number).replace(/[^0-9+]/g, '');
             if (!normalized) return;
             window.location.href = `tel:${normalized}`;
@@ -1671,8 +1715,21 @@ speedSlider.addEventListener("change", async () => {
             if (saveBtn) saveBtn.style.display = 'none';
             if (cancelBtn) cancelBtn.style.display = 'none';
         }
+        
+function recenterMap() {
+    if (!lastPatientLocation || !lastPatientLocation.lat) {
+        showToast("⚠️ Waiting for GPS data...");
+        return;
+    }
 
-        function openCaretakerEditForm() {
+    window.map.setView(
+        [lastPatientLocation.lat, lastPatientLocation.lng],
+        17
+    );
+
+    showToast("📍 Re-centered to patient");
+}
+function openCaretakerEditForm() {
             const editForm = document.getElementById('caretakerEditForm');
             const viewFields = document.getElementById('caretakerViewFields');
             const editBtn = document.getElementById('editCaretakerBtn');
@@ -1700,19 +1757,39 @@ speedSlider.addEventListener("change", async () => {
             renderCaretakerProfile();
         }
 
-        function saveCaretakerEdit() {
-            const newData = {
-                name: document.getElementById('editCaretakerName')?.value.trim() || caretakerData.name,
-                id: document.getElementById('editCaretakerId')?.value.trim() || caretakerData.id,
-                email: document.getElementById('editCaretakerEmail')?.value.trim() || caretakerData.email,
-                phone: document.getElementById('editCaretakerPhone')?.value.trim() || caretakerData.phone,
-                facility: document.getElementById('editCaretakerFacility')?.value.trim() || caretakerData.facility
-            };
+async function saveCaretakerEdit() {
+    const newData = {
+        name: document.getElementById('editCaretakerName')?.value.trim() || caretakerData.name,
+        id: document.getElementById('editCaretakerId')?.value.trim() || caretakerData.id,
+        email: document.getElementById('editCaretakerEmail')?.value.trim() || caretakerData.email,
+        phone: document.getElementById('editCaretakerPhone')?.value.trim() || caretakerData.phone,
+        facility: document.getElementById('editCaretakerFacility')?.value.trim() || caretakerData.facility,
+        photo: caretakerData.photo,
+        role: caretakerData.role
+    };
 
-            Object.assign(caretakerData, newData);
-            renderCaretakerProfile();
-            addNotification('✅ Caretaker Updated', 'Caretaker details updated successfully', false);
-        }
+    Object.assign(caretakerData, newData);
+
+    // 🔥 SAVE TO FIRESTORE
+await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData, { merge: true });
+    renderCaretakerProfile();
+    addNotification('✅ Caretaker Updated', 'Saved permanently', false);
+}
+
+async function loadCaretakerFromFirestore() {
+    const refDoc = doc(db, "settings", "caretaker_profile");
+    const snap = await getDoc(refDoc);
+
+    if (snap.exists()) {
+        Object.assign(caretakerData, snap.data());
+        console.log("✅ Caretaker loaded:", caretakerData);
+    } else {
+        // First time → save default
+        await setDoc(refDoc, caretakerData);
+    }
+
+    renderCaretakerProfile();
+}
 
         const safetyChecks = {
             'Line Following': [
@@ -1902,52 +1979,42 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
     lastWheelState.angle = validAngle;
 }
 
+
         // Fast angle fetch with optimized polling
         let angleFetchInterval = null;
         let lastFetchTime = 0;
 
-        async function fetchAngleData() {
-            if (!esp32Connected) {
-                return null;
-            }
-            
-            // Rate limit to prevent overwhelming the ESP32
-            const now = Date.now();
-            if (now - lastFetchTime < 30) {
-                return null;
-            }
-            lastFetchTime = now;
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 300);
-                
-                const response = await fetch(`http://${esp32IP}/angle`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.text();
-                    const angle = parseFloat(data);
-                    if (!isNaN(angle) && isFinite(angle)) {
-                        updateAngleDisplay(angle);
-                        return angle;
-                    }
-                }
-            } catch (error) {
-                // Silent fail for connection issues
-                if (error.name !== 'AbortError' && Math.random() < 0.02) {
-                    console.log("Angle fetch:", error.message);
-                }
-            }
-            return null;
-        }
+async function fetchAngleData() {
+    if (!esp32Connected) return;
 
+    try {
+        const res = await fetch(`http://${esp32IP}/telemetry`);
+        if (res.ok) {
+            const data = await res.json();
+
+            const angle = data.angle || 0;
+            const speed = data.speed || 0;
+            const battery = data.battery || 0;
+            const obstacle = data.obstacle || "Clear";
+            const direction = data.direction || "stop";
+
+            // 👉 Update UI (existing)
+            updateAngleDisplay(angle);
+
+            // 🔥 PUSH TO FIREBASE (REALTIME DB)
+            await set(ref(dbRealtime, "status"), {
+                angle,
+                speed,
+                battery,
+                obstacle,
+                direction,
+                timestamp: Date.now()
+            });
+        }
+    } catch (e) {
+        console.log("Telemetry error");
+    }
+}
         // Parse angle from Arduino serial data
         function parseAngleFromSerial(data) {
             if (!data) return null;
@@ -2351,8 +2418,8 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
                     return;
                 }
                 
-                await sendCommand("CMD:stop");
-                
+await sendCommand("stop");
+
                 if (await sendCommand(`MODE:${mode}`)) {
                     currentMode = mode;
                     document.getElementById('modeDisplay').innerText = currentMode;
@@ -2369,19 +2436,18 @@ const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 
             await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
         }
 
-        function sendControlCommand(cmd) {
-            if (currentMode !== 'Control') {
-                showToast("Not in Control mode");
-                return;
-            }
-            
-            const now = Date.now();
-            if (now - lastCommandTime < 100) return;
-            lastCommandTime = now;
-            
-            sendCommand(`CMD:${cmd}`);
-        }
-
+function sendControlCommand(cmd) {
+    if (currentMode !== 'Control') {
+        showToast("Not in Control mode");
+        return;
+    }
+    
+    const now = Date.now();
+    if (now - lastCommandTime < 100) return;
+    lastCommandTime = now;
+    
+    sendCommand(cmd);   // ✅ FIXED
+}
         // =============== EMERGENCY FUNCTIONS ===============
 
         async function triggerEmergency() {
@@ -2774,19 +2840,49 @@ async function fetchRealSpeed() {
         // =============== INITIALIZATION ===============
 
         document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    patientData.photo = ev.target.result;
-                    document.getElementById('patientPhoto').src = patientData.photo;
-                    refreshPatientMarkerIcon();
-                    await syncPatientToFirestore();
-                    addNotification('📸 Photo Updated', 'Patient photo has been updated', false);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (ev) => {
+        const img = new Image();
+        img.src = ev.target.result;
+
+        img.onload = async () => {
+            // 🔧 Create canvas for compression
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Resize settings
+            const maxWidth = 300;
+            const scale = maxWidth / img.width;
+
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+
+            // Draw resized image
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // 🔥 Compress image (very important for Firestore)
+canvas.toDataURL("image/jpeg", 0.5);
+            // Save to patientData
+            patientData.photo = compressedBase64;
+
+            // Update UI instantly
+            document.getElementById('patientPhoto').src = compressedBase64;
+            refreshPatientMarkerIcon();
+
+            // Save to Firestore (permanent across devices)
+            await syncPatientToFirestore();
+
+            addNotification('📸 Photo Updated', 'Patient photo saved permanently', false);
+            showToast("✅ Image uploaded & synced");
+        };
+    };
+
+    reader.readAsDataURL(file);
+});
 
         document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
         document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
@@ -2817,8 +2913,8 @@ async function fetchRealSpeed() {
             opt.onclick = () => setMode(opt.dataset.mode);
         });
 
-        const map = L.map('map').setView([12.9716, 77.5946], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+const map = window.map = L.map('map').setView([12.9716, 77.5946], 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         function createPatientMapIcon(photoUrl) {
             const imageUrl = photoUrl || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
@@ -2830,6 +2926,8 @@ async function fetchRealSpeed() {
                 popupAnchor: [0, -26]
             });
         }
+        
+        
 
         const currentLocationMarker = L.marker([12.9716, 77.5946], { icon: createPatientMapIcon(patientData.photo) }).addTo(map);
         const currentLocationCircle = L.circle([12.9716, 77.5946], { radius: 50, color: '#3b82f6', fillColor: '#bfdbfe', fillOpacity: 0.2 }).addTo(map);
@@ -2849,31 +2947,6 @@ async function fetchRealSpeed() {
             currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
         }
 
-        function startLiveGpsTracking() {
-            if (!navigator.geolocation) {
-                showToast('⚠️ GPS not supported by this browser');
-                return;
-            }
-
-            navigator.geolocation.watchPosition(
-                position => {
-                    const { latitude, longitude, accuracy } = position.coords;
-                    updateMapLocation(latitude, longitude, accuracy);
-                },
-                error => {
-                    console.warn('GPS error', error);
-                    showToast('⚠️ Unable to get GPS location');
-                },
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 5000,
-                    timeout: 10000
-                }
-            );
-        }
-
-        startLiveGpsTracking();
-
         window.toggleGpsFullscreen = () => {
             const card = document.querySelector('.map-card');
             if (!document.fullscreenElement) card.requestFullscreen();
@@ -2883,11 +2956,88 @@ async function fetchRealSpeed() {
         document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
 
         await loadPatientFromFirestore();
+        await loadCaretakerFromFirestore();
+        await loadEmergencyContacts();
         listenDriveMode();
+        listenCaretakerProfile();
         listenEmergencyFromPatient();
+        listenEmergencyContacts();
 
         setInterval(simulateHealthMonitoring, 8000);
 setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
+
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const dbRealtime = getDatabase(app);
+
+let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
+
+function listenPatientLocation() {
+    const locRef = ref(dbRealtime, "patient_location/patient_main");
+
+    onValue(locRef, (snap) => {
+        const data = snap.val();
+
+        if (data && data.lat && data.lng) {
+            lastPatientLocation = {
+                lat: data.lat,
+                lng: data.lng
+            };
+
+            updateMapLocation(data.lat, data.lng, data.accuracy);
+
+            console.log("📍 Patient location updated:", data);
+        }
+    });
+}
+
+listenPatientLocation();
+
+function listenCaretakerProfile() {
+    const refDoc = doc(db, "settings", "caretaker_profile");
+
+    onSnapshot(refDoc, (snap) => {
+        if (snap.exists()) {
+            Object.assign(caretakerData, snap.data());
+            renderCaretakerProfile();
+        }
+    });
+}
+
+async function loadEmergencyContacts() {
+    const refDoc = doc(db, "settings", "emergency_contacts");
+    const snap = await getDoc(refDoc);
+
+    if (snap.exists()) {
+        const data = snap.data();
+
+        if (data.contacts && Array.isArray(data.contacts)) {
+            emergencyContacts = data.contacts.map(c => {
+                const parts = c.label.split(" ");
+                const icon = parts[0]; // first emoji
+                const label = parts.slice(1).join(" ");
+
+                return {
+                    icon: icon,
+                    label: label,
+                    value: c.number
+                };
+            });
+
+            console.log("✅ Emergency contacts loaded:", emergencyContacts);
+        }
+    } else {
+        // First time → save default
+        await setDoc(refDoc, {
+            contacts: emergencyContacts.map(c => ({
+                label: `${c.icon} ${c.label}`,
+                number: c.value
+            }))
+        });
+    }
+
+    renderEmergencyContacts();
+}
 
         function listenDriveMode() {
             const modeRef = doc(db, "settings", MODE_ID);
@@ -2915,4 +3065,4 @@ setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
     </script>
 </body>
 
-</html> 
+</html>
