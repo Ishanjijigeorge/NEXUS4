@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,17 +14,18 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        A
+        import { getFirestore, doc, onSnapshot, setDoc, collection, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, onValue, set, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        
         const firebaseConfig = {
-            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
-            authDomain: "nexus-org-6e7e9.firebaseapp.com",
-            projectId: "nexus-org-6e7e9",
-            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
-            messagingSenderId: "989376914258",
-            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
-            measurementId: "G-TP1CVNYHNE"
+             apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+  authDomain: "nexus-org-6e7e9.firebaseapp.com",
+  databaseURL: "https://nexus-org-6e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "nexus-org-6e7e9",
+  storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+  messagingSenderId: "989376914258",
+  appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+  measurementId: "G-TP1CVNYHNE"
         };
         
         const app = initializeApp(firebaseConfig);
@@ -38,10 +38,14 @@
         window.setDoc = setDoc;
         window.onSnapshot = onSnapshot;
         window.getDoc = getDoc;
+        window.updateDoc = updateDoc;
         window.collection = collection;
         window.ref = ref;
         window.onValue = onValue;
         window.set = set;
+        window.push = push;
+        window.onDisconnect = onDisconnect;
+        
         console.log("Patient page Firebase initialized");
     </script>
     <style>
@@ -73,7 +77,6 @@
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
-        /* Connection Status */
         .connection-status {
             position: fixed;
             bottom: 20px;
@@ -365,7 +368,6 @@
         .obstacle-warn { color: var(--amber); }
         .obstacle-block { color: var(--danger); }
         
-        /* TILT ANGLE CARD (synced with caretaker) */
         .angle-card {
             background: white;
             border-radius: 28px;
@@ -971,7 +973,6 @@
     </div>
 </div>
 
-<!-- TILT ANGLE CARD (live sync with ESP32 via Firebase) -->
 <div class="angle-card" id="angleCard">
     <div class="angle-header"><h4>📐 Tilt Angle (Stability)</h4></div>
     <div class="angle-value" id="angleValue">0.0<span>°</span></div>
@@ -998,7 +999,6 @@
 
 <button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
 
-<!-- EMERGENCY CALL POPUP -->
 <div id="callPopup" class="popup-panel square">
     <div class="popup-header"><h3>📞 Emergency Call</h3></div>
     <div class="popup-message">Tap contact to dial</div>
@@ -1019,10 +1019,11 @@
 <div class="connection-status disconnected" id="connectionStatus"><span class="status-dot"></span><span id="connectionText">Disconnected</span></div>
 
 <script type="module">
-    import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, onValue, set, push, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     
-    const db = window.db, dbRealtime = window.dbRealtime;
+    const db = window.db;
+    const dbRealtime = window.dbRealtime;
     const PATIENT_ID = "patient_main";
     let patientData = { fullName: 'Rebecca Rowe', patientId: 'PT-10234', age: '67', bloodGroup: 'A+', doctor: 'Dr. Sarah Adams', contactNo: '+1 555 0199', photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png' };
     let currentMode = 'Line Following', currentDirection = 'stop', emergencyActive = false;
@@ -1033,8 +1034,9 @@
     let touchStartX = 0, touchEndX = 0;
     let lastHealthState = { hr: 84, temp: 36.8, o2: 98, bp: '130/80' };
     const locationNameCache = new Map();
+    let currentLocation = { lat: 12.9716, lng: 77.5946 };
+    let gpsWatchId = null;
     
-    // Emergency contacts (sync with caretaker later, but default)
     let emergencyContacts = [
         { label: "🚑 Ambulance", number: "108" },
         { label: "👨‍⚕️ Dr. Adams", number: "123-456-7890" },
@@ -1051,26 +1053,29 @@
     }
     
     function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
-    function showAlertPopup(title, msg, time='Now') { const pop=document.createElement('div'); pop.className='alert-popup'; pop.innerHTML=`<div class="alert-icon">⚠️</div><div class="alert-title">${escapeHtml(title)}</div><div class="alert-message">${escapeHtml(msg)}</div><button onclick="this.parentElement.remove()">Dismiss</button>`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),8000); }
+    function showAlertPopup(title, msg) { const pop=document.createElement('div'); pop.className='alert-popup'; pop.innerHTML=`<div class="alert-icon">⚠️</div><div class="alert-title">${escapeHtml(title)}</div><div class="alert-message">${escapeHtml(msg)}</div><button onclick="this.parentElement.remove()">Dismiss</button>`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),8000); }
     function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>]/g,function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
     
     function updateConnectionStatus(connected) { const s=document.getElementById('connectionStatus'); s.className=connected?'connection-status connected':'connection-status disconnected'; document.getElementById('connectionText').innerText=connected?'Connected':'Disconnected'; }
     
-    function setEmergencyState(active, source='remote') {
+    async function setEmergencyState(active, source='remote') {
         const overlay = document.getElementById('shutdownOverlay');
         if (active && !emergencyActive) {
             emergencyActive = true;
             document.body.classList.add('emergency-shutdown');
             if (overlay) overlay.style.display = 'flex';
             addToNotificationLog('🚨 EMERGENCY', source === 'patient' ? 'Emergency stop activated on this device.' : 'Emergency stop activated by caretaker.', true);
+            await set(ref(dbRealtime, 'emergency_status/active'), true);
+            await setDoc(doc(db,"settings","emergency_status"), { active: true, source: source, timestamp: new Date().toISOString() }, { merge: true });
         } else if (!active && emergencyActive) {
             emergencyActive = false;
             document.body.classList.remove('emergency-shutdown');
             if (overlay) overlay.style.display = 'none';
+            await set(ref(dbRealtime, 'emergency_status/active'), false);
+            await setDoc(doc(db,"settings","emergency_status"), { active: false, timestamp: new Date().toISOString() }, { merge: true });
         }
     }
     
-    // Tilt angle display logic (identical to caretaker sync)
     function updateAngleDisplay(angle) {
         let valid = Math.min(45, Math.max(-45, angle));
         document.getElementById('angleValue').innerHTML = valid.toFixed(1)+'<span>°</span>';
@@ -1096,7 +1101,53 @@
         else statusDiv.innerHTML='✓ Normal operating range';
     }
     
-    // ESP32 status listener (tilt, speed, direction, battery, obstacle)
+    async function sharePatientLocation(lat, lng) {
+        try {
+            await set(ref(dbRealtime, `patient_location/${PATIENT_ID}`), {
+                lat: lat,
+                lng: lng,
+                timestamp: serverTimestamp(),
+                accuracy: 10,
+                source: 'patient_device'
+            });
+            await setDoc(doc(db, "locations", PATIENT_ID), {
+                lat: lat,
+                lng: lng,
+                timestamp: new Date().toISOString(),
+                source: 'patient_device'
+            }, { merge: true });
+        } catch (error) {
+            console.warn("Failed to share location:", error);
+        }
+    }
+    
+    function startGPSSharing() {
+        if (!navigator.geolocation) {
+            showToast('GPS not supported');
+            return;
+        }
+        
+        if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+        
+        gpsWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude, accuracy } = position.coords;
+                currentLocation = { lat: latitude, lng: longitude };
+                updateWheelchairLocation(latitude, longitude);
+                sharePatientLocation(latitude, longitude);
+            },
+            (error) => {
+                console.warn('GPS error:', error);
+                showToast('⚠️ Unable to get GPS location');
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000
+            }
+        );
+    }
+    
     function listenESP32Status() {
         const statusRef = ref(dbRealtime, 'status');
         onValue(statusRef, (snap) => {
@@ -1121,11 +1172,6 @@
                     icon.innerHTML=icons[s.direction]||'⏹️';
                     text.innerHTML=texts[s.direction]||'Stopped';
                 }
-                const liveLat = s.latitude ?? s.lat;
-                const liveLng = s.longitude ?? s.lng;
-                if(typeof liveLat === 'number' && typeof liveLng === 'number'){
-                    updateWheelchairLocation(liveLat, liveLng);
-                }
                 if(s.mode && s.mode!==currentMode){ currentMode=s.mode; updateModeUI(currentMode); addToNotificationLog('🔄 Drive Mode',`Mode: ${currentMode}`,new Date().toLocaleString(),false); }
             } else updateConnectionStatus(false);
         }, (err)=>{ updateConnectionStatus(false); });
@@ -1138,33 +1184,17 @@
     
     async function triggerEmergency(){
         if(emergencyActive) return;
-        try {
-            await set(ref(dbRealtime, 'emergency_status/active'), true);
-        } catch (err) { console.warn('Realtime emergency write failed', err); }
-        try {
-            await setDoc(doc(db,"settings","emergency_status"), { active: true, source:'patient', timestamp: new Date().toISOString() }, { merge: true });
-        } catch (err) { console.warn('Firestore emergency write failed', err); }
-        emergencyActive=true; document.body.classList.add('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display='flex';
+        await setEmergencyState(true, 'patient');
         addToNotificationLog('🚨 EMERGENCY','You activated emergency stop!',new Date().toLocaleString(),true);
-        setTimeout(async()=>{ 
-            try { await set(ref(dbRealtime,'emergency_status/active'),false); } catch (err) {}
-            try { await setDoc(doc(db,"settings","emergency_status"), { active:false, timestamp:new Date().toISOString() }, { merge:true }); } catch (err) {}
-            emergencyActive=false; document.body.classList.remove('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display='none'; 
-        },5000);
+        setTimeout(async()=>{ await setEmergencyState(false, 'patient'); },5000);
     }
     
-    async function closeShutdown(){ 
-        if(emergencyActive) {
-            try { await set(ref(dbRealtime,'emergency_status/active'),false); } catch (err) {}
-            try { await setDoc(doc(db,"settings","emergency_status"), { active:false, timestamp:new Date().toISOString() }, { merge:true }); } catch (err) {}
-        }
-        emergencyActive=false; document.body.classList.remove('emergency-shutdown'); document.getElementById('shutdownOverlay').style.display='none'; 
-    }
+    async function closeShutdown(){ await setEmergencyState(false, 'patient'); }
     
     function listenEmergency(){
         onValue(ref(dbRealtime,'emergency_status/active'),(snap)=>{
             const active = snap.val()===true;
-            setEmergencyState(active,'patient-realtime');
+            if(active !== emergencyActive) setEmergencyState(active, 'remote');
         });
     }
     
@@ -1173,7 +1203,8 @@
         onSnapshot(emergencyRef, (docSnap) => {
             if (!docSnap.exists()) return;
             const data = docSnap.data();
-            setEmergencyState(data.active === true, 'caretaker');
+            if(data.active === true && !emergencyActive) setEmergencyState(true, 'caretaker');
+            else if(data.active === false && emergencyActive) setEmergencyState(false, 'caretaker');
         });
     }
     
@@ -1185,7 +1216,7 @@
             if (data.mode && data.mode !== currentMode) {
                 currentMode = data.mode;
                 updateModeUI(currentMode);
-                addToNotificationLog('🔄 Drive Mode Changed', `Mode changed to: ${currentMode}`, false);
+                addToNotificationLog('🔄 Drive Mode Changed', `Mode changed to: ${currentMode}`, new Date().toLocaleString(), false);
             }
         });
     }
@@ -1201,7 +1232,6 @@
         });
     }
 
-    // Notifications & logs
     function addToNotificationLog(title,msg,time,isWarning=false){
         const id=Date.now()+Math.random();
         notifications.unshift({id,title,message:msg,time,isWarning});
@@ -1211,22 +1241,31 @@
         else badge.style.display='none';
         updateNotificationLogDisplay();
     }
+    
     function updateNotificationLogDisplay(){
         const container=document.getElementById('notificationLog');
         if(!container) return;
         if(notifications.length===0){ container.innerHTML='<div class="empty-message">No notifications</div>'; return; }
         container.innerHTML=notifications.slice(0,50).map(n=>`<div class="notification-log-item ${n.isWarning?'warning':''}"><div class="log-title">${escapeHtml(n.title)}</div><div class="log-message">${escapeHtml(n.message)}</div><div class="log-time">${n.time}</div></div>`).join('');
     }
+    
     function clearAllNotifications(){ notifications=[]; notificationCount=0; updateNotificationLogDisplay(); document.getElementById('notificationBadge').style.display='none'; showToast('Cleared'); }
     
-    // Carousel + data from Firestore (caretaker actions)
-    function rebuildCarousel(){ /* same as original */ const container=document.getElementById('carouselSlides'); if(!container)return; container.innerHTML=''; slides=[];
-        const vitalsSlide=document.createElement('div'); vitalsSlide.className='carousel-slide vital-signs-slide'; vitalsSlide.innerHTML=`<div class="health-header-compact"><span>❤️</span><h4>Vital Signs</h4></div><div class="health-metrics-compact"><div class="health-metric-compact" id="hrMetricSlide"><div class="metric-value-compact" id="healthHeartRateSlide">84</div><div class="metric-label-compact">HR</div><small>bpm</small></div><div class="health-metric-compact" id="bpMetricSlide"><div class="metric-value-compact" id="healthBPSlide">130/80</div><div class="metric-label-compact">BP</div><small>mmHg</small></div><div class="health-metric-compact" id="tempMetricSlide"><div class="metric-value-compact" id="healthTempSlide">36.8</div><div class="metric-label-compact">TEMP</div><small>°C</small></div><div class="health-metric-compact" id="o2MetricSlide"><div class="metric-value-compact" id="healthO2Slide">98</div><div class="metric-label-compact">SpO₂</div><small>%</small></div></div>`;
-        container.appendChild(vitalsSlide); slides.push({type:'vitals',element:vitalsSlide});
+    function rebuildCarousel(){
+        const container=document.getElementById('carouselSlides');
+        if(!container)return;
+        container.innerHTML='';
+        slides=[];
+        const vitalsSlide=document.createElement('div');
+        vitalsSlide.className='carousel-slide vital-signs-slide';
+        vitalsSlide.innerHTML=`<div class="health-header-compact"><span>❤️</span><h4>Vital Signs</h4></div><div class="health-metrics-compact"><div class="health-metric-compact" id="hrMetricSlide"><div class="metric-value-compact" id="healthHeartRateSlide">84</div><div class="metric-label-compact">HR</div><small>bpm</small></div><div class="health-metric-compact" id="bpMetricSlide"><div class="metric-value-compact" id="healthBPSlide">130/80</div><div class="metric-label-compact">BP</div><small>mmHg</small></div><div class="health-metric-compact" id="tempMetricSlide"><div class="metric-value-compact" id="healthTempSlide">36.8</div><div class="metric-label-compact">TEMP</div><small>°C</small></div><div class="health-metric-compact" id="o2MetricSlide"><div class="metric-value-compact" id="healthO2Slide">98</div><div class="metric-label-compact">SpO₂</div><small>%</small></div></div>`;
+        container.appendChild(vitalsSlide);
+        slides.push({type:'vitals',element:vitalsSlide});
         const configs=[{key:'messages',icon:'💬',title:'Messages'},{key:'alarms',icon:'⏰',title:'Alarms'},{key:'appointments',icon:'📋',title:'Appointments'},{key:'media',icon:'🎵',title:'Media'},{key:'calendar',icon:'📅',title:'Calendar'}];
         configs.forEach(cfg=>{ const items=dataStore[cfg.key]||[]; const slideDiv=document.createElement('div'); slideDiv.className='carousel-slide content-slide'; slideDiv.innerHTML=`<div class="content-slide-header"><span>${cfg.icon}</span><h4>${cfg.title}</h4></div><div class="content-list">${items.length?items.slice().reverse().slice(0,5).map(i=>`<div class="content-item"><div class="title">${escapeHtml(i.title||i.text||'Update')}</div><div class="detail">${escapeHtml(i.detail||'')} ${i.time?'• '+i.time:''}</div></div>`).join(''):'<div class="empty-message">No items</div>'}</div>`; container.appendChild(slideDiv); slides.push({type:cfg.key,element:slideDiv}); });
         updateCarouselDots(); updateCarouselPosition();
     }
+    
     function updateCarouselDots(){ const dots=document.getElementById('carouselDots'); if(!dots)return; dots.innerHTML=''; slides.forEach((_,idx)=>{ const dot=document.createElement('div'); dot.className='dot'+(idx===carouselIndex?' active':''); dot.onclick=()=>goToSlide(idx); dots.appendChild(dot); }); }
     function updateCarouselPosition(){ document.querySelector('.carousel-slides').style.transform=`translateX(-${carouselIndex*100}%)`; updateCarouselDots(); }
     function goToSlide(idx){ carouselIndex=Math.min(Math.max(idx,0),slides.length-1); updateCarouselPosition(); resetAutoSlideTimer(); }
@@ -1249,23 +1288,62 @@
         updatePatientDisplay(); 
         renderPatientDetails(); 
     }
+    
     function updatePatientDisplay(){ 
         document.getElementById('patientFirstName').innerText=patientData.fullName.split(' ')[0]; 
         document.getElementById('patientIdSmall').innerHTML=`ID: ${patientData.patientId} · ${patientData.age}y`; 
         document.getElementById('profileImage').src=patientData.photo; 
     }
+    
     function renderPatientDetails(){ 
         const grid=document.getElementById('patientDetailsGrid'); grid.innerHTML=''; 
         [['Full Name',patientData.fullName],['Patient ID',patientData.patientId],['Age',patientData.age+' years'],['Blood Group',patientData.bloodGroup],['Doctor',patientData.doctor],['Contact',patientData.contactNo]].forEach(([l,v])=>{ const div=document.createElement('div'); div.className='detail-item'; div.innerHTML=`<span class="detail-label">${l}</span><div class="detail-value">${v}</div>`; grid.appendChild(div); }); 
     }
-    function updateHealthMetrics(){ let hr=parseInt(document.getElementById('healthHeartRateSlide')?.innerText)||84; hr=Math.min(110,Math.max(65,hr+(Math.random()>0.5?1:-1))); let temp=36.8+(Math.random()-0.5)*0.2; let o2=Math.min(100,Math.max(92,98+(Math.random()>0.8?-1:0))); let sys=130+(Math.random()>0.7?(Math.random()>0.5?5:-5):0); let dia=80+(sys-130)*0.6; if(document.getElementById('healthHeartRateSlide')){ document.getElementById('healthHeartRateSlide').innerText=hr; document.getElementById('healthTempSlide').innerText=temp.toFixed(1); document.getElementById('healthO2Slide').innerText=o2; document.getElementById('healthBPSlide').innerText=`${Math.min(160,Math.max(85,sys))}/${Math.min(100,Math.max(55,dia))}`; }
-        const abnormal=(hr<60||hr>100||temp<36.1||temp>37.2||o2<95); if(abnormal && !isVitalsAbnormal){ isVitalsAbnormal=true; if(autoSlideInterval)clearInterval(autoSlideInterval); if(carouselIndex!==0){carouselIndex=0;updateCarouselPosition();} addToNotificationLog('⚠️ Health Alert','Abnormal vitals detected',new Date().toLocaleString(),true); } else if(!abnormal && isVitalsAbnormal){ isVitalsAbnormal=false; resetAutoSlideTimer(); } }
+    
+    function updateHealthMetrics(){ 
+        let hr=parseInt(document.getElementById('healthHeartRateSlide')?.innerText)||84;
+        hr=Math.min(110,Math.max(65,hr+(Math.random()>0.5?1:-1))); 
+        let temp=36.8+(Math.random()-0.5)*0.2; 
+        let o2=Math.min(100,Math.max(92,98+(Math.random()>0.8?-1:0))); 
+        let sys=130+(Math.random()>0.7?(Math.random()>0.5?5:-5):0); 
+        let dia=80+(sys-130)*0.6; 
+        if(document.getElementById('healthHeartRateSlide')){ 
+            document.getElementById('healthHeartRateSlide').innerText=hr; 
+            document.getElementById('healthTempSlide').innerText=temp.toFixed(1); 
+            document.getElementById('healthO2Slide').innerText=o2; 
+            document.getElementById('healthBPSlide').innerText=`${Math.min(160,Math.max(85,sys))}/${Math.min(100,Math.max(55,dia))}`; 
+        }
+        const abnormal=(hr<60||hr>100||temp<36.1||temp>37.2||o2<95); 
+        if(abnormal && !isVitalsAbnormal){ 
+            isVitalsAbnormal=true; 
+            if(autoSlideInterval)clearInterval(autoSlideInterval); 
+            if(carouselIndex!==0){carouselIndex=0;updateCarouselPosition();} 
+            addToNotificationLog('⚠️ Health Alert','Abnormal vitals detected',new Date().toLocaleString(),true); 
+        } else if(!abnormal && isVitalsAbnormal){ 
+            isVitalsAbnormal=false; 
+            resetAutoSlideTimer(); 
+        }
+    }
+    
     function updateDateTime(){ const now=new Date(); document.getElementById('dateText').innerText=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); document.getElementById('timeText').innerText=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+    
+    function updateModeUI(mode){
+        document.querySelectorAll('.mode-btn').forEach(btn=>{
+            if(btn.dataset.mode === mode) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+    
+    async function setMode(mode){
+        currentMode = mode;
+        updateModeUI(mode);
+        await setDoc(doc(db, "settings", "drive_mode"), { mode: mode, timestamp: new Date().toISOString() });
+        addToNotificationLog('Drive Mode', `Switched to ${mode}`, new Date().toLocaleString(), false);
+    }
     
     const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([12.9716,77.5946],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     const wheelchairMarker = L.marker([12.9716,77.5946], { icon: getWheelchairIcon() }).addTo(map);
-    bindLocationInfo(wheelchairMarker, 12.9716, 77.5946).catch(() => {});
     let deviceMarker;
 
     function updateWheelchairLocation(lat, lng) {
@@ -1280,11 +1358,7 @@
         const name = patientData.fullName || 'User';
         return L.divIcon({
             className: 'device-marker-icon',
-            html: `
-                <div class="device-marker-wrap">
-                    <img src="${imageUrl}" alt="${name}" />
-                </div>
-            `,
+            html: `<div class="device-marker-wrap"><img src="${imageUrl}" alt="${name}" /></div>`,
             iconSize: [42, 42],
             iconAnchor: [21, 42],
             popupAnchor: [0, -42]
@@ -1304,9 +1378,7 @@
     function updateDeviceLocation(lat, lng) {
         const coords = [lat, lng];
         if (!deviceMarker) {
-            deviceMarker = L.marker(coords, {
-                icon: getDeviceIcon()
-            }).addTo(map);
+            deviceMarker = L.marker(coords, { icon: getDeviceIcon() }).addTo(map);
         } else {
             deviceMarker.setLatLng(coords);
             deviceMarker.setIcon(getDeviceIcon());
@@ -1344,31 +1416,8 @@
         const locationName = await resolveLocationName(lat, lng);
         marker.unbindTooltip();
         marker.unbindPopup();
-        marker.bindTooltip(locationName, {
-            permanent: false,
-            direction: 'top',
-            offset: [0, -10],
-            className: 'location-tooltip'
-        });
+        marker.bindTooltip(locationName, { permanent: false, direction: 'top', offset: [0, -10], className: 'location-tooltip' });
         marker.bindPopup(`Latitude: ${lat.toFixed(5)}<br>Longitude: ${lng.toFixed(5)}`);
-    }
-
-    function watchDeviceLocation() {
-        if (!navigator.geolocation) {
-            showToast('Geolocation not supported');
-            return;
-        }
-        navigator.geolocation.getCurrentPosition((pos) => {
-            updateDeviceLocation(pos.coords.latitude, pos.coords.longitude);
-        }, (err) => {
-            showToast('Unable to fetch device location');
-        }, { enableHighAccuracy: true, timeout: 10000 });
-
-        navigator.geolocation.watchPosition((pos) => {
-            updateDeviceLocation(pos.coords.latitude, pos.coords.longitude);
-        }, (err) => {
-            console.warn('Geolocation watch failed', err);
-        }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
     }
 
     window.closePatientDetails=()=>document.getElementById('patientDetailsSection').style.display='none';
@@ -1377,7 +1426,8 @@
     window.closeShutdown=closeShutdown;
     
     function init(){
-        updateDateTime(); setInterval(updateDateTime,1000);
+        updateDateTime(); 
+        setInterval(updateDateTime,1000);
         loadPatientFromFirestore();
         listenPatientProfileUpdates();
         listenESP32Status();
@@ -1385,16 +1435,23 @@
         listenEmergencyStatus();
         listenDriveMode();
         listenCaretakerActions();
-        watchDeviceLocation();
-        rebuildCarousel(); initTouchEvents(); resetAutoSlideTimer();
+        startGPSSharing();
+        rebuildCarousel(); 
+        initTouchEvents(); 
+        resetAutoSlideTimer();
         setInterval(updateHealthMetrics,8000);
+        
         document.getElementById('profileIconBtn').onclick=()=>{ const sec=document.getElementById('patientDetailsSection'); sec.style.display=(sec.style.display==='none'||sec.style.display==='')?'block':'none'; };
         document.getElementById('welcomeNotifBtn').onclick=()=>document.getElementById('logPopup').style.display='block';
         document.getElementById('welcomeLogBtn').onclick=()=>document.getElementById('logPopup').style.display='block';
         document.getElementById('welcomeCallBtn').onclick=()=>{ renderEmergencyContacts(); document.getElementById('callPopup').style.display='block'; };
         document.getElementById('emergencyStopBtn').onclick=triggerEmergency;
         document.getElementById('clearAllNotificationsBtn').onclick=clearAllNotifications;
-        document.querySelectorAll('.mode-btn').forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.mode)));
+        
+        document.querySelectorAll('.mode-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>setMode(btn.dataset.mode));
+        });
+        
         updateModeUI(currentMode);
         renderEmergencyContacts();
     }
