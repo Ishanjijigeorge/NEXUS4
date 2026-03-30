@@ -17,6 +17,8 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <!-- Firebase SDKs -->
     <script type="module">
+    import { getDatabase, ref, set } 
+from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
