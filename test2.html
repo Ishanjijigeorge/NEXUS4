@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1164,51 +1164,78 @@ function listenEmergencyContacts() {
         );
     }
     
-let lastDataReceived = Date.now();
-
 function listenESP32Status() {
-    // Listen to the correct path where ESP32 writes data
-    const statusRef = ref(dbRealtime, 'wheelchair/status');
-    onValue(statusRef, (snap) => {
-        const s = snap.val();
-        if(s){
-            lastDataReceived = Date.now();
-            updateConnectionStatus(true);
-            if(s.angle!==undefined) updateAngleDisplay(s.angle);
-            if(s.speed!==undefined) document.getElementById('speedValue').innerText = s.speed.toFixed(1)+' m/s';
-            if(s.battery!==undefined) document.getElementById('batteryValue').innerText = Math.round(s.battery)+'%';
-            if(s.obstacle!==undefined){
-                const obsSpan=document.getElementById('obstacleValue');
-                obsSpan.innerText = s.obstacle;
-                obsSpan.className = 'tele-value '+(s.obstacle==='Clear'?'obstacle-clear':s.obstacle==='Nearby'?'obstacle-warn':'obstacle-block');
-            }
-            if(s.battery!==undefined) document.getElementById('rangeValue').innerText = ((s.battery/100)*8).toFixed(1)+' km';
-            if(s.direction!==undefined){
-                currentDirection=s.direction;
-                const badge=document.getElementById('directionBadge'), icon=document.getElementById('dirIconLarge'), text=document.getElementById('dirTextLarge');
-                badge.className='direction-status-badge '+s.direction;
-                const icons={forward:'⬆️',backward:'⬇️',left:'⬅️',right:'➡️',stop:'⏹️'};
-                const texts={forward:'Moving forward',backward:'Moving backward',left:'Turning left',right:'Turning right',stop:'STOPPED'};
-                icon.innerHTML=icons[s.direction]||'⏹️';
-                text.innerHTML=texts[s.direction]||'Stopped';
-            }
-            if(s.mode && s.mode!==currentMode){ 
-                currentMode=s.mode; 
-                updateModeUI(currentMode); 
-                addToNotificationLog('🔄 Drive Mode',`Mode: ${currentMode}`,new Date().toLocaleString(),false); 
-            }
-        }
-    }, (err)=>{ 
-        console.log("Error listening to status:", err);
-        updateConnectionStatus(false); 
-    });
+    const statusRef = ref(dbRealtime, 'status');
+    let lastConnected = false;
     
-    // Start heartbeat check
-    setInterval(() => {
-        if (Date.now() - lastDataReceived > 8000) {
+    onValue(statusRef, (snap) => {
+        const status = snap.val();
+        const isConnected = status && status.connected === true;
+        
+        if (isConnected) {
+            updateConnectionStatus(true);
+            
+            // Also listen to wheelchair status for telemetry
+            const telemetryRef = ref(dbRealtime, 'wheelchair/status');
+            onValue(telemetryRef, (teleSnap) => {
+                const tele = teleSnap.val();
+                if (tele && isConnected) {
+                    if (tele.angle !== undefined) updateAngleDisplay(tele.angle);
+                    if (tele.speed !== undefined) document.getElementById('speedValue').innerText = tele.speed.toFixed(1) + ' m/s';
+                    if (tele.battery !== undefined) {
+                        const batteryVal = Math.round(tele.battery);
+                        document.getElementById('batteryValue').innerText = batteryVal + '%';
+                        document.getElementById('rangeValue').innerText = ((batteryVal / 100) * 8).toFixed(1) + ' km';
+                    }
+                    if (tele.obstacle !== undefined) {
+                        const obsSpan = document.getElementById('obstacleValue');
+                        obsSpan.innerText = tele.obstacle;
+                        obsSpan.className = 'tele-value ' + (tele.obstacle === 'Clear' ? 'obstacle-clear' : tele.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+                    }
+                    if (tele.direction !== undefined) {
+                        currentDirection = tele.direction;
+                        const badge = document.getElementById('directionBadge');
+                        const icon = document.getElementById('dirIconLarge');
+                        const text = document.getElementById('dirTextLarge');
+                        badge.className = 'direction-status-badge ' + tele.direction;
+                        const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
+                        const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
+                        icon.innerHTML = icons[tele.direction] || '⏹️';
+                        text.innerHTML = texts[tele.direction] || 'Stopped';
+                    }
+                }
+            }, { onlyOnce: false });
+            
+        } else {
             updateConnectionStatus(false);
         }
-    }, 3000);
+        
+        // Auto-reconnect attempt if disconnected
+        if (!isConnected && lastConnected !== isConnected) {
+            console.log("ESP32 disconnected, attempting to reconnect...");
+            // Trigger reconnect by requesting status update from caretaker side
+            const reconnectRef = ref(dbRealtime, 'commands/requestStatus');
+            set(reconnectRef, {
+                timestamp: Date.now(),
+                source: 'patient'
+            });
+            
+            // Try to reconnect every 10 seconds
+            if (window.reconnectInterval) clearInterval(window.reconnectInterval);
+            window.reconnectInterval = setInterval(() => {
+                if (!isConnected) {
+                    set(ref(dbRealtime, 'commands/requestStatus'), {
+                        timestamp: Date.now(),
+                        source: 'patient'
+                    });
+                } else {
+                    clearInterval(window.reconnectInterval);
+                }
+            }, 10000);
+        }
+        
+        lastConnected = isConnected;
+    });
 }
 
     async function sendCommandToESP32(type, value) {
@@ -1498,4 +1525,4 @@ function listenESP32Status() {
     init();
 </script>
 </body>
-</html>
+</html> 
