@@ -1452,6 +1452,20 @@ window.doc = doc;
             font-size: 10px;
             color: var(--muted);
         }
+        
+.speed-card{
+    background:white;
+    border-radius:28px;
+    padding:16px;
+
+    margin-top:14px;
+    margin-bottom:28px;   /* increased space below slider */
+
+    box-shadow:0 8px 24px rgba(0,0,0,0.08),
+               0 2px 8px rgba(0,0,0,0.04);
+
+    border:1px solid rgba(255,255,255,0.8);
+}
 
         .command-feedback {
             position: fixed;
@@ -1645,57 +1659,114 @@ window.doc = doc;
         <div id="map"></div>
     </div>
 
-    <div id="controlPad">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <button class="ctrl-btn" data-cmd="forward">⬆️</button>
-            <div style="display: flex; gap: 20px;">
-                <button class="ctrl-btn" data-cmd="left">⬅️</button>
-                <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
-                <button class="ctrl-btn" data-cmd="right">➡️</button>
-            </div>
-            <button class="ctrl-btn" data-cmd="back">⬇️</button>
+   <!-- CONTROL PAD (Visible only in Control mode) -->
+<div id="controlPad">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <button class="ctrl-btn" data-cmd="forward">⬆️</button>
+
+        <div style="display:flex; gap:20px;">
+            <button class="ctrl-btn" data-cmd="left">⬅️</button>
+            <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
+            <button class="ctrl-btn" data-cmd="right">➡️</button>
         </div>
-        <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
-    <div style="margin-top:20px; text-align:center;">
-    <label style="font-weight:600;">⚡ Speed Control</label><br>
 
-    <input type="range" id="speedSlider" min="0" max="100" value="20" style="width:90%;">
-
-    <div style="margin-top:6px;">
-        <span id="speedPercent">20%</span>
+        <button class="ctrl-btn" data-cmd="back">⬇️</button>
     </div>
-</div>
+
+    <p style="text-align:center; margin-top:12px; color:var(--muted); font-size:13px;">
+        Control active · tap to move
+    </p>
 </div>
 
 
-    <button class="connect-btn" id="connectBtn">🔌 Connect to ESP32</button>
+<!-- SPEED CONTROL (Always Visible in All Modes) -->
+<div class="speed-card">
 
-    <div class="serial-console" id="serialConsole">
-        <div class="console-header">
-            <span>📟 Command Log</span>
-            <button onclick="toggleSerialConsole()" style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
-        </div>
-        <div class="console-content" id="consoleContent"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-weight:600;">⚡ Speed Control</span>
+        <span id="speedPercent" style="font-weight:700; color:var(--blue);">20%</span>
     </div>
 
-    <div id="modePopup" class="popup-panel">
-        <div class="popup-header">
-            <h3>⚙️ Select mode</h3>
-            <button class="close-popup" onclick="closeModePopup()">×</button>
-        </div>
-        <div class="mode-option" data-mode="Line Following">➖ Line Following</div>
-        <div class="mode-option" data-mode="Control">🎮 Control</div>
-        <div class="mode-option" data-mode="Self Drive">🤖 Self Drive</div>
+    <input 
+        type="range"
+        id="speedSlider"
+        min="0"
+        max="100"
+        value="20"
+        style="width:100%; cursor:pointer;"
+    >
+
+</div>
+
+
+<!-- CONNECT BUTTON -->
+<button class="connect-btn" id="connectBtn">
+    🔌 Connect to ESP32
+</button>
+
+
+<!-- SERIAL CONSOLE -->
+<div class="serial-console" id="serialConsole">
+
+    <div class="console-header">
+        <span>📟 Command Log</span>
+
+        <button 
+            onclick="toggleSerialConsole()"
+            style="background:none; border:none; color:#94a3b8; cursor:pointer;">
+            ✕
+        </button>
     </div>
 
-    <div id="callPopup" class="popup-panel">
-        <div class="popup-header">
-            <h3>📞 Emergency</h3>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button class="btn-secondary" id="editEmergencyBtn" style="padding:8px 16px; font-size:12px;">✎ Edit</button>
-                <button class="close-popup" onclick="closePopup('call')">×</button>
-            </div>
+    <div class="console-content" id="consoleContent"></div>
+
+</div>
+
+
+<!-- MODE POPUP -->
+<div id="modePopup" class="popup-panel">
+
+    <div class="popup-header">
+        <h3>⚙️ Select mode</h3>
+        <button class="close-popup" onclick="closeModePopup()">×</button>
+    </div>
+
+    <div class="mode-option" data-mode="Line Following">
+        ➖ Line Following
+    </div>
+
+    <div class="mode-option" data-mode="Control">
+        🎮 Control
+    </div>
+
+    <div class="mode-option" data-mode="Self Drive">
+        🤖 Self Drive
+    </div>
+
+</div>
+
+
+<!-- CALL POPUP -->
+<div id="callPopup" class="popup-panel">
+
+    <div class="popup-header">
+        <h3>📞 Emergency</h3>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button 
+                class="btn-secondary"
+                id="editEmergencyBtn"
+                style="padding:8px 16px; font-size:12px;">
+                ✎ Edit
+            </button>
+
+            <button 
+                class="close-popup"
+                onclick="closePopup('call')">
+                ×
+            </button>
         </div>
+    </div>
         <div id="emergencyViewFields">
             <div class="contact-item">🚑 Ambulance <span style="margin-left:auto;">108</span></div>
             <div class="contact-item">👨‍⚕️ Dr. Adams <span>+1 555 1234</span></div>
