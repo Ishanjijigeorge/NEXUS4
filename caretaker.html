@@ -2372,7 +2372,7 @@ window.doc = doc;
             if (window.angleFetchInterval) clearInterval(window.angleFetchInterval);
             window.angleFetchInterval = setInterval(() => {
                 fetchAngleData();
-            }, 33);
+            }, 200);
             
             if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
             window.heartbeatInterval = setInterval(async () => {
