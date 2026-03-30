@@ -8,8 +8,8 @@
 #include <ArduinoJson.h>
 
 // ============= WIFI CONFIG =============
-const char* ssid = "5.0";
-const char* password = "ishan008";
+const char* ssid = "IQOO";
+const char* password = "123456789";
 
 WebServer server(80);
 HardwareSerial& arduinoSerial = Serial2;
