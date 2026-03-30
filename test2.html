@@ -1164,80 +1164,53 @@ function listenEmergencyContacts() {
         );
     }
     
+let lastDataReceived = Date.now();
+
 function listenESP32Status() {
-
+    // Listen to the correct path where ESP32 writes data
     const statusRef = ref(dbRealtime, 'wheelchair/status');
-
     onValue(statusRef, (snap) => {
-
         const s = snap.val();
-
-        if (s) {
-
+        if(s){
+            lastDataReceived = Date.now();
             updateConnectionStatus(true);
-
-            if (s.angle !== undefined)
-                updateAngleDisplay(s.angle);
-
-            if (s.speed !== undefined)
-                document.getElementById('speedValue').innerText =
-                    s.speed.toFixed(1) + ' m/s';
-
-            if (s.battery !== undefined)
-                document.getElementById('batteryValue').innerText =
-                    Math.round(s.battery) + '%';
-
-            if (s.obstacle !== undefined) {
-
-                const obsSpan = document.getElementById('obstacleValue');
-
+            if(s.angle!==undefined) updateAngleDisplay(s.angle);
+            if(s.speed!==undefined) document.getElementById('speedValue').innerText = s.speed.toFixed(1)+' m/s';
+            if(s.battery!==undefined) document.getElementById('batteryValue').innerText = Math.round(s.battery)+'%';
+            if(s.obstacle!==undefined){
+                const obsSpan=document.getElementById('obstacleValue');
                 obsSpan.innerText = s.obstacle;
-
-                obsSpan.className =
-                    'tele-value ' +
-                    (s.obstacle === 'Clear'
-                        ? 'obstacle-clear'
-                        : s.obstacle === 'Nearby'
-                        ? 'obstacle-warn'
-                        : 'obstacle-block');
+                obsSpan.className = 'tele-value '+(s.obstacle==='Clear'?'obstacle-clear':s.obstacle==='Nearby'?'obstacle-warn':'obstacle-block');
             }
-
-            if (s.direction !== undefined) {
-
-                const badge = document.getElementById('directionBadge');
-                const icon = document.getElementById('dirIconLarge');
-                const text = document.getElementById('dirTextLarge');
-
-                const icons = {
-                    forward: '⬆️',
-                    backward: '⬇️',
-                    left: '⬅️',
-                    right: '➡️',
-                    stop: '⏹️'
-                };
-
-                const texts = {
-                    forward: 'Moving forward',
-                    backward: 'Moving backward',
-                    left: 'Turning left',
-                    right: 'Turning right',
-                    stop: 'STOPPED'
-                };
-
-                badge.className = 'direction-status-badge ' + s.direction;
-                icon.innerHTML = icons[s.direction] || '⏹️';
-                text.innerHTML = texts[s.direction] || 'Stopped';
+            if(s.battery!==undefined) document.getElementById('rangeValue').innerText = ((s.battery/100)*8).toFixed(1)+' km';
+            if(s.direction!==undefined){
+                currentDirection=s.direction;
+                const badge=document.getElementById('directionBadge'), icon=document.getElementById('dirIconLarge'), text=document.getElementById('dirTextLarge');
+                badge.className='direction-status-badge '+s.direction;
+                const icons={forward:'⬆️',backward:'⬇️',left:'⬅️',right:'➡️',stop:'⏹️'};
+                const texts={forward:'Moving forward',backward:'Moving backward',left:'Turning left',right:'Turning right',stop:'STOPPED'};
+                icon.innerHTML=icons[s.direction]||'⏹️';
+                text.innerHTML=texts[s.direction]||'Stopped';
             }
-
-        } else {
-
-            updateConnectionStatus(false);
-
+            if(s.mode && s.mode!==currentMode){ 
+                currentMode=s.mode; 
+                updateModeUI(currentMode); 
+                addToNotificationLog('🔄 Drive Mode',`Mode: ${currentMode}`,new Date().toLocaleString(),false); 
+            }
         }
-
+    }, (err)=>{ 
+        console.log("Error listening to status:", err);
+        updateConnectionStatus(false); 
     });
+    
+    // Start heartbeat check
+    setInterval(() => {
+        if (Date.now() - lastDataReceived > 8000) {
+            updateConnectionStatus(false);
+        }
+    }, 3000);
+}
 
-}    
     async function sendCommandToESP32(type, value) {
         try{ await set(ref(dbRealtime, 'commands/lastCommand'), JSON.stringify({type,value,timestamp:Date.now(),source:'patient'})); showToast(`Command: ${value}`); return true; }
         catch(e){ showToast('Failed'); return false; }
