@@ -18,6 +18,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -74,86 +75,96 @@ window.doc = doc;
             font-size: 14px;
         }
 
-        /* Connection Status Indicator */
-        .connection-status {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: #dc2626;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    .connection-status {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: #dc2626;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    transition: all 0.2s ease;
+}
 
-        .connection-status.connected {
-            background: #10b981;
-        }
+.connection-status.connected {
+    background: #10b981;
+    border-color: white;
+}
 
-        .connection-status.disconnected {
-            background: #dc2626;
-        }
+.connection-status.disconnected {
+    background: #dc2626;
+    border-color: white;
+}
 
-        .connection-status .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: white;
-            animation: pulse 1.5s infinite;
-        }
+.connection-status .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    animation: pulse 1.5s infinite;
+}
 
-        .connection-status .baud-rate {
-            font-size: 9px;
-            opacity: 0.8;
-            margin-left: 8px;
-        }
+.connection-status .baud-rate {
+    font-size: 9px;
+    opacity: 0.9;
+    margin-left: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 12px;
+}
 
-        @keyframes pulse {
-            0% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(1.2);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
+@keyframes pulse {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
 
-        .connect-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: var(--blue);
-            color: white;
-            border: none;
-            border-radius: 40px;
-            padding: 12px 20px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-        }
+.connect-btn {
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    background: var(--blue);
+    color: white;
+    border: 2px solid white;
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
 
-        .connect-btn.connected {
-            background: var(--green);
-        }
+.connect-btn:active {
+    transform: scale(0.97);
+}
 
+.connect-btn.connected {
+    background: var(--green);
+    border-color: white;
+}
         .connect-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -1489,1460 +1500,723 @@ window.doc = doc;
         <span id="baudRate" class="baud-rate">(ESP32 Bridge)</span>
     </div>
 
-    <script type="module">
-        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-
-        const db = window.db;
-        const PATIENT_ID = "patient_main";
-        const MODE_ID = "drive_mode";
-        const EMERGENCY_ID = "emergency_status";
-        const speedSlider = document.getElementById("speedSlider");
-const speedPercent = document.getElementById("speedPercent");
-
-speedSlider.addEventListener("input", () => {
-    const value = speedSlider.value;
-    speedPercent.innerText = value + "%";
-});
-
-speedSlider.addEventListener("change", async () => {
-    const value = speedSlider.value;
-
-    try {
-        await fetch(`http://${esp32IP}/speed?speed=${value}`, {
-            method: "GET",
-            mode: "cors"
-        });
-
-        showToast(`⚡ Speed set to ${value}%`);
-    } catch (err) {
-        showToast("❌ Speed update failed");
-    }
-});
-
-        let patientData = {
-            fullName: 'Rebecca Rowe',
-            patientId: 'PT-10234',
-            age: '67',
-            bloodGroup: 'A+',
-            doctor: 'Dr. Sarah Adams',
-            contactNo: '+1 555 0199',
-            photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
-        };
-
-        let currentMode = 'Line Following';
-        let pendingMode = null;
-        let notifications = [];
-        let notificationCount = 0;
-        let emergencyActive = false;
-
-        // ESP32 Bridge Configuration
-        let esp32IP = "10.179.0.126";
-        let esp32Connected = false;
-        let lastPing = 0;
-        let lastCommandTime = 0;
-        let lastAngleValue = 0;
-        let angleUpdateCount = 0;
-        let lastFirebasePush = 0;
-        
-
-        // Health monitoring state
-        let lastHealthState = {
-            hr: 84,
-            bp: '130/80',
-            temp: 36.8,
-            o2: 98
-        };
-
-        let lastWheelState = {
-            battery: 82,
-            speed: 1.2,
-            angle: 0
-        };
-
-        let caretakerData = {
-            name: 'John Doe',
-            id: 'CT-2210',
-            email: 'john.d@care.com',
-            phone: '+1 555 7700',
-            facility: 'HomeCare Plus',
-            photo: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-            role: 'caretaker'
-        };
-
-        let emergencyContacts = [
-            { icon: '🚑', label: 'Ambulance', value: '108' },
-            { icon: '👨‍⚕️', label: 'Dr. Adams', value: '+1 555 1234' },
-            { icon: '🏠', label: 'Michael', value: '+1 555 8723' }
-        ];
-
-        function renderEmergencyContacts() {
-            const viewFields = document.getElementById('emergencyViewFields');
-            const editForm = document.getElementById('emergencyEditForm');
-            const editBtn = document.getElementById('editEmergencyBtn');
-            const saveBtn = document.getElementById('saveEmergencyBtn');
-            const cancelBtn = document.getElementById('cancelEmergencyBtn');
-
-            if (viewFields) {
-                viewFields.innerHTML = emergencyContacts.map((contact, index) =>
-                    `<div class="contact-item emergency-contact" data-contact-index="${index}">${contact.icon} ${contact.label} <span style="margin-left:auto;">${contact.value}</span></div>`
-                ).join('');
-                viewFields.querySelectorAll('.emergency-contact').forEach(contactEl => {
-                    contactEl.style.cursor = 'pointer';
-                    contactEl.onclick = () => {
-                        const index = Number(contactEl.dataset.contactIndex);
-                        if (!Number.isNaN(index) && emergencyContacts[index]) {
-                            callEmergencyNumber(emergencyContacts[index].value);
-                        }
-                    };
-                });
-            }
-            if (editForm) editForm.style.display = 'none';
-            if (saveBtn) saveBtn.style.display = 'none';
-            if (cancelBtn) cancelBtn.style.display = 'none';
-            if (editBtn) editBtn.style.display = 'inline-flex';
-            if (viewFields) viewFields.style.display = 'block';
-        }
-
-        function openEmergencyEditForm() {
-            const editForm = document.getElementById('emergencyEditForm');
-            const viewFields = document.getElementById('emergencyViewFields');
-            const editBtn = document.getElementById('editEmergencyBtn');
-            const saveBtn = document.getElementById('saveEmergencyBtn');
-            const cancelBtn = document.getElementById('cancelEmergencyBtn');
-
-            if (!editForm || !viewFields) return;
-
-            editForm.innerHTML = emergencyContacts.map((contact, index) => `
-                <div class="edit-field-row"><label>Contact ${index + 1} Label</label><input type="text" id="editEmergencyLabel${index}" value="${escapeHtml(contact.label)}"></div>
-                <div class="edit-field-row"><label>Contact ${index + 1} Number</label><input type="text" id="editEmergencyValue${index}" value="${escapeHtml(contact.value)}"></div>
-            `).join('');
-
-            viewFields.style.display = 'none';
-            editForm.style.display = 'block';
-            if (editBtn) editBtn.style.display = 'none';
-            if (saveBtn) saveBtn.style.display = 'inline-flex';
-            if (cancelBtn) cancelBtn.style.display = 'inline-flex';
-        }
-
-        function cancelEmergencyEdit() {
-            renderEmergencyContacts();
-        }
-        
-        function listenEmergencyContacts() {
-    const refDoc = doc(db, "settings", "emergency_contacts");
-
-    onSnapshot(refDoc, (snap) => {
-        if (snap.exists()) {
-            const data = snap.data();
-
-            emergencyContacts = data.contacts.map(c => {
-                const parts = c.label.split(" ");
-                return {
-                    icon: parts[0],
-                    label: parts.slice(1).join(" "),
-                    value: c.number
-                };
-            });
-
-            renderEmergencyContacts();
-        }
-    });
-}
-
-async function saveEmergencyContacts() {
-    emergencyContacts = emergencyContacts.map((contact, index) => ({
-        icon: contact.icon,
-        label: document.getElementById(`editEmergencyLabel${index}`)?.value.trim() || contact.label,
-        value: document.getElementById(`editEmergencyValue${index}`)?.value.trim() || contact.value
-    }));
-
-    // 🔥 SAVE TO FIRESTORE
-    const formatted = emergencyContacts.map(c => ({
-        label: `${c.icon} ${c.label}`,
-        number: c.value
-    }));
-
-    try {
-        await setDoc(doc(db, "settings", "emergency_contacts"), {
-            contacts: formatted
-        });
-
-        console.log("✅ Saved to Firestore:", formatted);
-
-        renderEmergencyContacts();
-        addNotification('✅ Emergency contacts saved', 'Saved permanently', false);
-        showToast("💾 Saved successfully");
-
-    } catch (error) {
-        console.error("❌ Save failed:", error);
-        showToast("❌ Failed to save contacts");
-    }
-}
-function callEmergencyNumber(number) {
-            const normalized = String(number).replace(/[^0-9+]/g, '');
-            if (!normalized) return;
-            window.location.href = `tel:${normalized}`;
-        }
-
-        function renderCaretakerProfile() {
-            const nameEl = document.getElementById('caretakerName');
-            const idDisplayEl = document.getElementById('caretakerIdDisplay');
-            const idValueEl = document.getElementById('caretakerIdValue');
-            const emailEl = document.getElementById('caretakerEmail');
-            const phoneEl = document.getElementById('caretakerPhone');
-            const facilityEl = document.getElementById('caretakerFacility');
-            const photoEl = document.getElementById('caretakerPhoto');
-            const editForm = document.getElementById('caretakerEditForm');
-            const viewFields = document.getElementById('caretakerViewFields');
-            const editBtn = document.getElementById('editCaretakerBtn');
-            const saveBtn = document.getElementById('saveCaretakerBtn');
-            const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
-
-            if (nameEl) nameEl.textContent = caretakerData.name;
-            if (idDisplayEl) idDisplayEl.textContent = `ID: ${caretakerData.id}`;
-            if (idValueEl) idValueEl.textContent = caretakerData.id;
-            if (emailEl) emailEl.textContent = caretakerData.email;
-            if (phoneEl) phoneEl.textContent = caretakerData.phone;
-            if (facilityEl) facilityEl.textContent = caretakerData.facility;
-            if (photoEl) photoEl.src = caretakerData.photo;
-
-            const profileNameEl = document.querySelector('#caretakerProfileBtn .profile-name');
-            if (profileNameEl) profileNameEl.textContent = caretakerData.name;
-
-            const profileRoleEl = document.querySelector('#caretakerProfileBtn .profile-role');
-            if (profileRoleEl) profileRoleEl.textContent = caretakerData.role;
-
-            if (editForm) editForm.style.display = 'none';
-            if (viewFields) viewFields.style.display = 'block';
-            if (editBtn) editBtn.style.display = 'inline-flex';
-            if (saveBtn) saveBtn.style.display = 'none';
-            if (cancelBtn) cancelBtn.style.display = 'none';
-        }
-        
-function recenterMap() {
-    if (!lastPatientLocation || !lastPatientLocation.lat) {
-        showToast("⚠️ Waiting for GPS data...");
-        return;
-    }
-
-    window.map.setView(
-        [lastPatientLocation.lat, lastPatientLocation.lng],
-        17
-    );
-
-    showToast("📍 Re-centered to patient");
-}
-function openCaretakerEditForm() {
-            const editForm = document.getElementById('caretakerEditForm');
-            const viewFields = document.getElementById('caretakerViewFields');
-            const editBtn = document.getElementById('editCaretakerBtn');
-            const saveBtn = document.getElementById('saveCaretakerBtn');
-            const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
-
-            if (!editForm || !viewFields) return;
-
-            editForm.innerHTML = `
-                <div class="edit-field-row"><label>Full Name</label><input type="text" id="editCaretakerName" value="${escapeHtml(caretakerData.name)}"></div>
-                <div class="edit-field-row"><label>Caretaker ID</label><input type="text" id="editCaretakerId" value="${escapeHtml(caretakerData.id)}"></div>
-                <div class="edit-field-row"><label>Email</label><input type="email" id="editCaretakerEmail" value="${escapeHtml(caretakerData.email)}"></div>
-                <div class="edit-field-row"><label>Phone</label><input type="text" id="editCaretakerPhone" value="${escapeHtml(caretakerData.phone)}"></div>
-                <div class="edit-field-row"><label>Facility</label><input type="text" id="editCaretakerFacility" value="${escapeHtml(caretakerData.facility)}"></div>
-            `;
-
-            viewFields.style.display = 'none';
-            editForm.style.display = 'block';
-            if (editBtn) editBtn.style.display = 'none';
-            if (saveBtn) saveBtn.style.display = 'inline-flex';
-            if (cancelBtn) cancelBtn.style.display = 'inline-flex';
-        }
-
-        function cancelCaretakerEdit() {
-            renderCaretakerProfile();
-        }
-
-async function saveCaretakerEdit() {
-    const newData = {
-        name: document.getElementById('editCaretakerName')?.value.trim() || caretakerData.name,
-        id: document.getElementById('editCaretakerId')?.value.trim() || caretakerData.id,
-        email: document.getElementById('editCaretakerEmail')?.value.trim() || caretakerData.email,
-        phone: document.getElementById('editCaretakerPhone')?.value.trim() || caretakerData.phone,
-        facility: document.getElementById('editCaretakerFacility')?.value.trim() || caretakerData.facility,
-        photo: caretakerData.photo,
-        role: caretakerData.role
+    const firebaseConfig = {
+        apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+        authDomain: "nexus-org-6e7e9.firebaseapp.com",
+        databaseURL: "https://nexus-org-6e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "nexus-org-6e7e9",
+        storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+        messagingSenderId: "989376914258",
+        appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+        measurementId: "G-TP1CVNYHNE"
     };
 
-    Object.assign(caretakerData, newData);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const dbRealtime = getDatabase(app);
+    
+    window.db = db;
+    window.dbRealtime = dbRealtime;
+    
+    const PATIENT_ID = "patient_main";
+    const MODE_ID = "drive_mode";
+    const EMERGENCY_ID = "emergency_status";
+    
+    let patientData = {
+        fullName: 'Rebecca Rowe',
+        patientId: 'PT-10234',
+        age: '67',
+        bloodGroup: 'A+',
+        doctor: 'Dr. Sarah Adams',
+        contactNo: '+1 555 0199',
+        photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+    };
 
-    // 🔥 SAVE TO FIRESTORE
-    await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData);
+    let currentMode = 'Line Following';
+    let notifications = [];
+    let notificationCount = 0;
+    let emergencyActive = false;
 
-    renderCaretakerProfile();
-    addNotification('✅ Caretaker Updated', 'Saved permanently', false);
-}
+    // ESP32 Bridge Configuration
+    let esp32IP = "10.179.0.126";
+    let esp32Connected = false;
+    let lastPing = 0;
+    let lastCommandTime = 0;
+    let lastAngleValue = 0;
+    let angleUpdateCount = 0;
+    let lastFirebasePush = 0;
+    
+    let lastHealthState = {
+        hr: 84,
+        bp: '130/80',
+        temp: 36.8,
+        o2: 98
+    };
 
-async function loadCaretakerFromFirestore() {
-    const refDoc = doc(db, "settings", "caretaker_profile");
-    const snap = await getDoc(refDoc);
+    let lastWheelState = {
+        battery: 82,
+        speed: 1.2,
+        angle: 0
+    };
 
-    if (snap.exists()) {
-        Object.assign(caretakerData, snap.data());
-        console.log("✅ Caretaker loaded:", caretakerData);
-    } else {
-        // First time → save default
-        await setDoc(refDoc, caretakerData);
+    let caretakerData = {
+        name: 'John Doe',
+        id: 'CT-2210',
+        email: 'john.d@care.com',
+        phone: '+1 555 7700',
+        facility: 'HomeCare Plus',
+        photo: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+        role: 'caretaker'
+    };
+
+    let emergencyContacts = [
+        { icon: '🚑', label: 'Ambulance', value: '108' },
+        { icon: '👨‍⚕️', label: 'Dr. Adams', value: '+1 555 1234' },
+        { icon: '🏠', label: 'Michael', value: '+1 555 8723' }
+    ];
+
+    // =============== CONNECTION SYNC FUNCTION ===============
+    async function syncConnectionStatusToFirebase(connected) {
+        try {
+            const connectionRef = ref(dbRealtime, 'esp32/connection');
+            await set(connectionRef, {
+                connected: connected,
+                ip: esp32IP,
+                timestamp: Date.now(),
+                lastSeen: Date.now()
+            });
+            console.log(`✅ Connection status synced: ${connected ? 'Connected' : 'Disconnected'}`);
+        } catch (error) {
+            console.error("Failed to sync connection status:", error);
+        }
     }
 
-    renderCaretakerProfile();
-}
-
-        const safetyChecks = {
-            'Line Following': [
-                'Ensure path is clear of obstacles',
-                'Check that line sensors are clean',
-                'Confirm maximum speed setting is safe',
-                'Verify emergency stop works'
-            ],
-            'Control': [
-                'Ensure joystick/control is responsive',
-                'Confirm user is ready to manual drive',
-                'Check area around wheelchair is clear',
-                'Verify speed limit is set to low'
-            ],
-            'Self Drive': [
-                'Ensure autonomy mode is enabled',
-                'Check map data is up-to-date',
-                'Confirm no passengers are in the way',
-                'Verify obstacle detection is active'
-            ]
-        };
-
-        // =============== FIXED ANGLE SENSING FUNCTIONS - SYNCHRONIZED ===============
-        
-       function updateAngleDisplay(angle) {
-    // Validate and clamp angle to -45 to 45 degrees
-    let validAngle = Math.min(45, Math.max(-45, angle));
-    
-    // Store for debug
-    lastAngleValue = validAngle;
-    angleUpdateCount++;
-    
-    // Update angle value display
-    const angleValueElem = document.getElementById('angleValue');
-    if (angleValueElem) {
-        const angleFormatted = validAngle.toFixed(1);
-        angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+    async function syncTelemetryToFirebase(data) {
+        try {
+            const telemetryRef = ref(dbRealtime, 'esp32/telemetry');
+            await set(telemetryRef, {
+                ...data,
+                timestamp: Date.now()
+            });
+        } catch (error) {
+            console.error("Failed to sync telemetry:", error);
+        }
     }
-    
-    // Get the track element to calculate positions
-    const track = document.getElementById('angleBarTrack');
-    if (track) {
-        const trackWidth = track.offsetWidth;
-        const centerX = trackWidth / 2;
-        const maxOffset = (trackWidth / 2) - 14; // Subtract half the dot width
+
+    // =============== ANGLE SENSING FUNCTIONS ===============
+    function updateAngleDisplay(angle) {
+        let validAngle = Math.min(45, Math.max(-45, angle));
+        lastAngleValue = validAngle;
+        angleUpdateCount++;
         
-        // Calculate dot position - moves in SAME direction as angle
-        // Positive angle = LEFT turn (dot moves LEFT)
-        // Negative angle = RIGHT turn (dot moves RIGHT)
-        const dotOffset = (validAngle / 45) * maxOffset;
-        const dotLeft = centerX + dotOffset;
+        const angleValueElem = document.getElementById('angleValue');
+        if (angleValueElem) {
+            const angleFormatted = validAngle.toFixed(1);
+            angleValueElem.innerHTML = `${angleFormatted}<span>°</span>`;
+        }
         
-        // Update indicator dot position
-        const indicatorDot = document.getElementById('angleIndicatorDot');
-        if (indicatorDot) {
-            indicatorDot.style.left = `${dotLeft}px`;
+        const track = document.getElementById('angleBarTrack');
+        if (track) {
+            const trackWidth = track.offsetWidth;
+            const centerX = trackWidth / 2;
+            const maxOffset = (trackWidth / 2) - 14;
+            const dotOffset = (validAngle / 45) * maxOffset;
+            const dotLeft = centerX - dotOffset;
+
+            const indicatorDot = document.getElementById('angleIndicatorDot');
+            if (indicatorDot) {
+                indicatorDot.style.left = `${dotLeft}px`;
+                if (Math.abs(validAngle) > 25) {
+                    indicatorDot.style.background = '#dc2626';
+                } else if (Math.abs(validAngle) > 18) {
+                    indicatorDot.style.background = '#f59e0b';
+                } else {
+                    indicatorDot.style.background = '#3b82f6';
+                }
+            }
             
-            // Change dot color based on severity
-            if (Math.abs(validAngle) > 25) {
-                indicatorDot.style.background = '#dc2626';
-                indicatorDot.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3)';
-            } else if (Math.abs(validAngle) > 18) {
-                indicatorDot.style.background = '#f59e0b';
-                indicatorDot.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.3)';
-            } else {
-                indicatorDot.style.background = '#3b82f6';
-                indicatorDot.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+            const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+            
+            const fillLeft = document.getElementById('angleFillLeft');
+            if (fillLeft) fillLeft.style.width = `${leftFillPercent}%`;
+            
+            const fillRight = document.getElementById('angleFillRight');
+            if (fillRight) fillRight.style.width = `${rightFillPercent}%`;
+        }
+        
+        const angleDirectionElem = document.getElementById('angleDirection');
+        const angleCard = document.getElementById('angleCard');
+        const angleStatus = document.getElementById('angleStatus');
+        const tiltValueInWheel = document.getElementById('tiltValue');
+        
+        let directionText = '';
+        let directionClass = '';
+        let directionIcon = '';
+        
+        if (validAngle > 5) {
+            directionIcon = '⬅️';
+            directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
+            directionClass = 'left';
+        } else if (validAngle < -5) {
+            directionIcon = '➡️';
+            directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
+            directionClass = 'right';
+        } else {
+            directionIcon = '✓';
+            directionText = 'STRAIGHT (centered)';
+            directionClass = 'straight';
+        }
+        
+        if (angleDirectionElem) {
+            angleDirectionElem.className = `angle-direction ${directionClass}`;
+            angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
+        }
+        
+        if (tiltValueInWheel) {
+            tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
+        }
+        
+        if (Math.abs(validAngle) > 25) {
+            angleCard.classList.add('angle-warning');
+            if (angleStatus) {
+                angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
+                angleStatus.style.background = '#fee2e2';
+                angleStatus.style.color = '#dc2626';
+            }
+        } else if (Math.abs(validAngle) > 18) {
+            angleCard.classList.add('angle-warning');
+            if (angleStatus) {
+                angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
+                angleStatus.style.background = '#fffbeb';
+                angleStatus.style.color = '#f59e0b';
+            }
+        } else {
+            angleCard.classList.remove('angle-warning');
+            if (angleStatus) {
+                angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
+                angleStatus.style.background = '#dcfce7';
+                angleStatus.style.color = '#166534';
             }
         }
         
-        // FIXED: Bar fill - MUST go in SAME direction as the dot
-        // LEFT fill (positive angle): expands from center to left
-        // RIGHT fill (negative angle): expands from center to right
-    const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
-const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
-        
-        // Update left fill (expands left from center) - for LEFT turn
-        const fillLeft = document.getElementById('angleFillLeft');
-        if (fillLeft) {
-            fillLeft.style.width = `${leftFillPercent}%`;
-            // Change color based on angle severity
-            if (validAngle > 25) {
-                fillLeft.style.background = 'linear-gradient(90deg, #dc2626, #f97316)';
-            } else if (validAngle > 18) {
-                fillLeft.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-            } else if (validAngle > 0) {
-                fillLeft.style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
+        lastWheelState.angle = validAngle;
+    }
+
+    // =============== ESP32 BRIDGE FUNCTIONS ===============
+    async function testESP32Connection() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            
+            const response = await fetch(`http://${esp32IP}/ping`, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const text = await response.text();
+                if (text === "PONG") {
+                    esp32Connected = true;
+                    updateConnectionStatus(true);
+                    lastPing = Date.now();
+                    return true;
+                }
             }
+        } catch (error) {
+            console.log("ESP32 not responding:", error);
         }
         
-        // Update right fill (expands right from center) - for RIGHT turn
-        const fillRight = document.getElementById('angleFillRight');
-        if (fillRight) {
-            fillRight.style.width = `${rightFillPercent}%`;
-            // Change color based on angle severity
-            if (validAngle < -25) {
-                fillRight.style.background = 'linear-gradient(90deg, #f97316, #dc2626)';
-            } else if (validAngle < -18) {
-                fillRight.style.background = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
-            } else if (validAngle < 0) {
-                fillRight.style.background = 'linear-gradient(90deg, #60a5fa, #3b82f6)';
-            }
-        }
+        esp32Connected = false;
+        updateConnectionStatus(false);
+        return false;
     }
-    
-    // Update direction text (using actual angle)
-    const angleDirectionElem = document.getElementById('angleDirection');
-    const angleCard = document.getElementById('angleCard');
-    const angleStatus = document.getElementById('angleStatus');
-    const tiltValueInWheel = document.getElementById('tiltValue');
-    
-    let directionText = '';
-    let directionClass = '';
-    let directionIcon = '';
-    
-    // Positive angle = LEFT turn
-    if (validAngle > 5) {
-        directionIcon = '⬅️';
-        directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
-        directionClass = 'left';
-    } else if (validAngle < -5) {
-        directionIcon = '➡️';
-        directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
-        directionClass = 'right';
-    } else {
-        directionIcon = '✓';
-        directionText = 'STRAIGHT (centered)';
-        directionClass = 'straight';
-    }
-    
-    if (angleDirectionElem) {
-        angleDirectionElem.className = `angle-direction ${directionClass}`;
-        angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
-    }
-    
-    // Update tilt value in wheel popup
-    if (tiltValueInWheel) {
-        tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
-    }
-    
-    // Update status and warnings
-    if (Math.abs(validAngle) > 25) {
-        angleCard.classList.add('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
-            angleStatus.style.background = '#fee2e2';
-            angleStatus.style.color = '#dc2626';
-            angleStatus.style.fontWeight = 'bold';
-        }
-        
-        // Add notification on threshold crossing
-        if (Math.abs(validAngle) > 25 && Math.abs(lastWheelState.angle) <= 25) {
-            addNotification('⚠️ CRITICAL Tilt Warning', `Wheelchair tilt is ${validAngle.toFixed(1)}° - IMMEDIATE ACTION REQUIRED!`, true);
-        }
-    } else if (Math.abs(validAngle) > 18) {
-        angleCard.classList.add('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°) - Reduce speed`;
-            angleStatus.style.background = '#fffbeb';
-            angleStatus.style.color = '#f59e0b';
-            angleStatus.style.fontWeight = '500';
-        }
-    } else if (Math.abs(validAngle) > 10) {
-        angleCard.classList.remove('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = `⚠️ Moderate tilt (${Math.abs(validAngle).toFixed(1)}°) - Be cautious`;
-            angleStatus.style.background = '#fffbeb';
-            angleStatus.style.color = '#f59e0b';
-            angleStatus.style.fontWeight = 'normal';
-        }
-    } else {
-        angleCard.classList.remove('angle-warning');
-        if (angleStatus) {
-            angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
-            angleStatus.style.background = '#dcfce7';
-            angleStatus.style.color = '#166534';
-            angleStatus.style.fontWeight = 'normal';
-        }
-    }
-    
-    // Update debug info every 10 updates
-    const debugElem = document.getElementById('angleDebug');
-    if (debugElem && angleUpdateCount % 10 === 0) {
-        debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
-    }
-    
-    lastWheelState.angle = validAngle;
-}
 
-        // Fast angle fetch with optimized polling
-        let angleFetchInterval = null;
-        let lastFetchTime = 0;
+    async function fetchAngleData() {
+        if (!esp32Connected) return;
 
-async function fetchAngleData() {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 1000);
 
-    if (!esp32Connected) return;
+            const res = await fetch(`http://${esp32IP}/telemetry`, {
+                signal: controller.signal
+            });
 
-    try {
+            clearTimeout(timeout);
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 1000);
+            if (res.ok) {
+                const data = await res.json();
+                
+                const angle = data.angle || 0;
+                const speed = data.speed || 0;
+                const battery = data.battery || 0;
+                const obstacle = data.obstacle || "Clear";
+                const direction = data.direction || "stop";
 
-        const res = await fetch(`http://${esp32IP}/telemetry`, {
-            signal: controller.signal
-        });
-
-        clearTimeout(timeout);
-
-        if (res.ok) {
-
-            const data = await res.json();
-
-            const angle = data.angle || 0;
-            const speed = data.speed || 0;
-            const battery = data.battery || 0;
-            const obstacle = data.obstacle || "Clear";
-            const direction = data.direction || "stop";
-
-            // update UI
-            updateAngleDisplay(angle);
-
-            // push to Firebase every 1 second
-            if (Date.now() - lastFirebasePush > 1000) {
-
-                const statusRef = ref(dbRealtime, "wheelchair/status");
-
-                await set(statusRef, {
+                updateAngleDisplay(angle);
+                
+                // Sync all telemetry to Firebase
+                const telemetryData = {
                     angle: angle,
                     speed: speed,
                     battery: battery,
                     obstacle: obstacle,
-                    direction: direction,
-                    timestamp: Date.now()
-                });
-
+                    direction: direction
+                };
+                await syncTelemetryToFirebase(telemetryData);
+                
                 lastFirebasePush = Date.now();
             }
-        }
-
-    } catch (e) {
-
-        console.log("Telemetry fetch error", e);
-
-    }
-}
-        // Parse angle from Arduino serial data
-        function parseAngleFromSerial(data) {
-            if (!data) return null;
-            
-            // Handle ANGLE: format
-            if (data.startsWith('ANGLE:')) {
-                const angleStr = data.substring(6).trim();
-                const angle = parseFloat(angleStr);
-                if (!isNaN(angle) && isFinite(angle)) {
-                    updateAngleDisplay(angle);
-                    return angle;
-                }
-            }
-            return null;
-        }
-
-        // Start fast angle monitoring (33ms for smooth animation - ~30fps)
-        function startAngleMonitoring() {
-            if (angleFetchInterval) clearInterval(angleFetchInterval);
-            angleFetchInterval = setInterval(() => {
-                fetchAngleData();
-            }, 33); // 33ms = ~30fps for smooth animation
-            console.log("Angle monitoring started at 33ms interval");
-        }
-
-        // Calibrate angle sensor
-        async function calibrateAngleSensor() {
-            if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected!");
-                return false;
-            }
-            
-            try {
-                const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache'
-                });
-                
-                if (response.ok) {
-                    showToast("📐 Calibration requested - keep wheelchair level");
-                    addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level for 5 seconds", false);
-                    // Reset to 0 temporarily
-                    updateAngleDisplay(0);
-                    
-                    // Add visual feedback
-                    const calibrateBtn = document.getElementById('calibrateAngleBtn');
-                    if (calibrateBtn) {
-                        calibrateBtn.textContent = 'Calibrating...';
-                        calibrateBtn.disabled = true;
-                        setTimeout(() => {
-                            calibrateBtn.textContent = 'Calibrate';
-                            calibrateBtn.disabled = false;
-                        }, 3000);
-                    }
-                    return true;
-                }
-            } catch (error) {
-                console.error("Calibration error:", error);
-                showToast("❌ Calibration failed");
-            }
-            return false;
-        }
-
-        // Add window resize handler to recalculate positions
-        window.addEventListener('resize', () => {
-            // Re-fetch and update angle after resize to correct positions
-            if (lastAngleValue !== undefined) {
-                setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
-            }
-        });
-
-        // =============== ESP32 BRIDGE FUNCTIONS ===============
-
-        async function testESP32Connection() {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                
-                const response = await fetch(`http://${esp32IP}/ping`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const text = await response.text();
-                    if (text === "PONG") {
-                        esp32Connected = true;
-                        updateConnectionStatus(true);
-                        lastPing = Date.now();
-                        startAngleMonitoring();
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.log("ESP32 not responding:", error);
-            }
-            
+        } catch (e) {
+            console.log("Telemetry fetch error", e);
             esp32Connected = false;
             updateConnectionStatus(false);
-            if (angleFetchInterval) clearInterval(angleFetchInterval);
-            return false;
         }
-
-        async function sendCommand(command) {
-            if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected! Check connection.");
-                return false;
-            }
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
-                
-                const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(command)}`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    console.log("Command sent:", command);
-                    showCommandFeedback(command);
-                    addToSerialConsole("→ " + command, true);
-                    return true;
-                } else {
-                    throw new Error("HTTP " + response.status);
-                }
-            } catch (error) {
-                console.error("Send error:", error);
-                showToast("❌ Failed to send command");
-                esp32Connected = false;
-                updateConnectionStatus(false);
-                return false;
-            }
-        }
-
-        async function sendEmergency() {
-            if (!esp32Connected) {
-                showToast("⚠️ ESP32 not connected!");
-                return false;
-            }
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
-                
-                const response = await fetch(`http://${esp32IP}/emergency`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    showToast("🚨 EMERGENCY STOP SENT");
-                    return true;
-                }
-            } catch (error) {
-                console.error("Emergency send error:", error);
-            }
-            return false;
-        }
-
-        function updateConnectionStatus(connected) {
-            const statusDiv = document.getElementById('connectionStatus');
-            const statusText = document.getElementById('connectionText');
-            const connectBtn = document.getElementById('connectBtn');
-            const angleStatus = document.getElementById('angleStatus');
-            
-            if (connected) {
-                statusDiv.className = 'connection-status connected';
-                statusText.innerText = `ESP32 Bridge (${esp32IP})`;
-                if (connectBtn) {
-                    connectBtn.innerHTML = '🔌 Disconnect';
-                    connectBtn.classList.add('connected');
-                }
-                if (angleStatus) {
-                    angleStatus.innerHTML = '✓ Connected - Receiving angle data';
-                    angleStatus.style.background = '#dcfce7';
-                    angleStatus.style.color = '#166534';
-                }
-            } else {
-                statusDiv.className = 'connection-status disconnected';
-                statusText.innerText = 'ESP32 Disconnected';
-                if (connectBtn) {
-                    connectBtn.innerHTML = '🔌 Connect to ESP32';
-                    connectBtn.classList.remove('connected');
-                }
-                if (angleStatus) {
-                    angleStatus.innerHTML = '⚠️ Disconnected - Waiting for ESP32';
-                    angleStatus.style.background = '#fee2e2';
-                    angleStatus.style.color = '#dc2626';
-                }
-            }
-        }
-
-        async function connectToESP32() {
-            if (esp32Connected) {
-                esp32Connected = false;
-                updateConnectionStatus(false);
-                showToast("Disconnected from ESP32");
-                if (angleFetchInterval) {
-                    clearInterval(angleFetchInterval);
-                }
-                return;
-            }
-            
-            showToast("🔍 Connecting to ESP32...");
-            
-            const connected = await testESP32Connection();
-            
-            if (connected) {
-                showToast("✅ Connected to ESP32 Bridge!");
-                addNotification("🔌 Connected", `Connected to ESP32 at ${esp32IP}`, false);
-                
-                if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
-                window.heartbeatInterval = setInterval(async () => {
-                    if (Date.now() - lastPing > 5000) {
-                        await testESP32Connection();
-                    }
-                }, 3000);
-            } else {
-                showToast("❌ Cannot reach ESP32. Check IP and WiFi.");
-                addNotification("⚠️ Connection Failed", "Cannot reach ESP32 bridge", true);
-            }
-        }
-
-        // =============== UI FUNCTIONS ===============
-
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        function showCommandFeedback(command) {
-            const feedback = document.createElement('div');
-            feedback.className = 'command-feedback';
-            feedback.textContent = `📡 ${command}`;
-            document.body.appendChild(feedback);
-            setTimeout(() => feedback.remove(), 2000);
-        }
-
-        function addToSerialConsole(message, isOutgoing = false) {
-            const consoleContent = document.getElementById('consoleContent');
-            if (!consoleContent) return;
-            
-            const time = new Date().toLocaleTimeString();
-            const prefix = isOutgoing ? '→ ' : '← ';
-            const color = isOutgoing ? '#a5f3c3' : '#fbbf24';
-            
-            const line = document.createElement('div');
-            line.innerHTML = `<span style="color:${color}">${prefix}</span><span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
-            consoleContent.appendChild(line);
-            
-            // Auto-parse angle data from serial
-            if (!isOutgoing) {
-                parseAngleFromSerial(message);
-            }
-            
-            line.scrollIntoView();
-            
-            while (consoleContent.children.length > 200) {
-                consoleContent.removeChild(consoleContent.firstChild);
-            }
-        }
-
-        function toggleSerialConsole() {
-            const consoleDiv = document.getElementById('serialConsole');
-            consoleDiv.classList.toggle('show');
-        }
-
-        function showAlertPopup(title, message) {
-            const existingPopup = document.querySelector('.alert-popup');
-            if (existingPopup) existingPopup.remove();
-            
-            const popup = document.createElement('div');
-            popup.className = 'alert-popup';
-            popup.innerHTML = `
-                <div class="alert-icon">⚠️</div>
-                <div class="alert-title">${escapeHtml(title)}</div>
-                <div class="alert-message">${escapeHtml(message)}</div>
-                <button onclick="this.parentElement.remove()">Dismiss</button>
-            `;
-            document.body.appendChild(popup);
-            
-            setTimeout(() => {
-                if (popup.parentElement) popup.remove();
-            }, 8000);
-        }
-
-        function addNotification(title, message, isWarning = false) {
-            const notification = {
-                id: Date.now() + Math.random(),
-                title: title,
-                message: message,
-                time: new Date().toLocaleString(),
-                isWarning: isWarning
-            };
-            notifications.unshift(notification);
-            notificationCount++;
-            updateNotificationBadge();
-            updateNotificationList();
-            
-            if (isWarning) {
-                showAlertPopup(title, message);
-            }
-            showToast(`📢 ${title}`);
-        }
-
-        function updateNotificationBadge() {
-            const badge = document.getElementById('notificationBadge');
-            if (notificationCount > 0) {
-                badge.style.display = 'flex';
-                badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        function updateNotificationList() {
-            const container = document.getElementById('notificationList');
-            if (!container) return;
-            
-            if (notifications.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No notifications yet</div>';
-                return;
-            }
-            
-            container.innerHTML = notifications.map(n => `
-                <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
-                    <div class="log-title">${escapeHtml(n.title)}</div>
-                    <div class="log-message">${escapeHtml(n.message)}</div>
-                    <div class="log-time">${n.time}</div>
-                </div>
-            `).join('');
-        }
-
-        function clearAllNotifications() {
-            notifications = [];
-            notificationCount = 0;
-            updateNotificationBadge();
-            updateNotificationList();
-            showToast('All notifications cleared');
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        // =============== MODE CONTROL ===============
-
-        function confirmModeSwitch(mode) {
-            const checks = safetyChecks[mode];
-            if (!checks) return;
-            pendingMode = mode;
-            
-            const existingPopup = document.getElementById('safetyPopup');
-            if (existingPopup) existingPopup.remove();
-            
-            const modal = document.createElement('div');
-            modal.className = 'popup-panel';
-            modal.id = 'safetyPopup';
-            modal.innerHTML = `
-                <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
-                <div style="margin: 16px 0;">
-                    ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
-                </div>
-                <div style="display: flex; gap: 12px;">
-                    <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
-                    <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            modal.style.display = 'block';
-            
-            document.getElementById('confirmSwitchBtn').onclick = async () => {
-                const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
-                let allChecked = true;
-                checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
-                if (!allChecked) {
-                    showToast('⚠️ Please tick all safety checkboxes');
-                    return;
-                }
-                
-                await sendCommand("CMD:stop");
-                
-                if (await sendCommand(`MODE:${mode}`)) {
-                    currentMode = mode;
-                    document.getElementById('modeDisplay').innerText = currentMode;
-                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-                    modal.remove();
-                    await saveModeToFirestore(currentMode);
-                    addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
-                }
-            };
-        }
-
-        async function saveModeToFirestore(mode) {
-            const modeRef = doc(db, "settings", MODE_ID);
-            await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
-        }
-
-        function sendControlCommand(cmd) {
-            if (currentMode !== 'Control') {
-                showToast("Not in Control mode");
-                return;
-            }
-            
-            const now = Date.now();
-            if (now - lastCommandTime < 100) return;
-            lastCommandTime = now;
-            
-            sendCommand(`CMD:${cmd}`);
-        }
-
-        // =============== EMERGENCY FUNCTIONS ===============
-
-        async function triggerEmergency() {
-            emergencyActive = true;
-            await sendEmergency();
-            
-            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-            await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
-            document.body.classList.add('emergency-shutdown');
-            document.getElementById('shutdownOverlay').style.display = 'flex';
-            addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
-            
-            setTimeout(async () => {
-                await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
-                emergencyActive = false;
-            }, 5000);
-        }
-
-        function closeShutdown() {
-            if (emergencyActive) {
-                const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-                setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
-                emergencyActive = false;
-            }
-            document.body.classList.remove('emergency-shutdown');
-            document.getElementById('shutdownOverlay').style.display = 'none';
-        }
-
-        function listenEmergencyFromPatient() {
-            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-            onSnapshot(emergencyRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
-                    emergencyActive = true;
-                    sendEmergency();
-                    document.body.classList.add('emergency-shutdown');
-                    document.getElementById('shutdownOverlay').style.display = 'flex';
-                    addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
-                } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
-                    emergencyActive = false;
-                    document.body.classList.remove('emergency-shutdown');
-                    document.getElementById('shutdownOverlay').style.display = 'none';
-                }
-            });
-        }
-
-        // =============== PATIENT MANAGEMENT ===============
-
-        async function loadPatientFromFirestore() {
-            const patientRef = doc(db, "patients", PATIENT_ID);
-            const docSnap = await getDoc(patientRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                Object.assign(patientData, data);
-            } else {
-                await setDoc(patientRef, patientData);
-            }
-            renderPatientDetails();
-        }
-
-        async function syncPatientToFirestore() {
-            const patientRef = doc(db, "patients", PATIENT_ID);
-            await setDoc(patientRef, patientData, { merge: true });
-            showToast('✅ Patient data saved permanently');
-        }
-
-        function renderPatientDetails() {
-            const grid = document.getElementById('patientDetailsGrid');
-            const fields = [
-                { label: 'Blood Group', key: 'bloodGroup' },
-                { label: 'Age', key: 'age' },
-                { label: 'Doctor', key: 'doctor' },
-                { label: 'Contact', key: 'contactNo' }
-            ];
-            grid.innerHTML = '';
-            fields.forEach(f => {
-                const div = document.createElement('div');
-                div.className = 'detail-item';
-                div.innerHTML = `<span class="detail-label">${f.label}</span>
-                <div class="detail-value">${patientData[f.key] || '—'}</div>`;
-                grid.appendChild(div);
-            });
-            document.getElementById('patientNameDisplay').innerText = patientData.fullName;
-            document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.patientId} · ${patientData.age}y`;
-            document.getElementById('patientPhoto').src = patientData.photo;
-            refreshPatientMarkerIcon();
-        }
-
-        function openEditPatientPopup() {
-            const formContainer = document.getElementById('editPatientForm');
-            formContainer.innerHTML = `
-                <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${escapeHtml(patientData.fullName)}"></div>
-                <div class="edit-field-row"><label>Patient ID</label><input type="text" id="editPatientId" value="${patientData.patientId}"></div>
-                <div class="edit-field-row"><label>Age</label><input type="text" id="editAge" value="${patientData.age}"></div>
-                <div class="edit-field-row"><label>Blood Group</label><input type="text" id="editBloodGroup" value="${patientData.bloodGroup}"></div>
-                <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${escapeHtml(patientData.doctor)}"></div>
-                <div class="edit-field-row"><label>Contact Number</label><input type="text" id="editContactNo" value="${patientData.contactNo}"></div>
-                <div class="edit-field-row"><label>Photo URL</label><input type="text" id="editPhotoUrl" value="${patientData.photo}"></div>
-            `;
-            document.getElementById('editPatientPopup').style.display = 'block';
-        }
-
-        async function savePatientEdits() {
-            const newData = {
-                fullName: document.getElementById('editFullName')?.value || patientData.fullName,
-                patientId: document.getElementById('editPatientId')?.value || patientData.patientId,
-                age: document.getElementById('editAge')?.value || patientData.age,
-                bloodGroup: document.getElementById('editBloodGroup')?.value || patientData.bloodGroup,
-                doctor: document.getElementById('editDoctor')?.value || patientData.doctor,
-                contactNo: document.getElementById('editContactNo')?.value || patientData.contactNo,
-                photo: document.getElementById('editPhotoUrl')?.value || patientData.photo
-            };
-            
-            Object.assign(patientData, newData);
-            renderPatientDetails();
-            await syncPatientToFirestore();
-            closeEditPatientPopup();
-            addNotification('✅ Patient Updated', 'Patient details have been updated successfully', false);
-        }
-
-        // =============== PATIENT ACTIONS ===============
-
-        async function saveActionToFirestore(type, data) {
-            const actionsRef = doc(db, "patientActions", "feed");
-            try {
-                const docSnap = await getDoc(actionsRef);
-                if (docSnap.exists()) {
-                    await updateDoc(actionsRef, {
-                        [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
-                    });
-                } else {
-                    await setDoc(actionsRef, { [type]: [data] });
-                }
-            } catch (error) {
-                console.error("Error saving action:", error);
-                await setDoc(actionsRef, { [type]: [data] });
-            }
-            addNotification('✅ Action Saved', `${type} saved to patient dashboard`, false);
-        }
-
-        window.sendMessage = async () => {
-            const msg = document.getElementById('messageText')?.value;
-            if (!msg) return showToast('Please enter a message');
-            await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleString() });
-            showToast(`💬 Message sent to patient`);
-            document.getElementById('messageText').value = '';
-            closePatientSubmenu();
-        };
-
-        window.saveCalendar = async () => {
-            const event = document.getElementById('calendarEvent')?.value;
-            const dt = document.getElementById('calendarDateTime')?.value;
-            if (!event) return showToast('Please enter an event');
-            await saveActionToFirestore("calendar", { title: event, detail: dt || "No time set", time: dt });
-            showToast(`📅 Calendar event added`);
-            closePatientSubmenu();
-        };
-
-        window.bookAppointment = async () => {
-            const dr = document.getElementById('apptDoctor')?.value;
-            const hosp = document.getElementById('apptHospital')?.value;
-            const dt = document.getElementById('apptDateTime')?.value;
-            if (!dr) return showToast('Please enter doctor name');
-            await saveActionToFirestore("appointments", { title: dr, detail: hosp || "Clinic visit", time: dt });
-            showToast(`📋 Appointment booked with ${dr}`);
-            closePatientSubmenu();
-        };
-
-        window.playMedia = async () => {
-            await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
-            showToast(`🎵 Media player started`);
-            closePatientSubmenu();
-        };
-
-        window.setAlarm = async () => {
-            const label = document.getElementById('alarmLabel')?.value;
-            const dt = document.getElementById('alarmDateTime')?.value;
-            if (!label) return showToast('Please enter alarm label');
-            await saveActionToFirestore("alarms", { title: label, detail: dt || "Now", time: dt });
-            showToast(`⏰ Alarm set: ${label}`);
-            closePatientSubmenu();
-        };
-
-        window.showPatientSubmenu = (option) => {
-            document.getElementById('patientMainMenu').style.display = 'none';
-            let title = '', content = '';
-            if (option === 'message') {
-                title = '💬 Send message';
-                content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
-                <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-            } else if (option === 'calendar') {
-                title = '📅 Mark calendar';
-                content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-                <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-            } else if (option === 'appointment') {
-                title = '📋 Book appointment';
-                content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
-                <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-                <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-            } else if (option === 'media') {
-                title = '🎵 Media & music';
-                content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
-            } else if (option === 'alarm') {
-                title = '⏰ Set alarm';
-                content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
-                <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-                <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-            }
-            document.getElementById('submenuTitle').innerText = title;
-            document.getElementById('submenuContent').innerHTML = content;
-            document.getElementById('patientSubmenu').style.display = 'block';
-            
-            setTimeout(() => {
-                if (option === 'message') document.getElementById('sendMsgBtn')?.addEventListener('click', window.sendMessage);
-                if (option === 'calendar') {
-                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-                    document.getElementById('saveCalendarBtn')?.addEventListener('click', window.saveCalendar);
-                }
-                if (option === 'appointment') {
-                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-                    document.getElementById('bookApptBtn')?.addEventListener('click', window.bookAppointment);
-                }
-                if (option === 'media') document.getElementById('playMediaBtn')?.addEventListener('click', window.playMedia);
-                if (option === 'alarm') {
-                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-                    document.getElementById('setAlarmBtn')?.addEventListener('click', window.setAlarm);
-                }
-            }, 50);
-        };
-
-        // =============== HEALTH MONITORING (SIMULATION) ===============
-
-        function simulateHealthMonitoring() {
-            let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
-            hr = Math.min(120, Math.max(55, hr));
-            
-            let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
-            temp = Math.min(39, Math.max(35, temp));
-            
-            let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
-            o2 = Math.min(100, Math.max(90, o2));
-            
-            let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
-            let diastolic = 80 + (systolic - 120) * 0.6;
-            systolic = Math.min(160, Math.max(90, systolic));
-            diastolic = Math.min(100, Math.max(60, diastolic));
-            const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
-            
-            document.getElementById('hrValue').innerText = hr;
-            document.getElementById('tempValue').innerText = temp.toFixed(1);
-            document.getElementById('o2Value').innerText = o2;
-            document.getElementById('bpValue').innerText = bp;
-            
-            if (hr < 60 || hr > 100) {
-                if (lastHealthState.hr >= 60 && lastHealthState.hr <= 100) {
-                    addNotification('⚠️ Abnormal Heart Rate', `Patient heart rate is ${hr} bpm (normal: 60-100)`, true);
-                    document.getElementById('healthHeartItem').classList.add('warning');
-                }
-            } else {
-                document.getElementById('healthHeartItem').classList.remove('warning');
-            }
-            
-            if (temp < 36.1 || temp > 37.2) {
-                if (lastHealthState.temp >= 36.1 && lastHealthState.temp <= 37.2) {
-                    addNotification('⚠️ Abnormal Temperature', `Patient temperature is ${temp.toFixed(1)}°C (normal: 36.1-37.2)`, true);
-                    document.getElementById('healthTempItem').classList.add('warning');
-                }
-            } else {
-                document.getElementById('healthTempItem').classList.remove('warning');
-            }
-            
-            if (o2 < 95) {
-                if (lastHealthState.o2 >= 95) {
-                    addNotification('⚠️ Low Oxygen Level', `Patient SpO₂ is ${o2}% (normal: 95-100)`, true);
-                    document.getElementById('healthO2Item').classList.add('warning');
-                }
-            } else {
-                document.getElementById('healthO2Item').classList.remove('warning');
-            }
-            
-            if (systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90) {
-                if (lastHealthState.bp.split('/')[0] >= 90 && lastHealthState.bp.split('/')[0] <= 140) {
-                    addNotification('⚠️ Abnormal Blood Pressure', `Patient BP is ${bp} mmHg (normal: 90-140/60-90)`, true);
-                    document.getElementById('healthBPItem').classList.add('warning');
-                }
-            } else {
-                document.getElementById('healthBPItem').classList.remove('warning');
-            }
-            
-            lastHealthState = { hr, temp, o2, bp };
-        }
-
-        function simulateWheelchairMonitoring() {
-let battery = 89;
-battery = Math.max(10, Math.min(100, battery));
-            
-            let speed = (Math.random() * 1.5 + 0.6).toFixed(1);
-            
-            document.getElementById('batteryValue').innerText = Math.round(battery) + '%';
-            document.getElementById('speedValue').innerText = speed + ' m/s';
-            
-            const r = Math.random();
-            const obstacle = r < 0.6 ? 'Clear' : (r < 0.9 ? 'Nearby' : 'Blocked');
-            const range = (Math.random() * 8 + 2).toFixed(1);
-            document.getElementById('obstacleValue').innerText = obstacle;
-            document.getElementById('rangeValue').innerText = range + ' km';
-            
-            if (battery < 20 && lastWheelState.battery >= 20) {
-                addNotification('⚠️ Low Battery', `Wheelchair battery is ${Math.round(battery)}% - Please charge soon`, true);
-                document.getElementById('batteryDetail').classList.add('warning');
-            } else if (battery >= 20) {
-                document.getElementById('batteryDetail').classList.remove('warning');
-            }
-            
-            const speedNum = parseFloat(speed);
-            if (speedNum > 2.0 && lastWheelState.speed <= 2.0) {
-                addNotification('⚠️ High Speed', `Wheelchair speed is ${speedNum} m/s - Please reduce speed`, true);
-                document.getElementById('speedDetail').classList.add('warning');
-            } else if (speedNum <= 2.0) {
-                document.getElementById('speedDetail').classList.remove('warning');
-            }
-                    }
-                    
-async function fetchRealSpeed() {
-    if (!esp32Connected) return;
-
-    try {
-        const res = await fetch(`http://${esp32IP}/telemetry`, {
-            method: "GET",
-            mode: "cors",
-            cache: "no-cache"
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-
-            const speed = data.speed || 0;
-
-            // 🔥 UPDATE UI
-            document.getElementById("speedValue").innerText = speed.toFixed(2) + " m/s";
-
-            // 🔥 OPTIONAL: warning logic
-            const speedDetail = document.getElementById("speedDetail");
-
-            if (speed > 1.2) {
-                speedDetail.classList.add("warning");
-            } else {
-                speedDetail.classList.remove("warning");
-            }
-        }
-
-    } catch (err) {
-        console.log("Speed fetch error");
     }
-}
 
-        // =============== POPUP FUNCTIONS ===============
-
-        function closeAllPopups() {
-            document.querySelectorAll('.popup-panel').forEach(p => p.style.display = 'none');
-            document.getElementById('safetyPopup')?.remove();
+    async function sendCommand(command) {
+        if (!esp32Connected) {
+            showToast("⚠️ ESP32 not connected! Check connection.");
+            return false;
         }
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1000);
+            
+            const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(command)}`, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                console.log("Command sent:", command);
+                showCommandFeedback(command);
+                return true;
+            } else {
+                throw new Error("HTTP " + response.status);
+            }
+        } catch (error) {
+            console.error("Send error:", error);
+            showToast("❌ Failed to send command");
+            esp32Connected = false;
+            updateConnectionStatus(false);
+            return false;
+        }
+    }
 
-        window.setMode = function(mode) {
-            closeModePopup();
-            confirmModeSwitch(mode);
+    async function sendEmergency() {
+        if (!esp32Connected) {
+            showToast("⚠️ ESP32 not connected!");
+            return false;
+        }
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1000);
+            
+            const response = await fetch(`http://${esp32IP}/emergency`, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                showToast("🚨 EMERGENCY STOP SENT");
+                return true;
+            }
+        } catch (error) {
+            console.error("Emergency send error:", error);
+        }
+        return false;
+    }
+
+    function updateConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionText');
+        const connectBtn = document.getElementById('connectBtn');
+        const angleStatus = document.getElementById('angleStatus');
+        
+        if (connected) {
+            statusDiv.className = 'connection-status connected';
+            statusText.innerText = `ESP32 Bridge (${esp32IP})`;
+            if (connectBtn) {
+                connectBtn.innerHTML = '🔌 Disconnect';
+                connectBtn.classList.add('connected');
+            }
+            if (angleStatus) {
+                angleStatus.innerHTML = '✓ Connected - Receiving angle data';
+                angleStatus.style.background = '#dcfce7';
+                angleStatus.style.color = '#166534';
+            }
+        } else {
+            statusDiv.className = 'connection-status disconnected';
+            statusText.innerText = 'ESP32 Disconnected';
+            if (connectBtn) {
+                connectBtn.innerHTML = '🔌 Connect to ESP32';
+                connectBtn.classList.remove('connected');
+            }
+            if (angleStatus) {
+                angleStatus.innerHTML = '⚠️ Disconnected - Waiting for ESP32';
+                angleStatus.style.background = '#fee2e2';
+                angleStatus.style.color = '#dc2626';
+            }
+        }
+        
+        // Sync connection status to Firebase for patient page
+        syncConnectionStatusToFirebase(connected);
+    }
+
+    async function connectToESP32() {
+        if (esp32Connected) {
+            esp32Connected = false;
+            updateConnectionStatus(false);
+            showToast("Disconnected from ESP32");
+            if (window.angleFetchInterval) {
+                clearInterval(window.angleFetchInterval);
+            }
+            return;
+        }
+        
+        showToast("🔍 Connecting to ESP32...");
+        
+        const connected = await testESP32Connection();
+        
+        if (connected) {
+            showToast("✅ Connected to ESP32 Bridge!");
+            addNotification("🔌 Connected", `Connected to ESP32 at ${esp32IP}`, false);
+            
+            if (window.angleFetchInterval) clearInterval(window.angleFetchInterval);
+            window.angleFetchInterval = setInterval(() => {
+                fetchAngleData();
+            }, 33);
+            
+            if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
+            window.heartbeatInterval = setInterval(async () => {
+                if (Date.now() - lastPing > 5000) {
+                    await testESP32Connection();
+                }
+            }, 3000);
+        } else {
+            showToast("❌ Cannot reach ESP32. Check IP and WiFi.");
+            addNotification("⚠️ Connection Failed", "Cannot reach ESP32 bridge", true);
+        }
+    }
+
+    // =============== UI FUNCTIONS ===============
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function showCommandFeedback(command) {
+        const feedback = document.createElement('div');
+        feedback.className = 'command-feedback';
+        feedback.textContent = `📡 ${command}`;
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 2000);
+    }
+
+    function addNotification(title, message, isWarning = false) {
+        const notification = {
+            id: Date.now() + Math.random(),
+            title: title,
+            message: message,
+            time: new Date().toLocaleString(),
+            isWarning: isWarning
         };
+        notifications.unshift(notification);
+        notificationCount++;
+        updateNotificationBadge();
+        updateNotificationList();
+        
+        if (isWarning) {
+            showAlertPopup(title, message);
+        }
+        showToast(`📢 ${title}`);
+    }
 
-        window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
-        window.closePopup = (type) => {
-            if (type === 'call') document.getElementById('callPopup').style.display = 'none';
-            if (type === 'health') document.getElementById('healthPopup').style.display = 'none';
-            if (type === 'wheel') document.getElementById('wheelPopup').style.display = 'none';
-        };
-        window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display = 'none';
-        window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display = 'none';
-        window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
-        window.closeCaretakerPopup = () => {
-            cancelCaretakerEdit();
-            document.getElementById('caretakerPopup').style.display = 'none';
-        };
-        window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
-        window.closeShutdown = closeShutdown;
-        window.clearAllNotifications = clearAllNotifications;
-        window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
-        window.toggleSerialConsole = toggleSerialConsole;
-        window.calibrateAngleSensor = calibrateAngleSensor;
+    function updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        if (notificationCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
 
-        // =============== INITIALIZATION ===============
+    function updateNotificationList() {
+        const container = document.getElementById('notificationList');
+        if (!container) return;
+        
+        if (notifications.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No notifications yet</div>';
+            return;
+        }
+        
+        container.innerHTML = notifications.slice(0, 50).map(n => `
+            <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
+                <div class="log-title">${escapeHtml(n.title)}</div>
+                <div class="log-message">${escapeHtml(n.message)}</div>
+                <div class="log-time">${n.time}</div>
+            </div>
+        `).join('');
+    }
 
-        document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    function clearAllNotifications() {
+        notifications = [];
+        notificationCount = 0;
+        updateNotificationBadge();
+        updateNotificationList();
+        showToast('All notifications cleared');
+    }
 
-    const reader = new FileReader();
+    function showAlertPopup(title, message) {
+        const existingPopup = document.querySelector('.alert-popup');
+        if (existingPopup) existingPopup.remove();
+        
+        const popup = document.createElement('div');
+        popup.className = 'alert-popup';
+        popup.innerHTML = `
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-title">${escapeHtml(title)}</div>
+            <div class="alert-message">${escapeHtml(message)}</div>
+            <button onclick="this.parentElement.remove()">Dismiss</button>
+        `;
+        document.body.appendChild(popup);
+        
+        setTimeout(() => {
+            if (popup.parentElement) popup.remove();
+        }, 8000);
+    }
 
-    reader.onload = (ev) => {
-        const img = new Image();
-        img.src = ev.target.result;
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 
-        img.onload = async () => {
-            // 🔧 Create canvas for compression
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-
-            // Resize settings
-            const maxWidth = 300;
-            const scale = maxWidth / img.width;
-
-            canvas.width = maxWidth;
-            canvas.height = img.height * scale;
-
-            // Draw resized image
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            // 🔥 Compress image (very important for Firestore)
-            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-
-            // Save to patientData
-            patientData.photo = compressedBase64;
-
-            // Update UI instantly
-            document.getElementById('patientPhoto').src = compressedBase64;
-            refreshPatientMarkerIcon();
-
-            // Save to Firestore (permanent across devices)
-            await syncPatientToFirestore();
-
-            addNotification('📸 Photo Updated', 'Patient photo saved permanently', false);
-            showToast("✅ Image uploaded & synced");
-        };
+    // =============== MODE CONTROL ===============
+    const safetyChecks = {
+        'Line Following': [
+            'Ensure path is clear of obstacles',
+            'Check that line sensors are clean',
+            'Confirm maximum speed setting is safe',
+            'Verify emergency stop works'
+        ],
+        'Control': [
+            'Ensure joystick/control is responsive',
+            'Confirm user is ready to manual drive',
+            'Check area around wheelchair is clear',
+            'Verify speed limit is set to low'
+        ],
+        'Self Drive': [
+            'Ensure autonomy mode is enabled',
+            'Check map data is up-to-date',
+            'Confirm no passengers are in the way',
+            'Verify obstacle detection is active'
+        ]
     };
 
-    reader.readAsDataURL(file);
-});
+    function confirmModeSwitch(mode) {
+        const checks = safetyChecks[mode];
+        if (!checks) return;
+        let pendingMode = mode;
+        
+        const existingPopup = document.getElementById('safetyPopup');
+        if (existingPopup) existingPopup.remove();
+        
+        const modal = document.createElement('div');
+        modal.className = 'popup-panel';
+        modal.id = 'safetyPopup';
+        modal.innerHTML = `
+            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
+            <div style="margin: 16px 0;">
+                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
+                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+        
+        document.getElementById('confirmSwitchBtn').onclick = async () => {
+            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
+            let allChecked = true;
+            checkboxes.forEach(cb => { if (!cb.checked) allChecked = false; });
+            if (!allChecked) {
+                showToast('⚠️ Please tick all safety checkboxes');
+                return;
+            }
+            
+            await sendCommand("CMD:stop");
+            
+            if (await sendCommand(`MODE:${mode}`)) {
+                currentMode = mode;
+                document.getElementById('modeDisplay').innerText = currentMode;
+                document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                modal.remove();
+                await saveModeToFirestore(currentMode);
+                addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
+            }
+        };
+    }
 
-        document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
-        document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
-        document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
-        document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); renderCaretakerProfile(); document.getElementById('caretakerPopup').style.display = 'block'; };
-        document.getElementById('callIcon').onclick = () => { closeAllPopups(); renderEmergencyContacts(); document.getElementById('callPopup').style.display = 'block'; };
-        document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display = 'block'; };
-        document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display = 'block'; };
-        document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display = 'block'; };
-        document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
-        document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
-        document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
-        document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
-        document.getElementById('connectBtn').onclick = connectToESP32;
-        document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
-        document.getElementById('editCaretakerBtn').onclick = openCaretakerEditForm;
-        document.getElementById('saveCaretakerBtn').onclick = saveCaretakerEdit;
-        document.getElementById('cancelCaretakerEditBtn').onclick = cancelCaretakerEdit;
-        document.getElementById('editEmergencyBtn').onclick = openEmergencyEditForm;
-        document.getElementById('saveEmergencyBtn').onclick = saveEmergencyContacts;
-        document.getElementById('cancelEmergencyBtn').onclick = cancelEmergencyEdit;
+    async function saveModeToFirestore(mode) {
+        const modeRef = doc(db, "settings", MODE_ID);
+        await setDoc(modeRef, { mode: mode, timestamp: new Date().toISOString() });
+    }
 
-        document.querySelectorAll('.ctrl-btn').forEach(btn => {
-            btn.onclick = () => sendControlCommand(btn.dataset.cmd);
+    function sendControlCommand(cmd) {
+        if (currentMode !== 'Control') {
+            showToast("Not in Control mode");
+            return;
+        }
+        
+        const now = Date.now();
+        if (now - lastCommandTime < 100) return;
+        lastCommandTime = now;
+        
+        sendCommand(`CMD:${cmd}`);
+    }
+
+    // =============== EMERGENCY FUNCTIONS ===============
+    async function triggerEmergency() {
+        emergencyActive = true;
+        await sendEmergency();
+        
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        await setDoc(emergencyRef, { active: true, triggeredBy: 'caretaker', timestamp: new Date().toISOString() });
+        document.body.classList.add('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'flex';
+        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
+        
+        setTimeout(async () => {
+            await setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }, 5000);
+    }
+
+    function closeShutdown() {
+        if (emergencyActive) {
+            const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+            setDoc(emergencyRef, { active: false, timestamp: new Date().toISOString() });
+            emergencyActive = false;
+        }
+        document.body.classList.remove('emergency-shutdown');
+        document.getElementById('shutdownOverlay').style.display = 'none';
+    }
+
+    // =============== PATIENT MANAGEMENT ===============
+    async function loadPatientFromFirestore() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        const docSnap = await getDoc(patientRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            Object.assign(patientData, data);
+        } else {
+            await setDoc(patientRef, patientData);
+        }
+        renderPatientDetails();
+    }
+
+    async function syncPatientToFirestore() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        await setDoc(patientRef, patientData, { merge: true });
+        showToast('✅ Patient data saved permanently');
+    }
+
+    function renderPatientDetails() {
+        const grid = document.getElementById('patientDetailsGrid');
+        const fields = [
+            { label: 'Blood Group', key: 'bloodGroup' },
+            { label: 'Age', key: 'age' },
+            { label: 'Doctor', key: 'doctor' },
+            { label: 'Contact', key: 'contactNo' }
+        ];
+        grid.innerHTML = '';
+        fields.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            div.innerHTML = `<span class="detail-label">${f.label}</span>
+            <div class="detail-value">${patientData[f.key] || '—'}</div>`;
+            grid.appendChild(div);
         });
+        document.getElementById('patientNameDisplay').innerText = patientData.fullName;
+        document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.patientId} · ${patientData.age}y`;
+        document.getElementById('patientPhoto').src = patientData.photo;
+        refreshPatientMarkerIcon();
+    }
 
-        document.querySelectorAll('.mode-option').forEach(opt => {
-            opt.onclick = () => setMode(opt.dataset.mode);
-        });
+    function openEditPatientPopup() {
+        const formContainer = document.getElementById('editPatientForm');
+        formContainer.innerHTML = `
+            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${escapeHtml(patientData.fullName)}"></div>
+            <div class="edit-field-row"><label>Patient ID</label><input type="text" id="editPatientId" value="${patientData.patientId}"></div>
+            <div class="edit-field-row"><label>Age</label><input type="text" id="editAge" value="${patientData.age}"></div>
+            <div class="edit-field-row"><label>Blood Group</label><input type="text" id="editBloodGroup" value="${patientData.bloodGroup}"></div>
+            <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${escapeHtml(patientData.doctor)}"></div>
+            <div class="edit-field-row"><label>Contact Number</label><input type="text" id="editContactNo" value="${patientData.contactNo}"></div>
+            <div class="edit-field-row"><label>Photo URL</label><input type="text" id="editPhotoUrl" value="${patientData.photo}"></div>
+        `;
+        document.getElementById('editPatientPopup').style.display = 'block';
+    }
 
-window.map = L.map('map').setView([12.9716, 77.5946], 15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    async function savePatientEdits() {
+        const newData = {
+            fullName: document.getElementById('editFullName')?.value || patientData.fullName,
+            patientId: document.getElementById('editPatientId')?.value || patientData.patientId,
+            age: document.getElementById('editAge')?.value || patientData.age,
+            bloodGroup: document.getElementById('editBloodGroup')?.value || patientData.bloodGroup,
+            doctor: document.getElementById('editDoctor')?.value || patientData.doctor,
+            contactNo: document.getElementById('editContactNo')?.value || patientData.contactNo,
+            photo: document.getElementById('editPhotoUrl')?.value || patientData.photo
+        };
+        
+        Object.assign(patientData, newData);
+        renderPatientDetails();
+        await syncPatientToFirestore();
+        closeEditPatientPopup();
+        addNotification('✅ Patient Updated', 'Patient details have been updated successfully', false);
+    }
 
+    // =============== MAP FUNCTIONS ===============
+    let map;
+    let currentLocationMarker;
+    let currentLocationCircle;
+    let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
+
+    function initMap() {
+        map = L.map('map').setView([12.9716, 77.5946], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
         function createPatientMapIcon(photoUrl) {
             const imageUrl = photoUrl || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
             return L.divIcon({
@@ -2954,140 +2228,592 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             });
         }
         
-        
+        currentLocationMarker = L.marker([12.9716, 77.5946], { icon: createPatientMapIcon(patientData.photo) }).addTo(map);
+        currentLocationCircle = L.circle([12.9716, 77.5946], { radius: 50, color: '#3b82f6', fillColor: '#bfdbfe', fillOpacity: 0.2 }).addTo(map);
+    }
 
-        const currentLocationMarker = L.marker([12.9716, 77.5946], { icon: createPatientMapIcon(patientData.photo) }).addTo(map);
-        const currentLocationCircle = L.circle([12.9716, 77.5946], { radius: 50, color: '#3b82f6', fillColor: '#bfdbfe', fillOpacity: 0.2 }).addTo(map);
-
-        function refreshPatientMarkerIcon() {
-            if (typeof currentLocationMarker !== 'undefined' && currentLocationMarker && patientData.photo) {
-                currentLocationMarker.setIcon(createPatientMapIcon(patientData.photo));
+    function refreshPatientMarkerIcon() {
+        if (typeof currentLocationMarker !== 'undefined' && currentLocationMarker && patientData.photo) {
+            function createPatientMapIcon(photoUrl) {
+                const imageUrl = photoUrl || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+                return L.divIcon({
+                    className: 'patient-map-icon',
+                    html: `<img src="${imageUrl}" alt="Patient">`,
+                    iconSize: [48, 48],
+                    iconAnchor: [24, 24],
+                    popupAnchor: [0, -26]
+                });
             }
+            currentLocationMarker.setIcon(createPatientMapIcon(patientData.photo));
         }
+    }
 
-        function updateMapLocation(lat, lng, accuracy) {
-            const position = [lat, lng];
-            map.setView(position, 16);
-            currentLocationMarker.setLatLng(position);
-            currentLocationCircle.setLatLng(position);
-            if (accuracy) currentLocationCircle.setRadius(Math.max(accuracy, 20));
-            currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
-        }
+    function updateMapLocation(lat, lng, accuracy) {
+        const position = [lat, lng];
+        map.setView(position, 16);
+        currentLocationMarker.setLatLng(position);
+        currentLocationCircle.setLatLng(position);
+        if (accuracy) currentLocationCircle.setRadius(Math.max(accuracy, 20));
+        currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
+    }
 
-        window.toggleGpsFullscreen = () => {
-            const card = document.querySelector('.map-card');
-            if (!document.fullscreenElement) card.requestFullscreen();
-            else document.exitFullscreen();
-        };
-
-        document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
-
-        await loadPatientFromFirestore();
-        await loadCaretakerFromFirestore();
-        await loadEmergencyContacts();
-        listenDriveMode();
-        listenCaretakerProfile();
-        listenEmergencyFromPatient();
-
-        setInterval(simulateHealthMonitoring, 8000);
-setInterval(fetchRealSpeed, 200);  // 5Hz update (smooth enough)
-
-
-const dbRealtime = getDatabase(window.firebaseApp);
-
-let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
-
-function listenPatientLocation() {
-    const locRef = ref(dbRealtime, "patient_location/patient_main");
-
-    onValue(locRef, (snap) => {
-        const data = snap.val();
-
-    if (data && data.lat !== undefined && data.lng !== undefined) {
-            lastPatientLocation = {
-                lat: data.lat,
-                lng: data.lng
-            };
-
-            updateMapLocation(data.lat, data.lng, data.accuracy);
-
-            console.log("📍 Patient location updated:", data);
-        }
-    });
-}
-
-listenPatientLocation();
-
-function listenCaretakerProfile() {
-    const refDoc = doc(db, "settings", "caretaker_profile");
-
-    onSnapshot(refDoc, (snap) => {
-        if (snap.exists()) {
-            Object.assign(caretakerData, snap.data());
-            renderCaretakerProfile();
-        }
-    });
-}
-
-async function loadEmergencyContacts() {
-    const refDoc = doc(db, "settings", "emergency_contacts");
-    const snap = await getDoc(refDoc);
-
-    if (snap.exists()) {
-        const data = snap.data();
-
-        if (data.contacts && Array.isArray(data.contacts)) {
-            emergencyContacts = data.contacts.map(c => {
-                const parts = c.label.split(" ");
-                const icon = parts[0]; // first emoji
-                const label = parts.slice(1).join(" ");
-
-                return {
-                    icon: icon,
-                    label: label,
-                    value: c.number
+    function listenPatientLocation() {
+        const locRef = ref(dbRealtime, "patient_location/patient_main");
+        
+        onValue(locRef, (snap) => {
+            const data = snap.val();
+            if (data && data.lat !== undefined && data.lng !== undefined) {
+                lastPatientLocation = {
+                    lat: data.lat,
+                    lng: data.lng
                 };
-            });
-
-            console.log("✅ Emergency contacts loaded:", emergencyContacts);
-        }
-    } else {
-        // First time → save default
-        await setDoc(refDoc, {
-            contacts: emergencyContacts.map(c => ({
-                label: `${c.icon} ${c.label}`,
-                number: c.value
-            }))
+                updateMapLocation(data.lat, data.lng, data.accuracy);
+                console.log("📍 Patient location updated:", data);
+            }
         });
     }
 
-    renderEmergencyContacts();
-}
+    // =============== EMERGENCY CONTACTS ===============
+    function renderEmergencyContacts() {
+        const viewFields = document.getElementById('emergencyViewFields');
+        const editForm = document.getElementById('emergencyEditForm');
+        const editBtn = document.getElementById('editEmergencyBtn');
+        const saveBtn = document.getElementById('saveEmergencyBtn');
+        const cancelBtn = document.getElementById('cancelEmergencyBtn');
 
-        function listenDriveMode() {
-            const modeRef = doc(db, "settings", MODE_ID);
-            onSnapshot(modeRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().mode) {
-                    const newMode = docSnap.data().mode;
-                    if (newMode !== currentMode) {
-                        currentMode = newMode;
-                        document.getElementById('modeDisplay').innerText = currentMode;
-                        document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-                        addNotification('🔄 Drive Mode Changed', `Mode changed to: ${currentMode}`, false);
+        if (viewFields) {
+            viewFields.innerHTML = emergencyContacts.map((contact, index) =>
+                `<div class="contact-item emergency-contact" data-contact-index="${index}">${contact.icon} ${contact.label} <span style="margin-left:auto;">${contact.value}</span></div>`
+            ).join('');
+            viewFields.querySelectorAll('.emergency-contact').forEach(contactEl => {
+                contactEl.style.cursor = 'pointer';
+                contactEl.onclick = () => {
+                    const index = Number(contactEl.dataset.contactIndex);
+                    if (!Number.isNaN(index) && emergencyContacts[index]) {
+                        callEmergencyNumber(emergencyContacts[index].value);
                     }
-                }
+                };
             });
         }
+        if (editForm) editForm.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'inline-flex';
+        if (viewFields) viewFields.style.display = 'block';
+    }
 
-        window.onload = () => {
-            document.getElementById('controlPad').style.display = 'none';
-            updateAngleDisplay(0);
-            
-            setTimeout(() => {
-                testESP32Connection();
-            }, 1000);
+    function openEmergencyEditForm() {
+        const editForm = document.getElementById('emergencyEditForm');
+        const viewFields = document.getElementById('emergencyViewFields');
+        const editBtn = document.getElementById('editEmergencyBtn');
+        const saveBtn = document.getElementById('saveEmergencyBtn');
+        const cancelBtn = document.getElementById('cancelEmergencyBtn');
+
+        if (!editForm || !viewFields) return;
+
+        editForm.innerHTML = emergencyContacts.map((contact, index) => `
+            <div class="edit-field-row"><label>Contact ${index + 1} Label</label><input type="text" id="editEmergencyLabel${index}" value="${escapeHtml(contact.label)}"></div>
+            <div class="edit-field-row"><label>Contact ${index + 1} Number</label><input type="text" id="editEmergencyValue${index}" value="${escapeHtml(contact.value)}"></div>
+        `).join('');
+
+        viewFields.style.display = 'none';
+        editForm.style.display = 'block';
+        if (editBtn) editBtn.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'inline-flex';
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    }
+
+    function cancelEmergencyEdit() {
+        renderEmergencyContacts();
+    }
+
+    async function saveEmergencyContacts() {
+        emergencyContacts = emergencyContacts.map((contact, index) => ({
+            icon: contact.icon,
+            label: document.getElementById(`editEmergencyLabel${index}`)?.value.trim() || contact.label,
+            value: document.getElementById(`editEmergencyValue${index}`)?.value.trim() || contact.value
+        }));
+
+        const formatted = emergencyContacts.map(c => ({
+            label: `${c.icon} ${c.label}`,
+            number: c.value
+        }));
+
+        try {
+            await setDoc(doc(db, "settings", "emergency_contacts"), {
+                contacts: formatted
+            });
+
+            console.log("✅ Saved to Firestore:", formatted);
+            renderEmergencyContacts();
+            addNotification('✅ Emergency contacts saved', 'Saved permanently', false);
+            showToast("💾 Saved successfully");
+        } catch (error) {
+            console.error("❌ Save failed:", error);
+            showToast("❌ Failed to save contacts");
+        }
+    }
+
+    function callEmergencyNumber(number) {
+        const normalized = String(number).replace(/[^0-9+]/g, '');
+        if (!normalized) return;
+        window.location.href = `tel:${normalized}`;
+    }
+
+    async function loadEmergencyContacts() {
+        const refDoc = doc(db, "settings", "emergency_contacts");
+        const snap = await getDoc(refDoc);
+
+        if (snap.exists()) {
+            const data = snap.data();
+            if (data.contacts && Array.isArray(data.contacts)) {
+                emergencyContacts = data.contacts.map(c => {
+                    const parts = c.label.split(" ");
+                    const icon = parts[0];
+                    const label = parts.slice(1).join(" ");
+                    return {
+                        icon: icon,
+                        label: label,
+                        value: c.number
+                    };
+                });
+                console.log("✅ Emergency contacts loaded:", emergencyContacts);
+            }
+        } else {
+            await setDoc(refDoc, {
+                contacts: emergencyContacts.map(c => ({
+                    label: `${c.icon} ${c.label}`,
+                    number: c.value
+                }))
+            });
+        }
+        renderEmergencyContacts();
+    }
+
+    // =============== CARETAKER PROFILE ===============
+    function renderCaretakerProfile() {
+        const nameEl = document.getElementById('caretakerName');
+        const idDisplayEl = document.getElementById('caretakerIdDisplay');
+        const emailEl = document.getElementById('caretakerEmail');
+        const phoneEl = document.getElementById('caretakerPhone');
+        const facilityEl = document.getElementById('caretakerFacility');
+        const photoEl = document.getElementById('caretakerPhoto');
+        const editForm = document.getElementById('caretakerEditForm');
+        const viewFields = document.getElementById('caretakerViewFields');
+        const editBtn = document.getElementById('editCaretakerBtn');
+        const saveBtn = document.getElementById('saveCaretakerBtn');
+        const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
+
+        if (nameEl) nameEl.textContent = caretakerData.name;
+        if (idDisplayEl) idDisplayEl.textContent = `ID: ${caretakerData.id}`;
+        if (emailEl) emailEl.textContent = caretakerData.email;
+        if (phoneEl) phoneEl.textContent = caretakerData.phone;
+        if (facilityEl) facilityEl.textContent = caretakerData.facility;
+        if (photoEl) photoEl.src = caretakerData.photo;
+
+        const profileNameEl = document.querySelector('#caretakerProfileBtn .profile-name');
+        if (profileNameEl) profileNameEl.textContent = caretakerData.name;
+
+        const profileRoleEl = document.querySelector('#caretakerProfileBtn .profile-role');
+        if (profileRoleEl) profileRoleEl.textContent = caretakerData.role;
+
+        if (editForm) editForm.style.display = 'none';
+        if (viewFields) viewFields.style.display = 'block';
+        if (editBtn) editBtn.style.display = 'inline-flex';
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+
+    function openCaretakerEditForm() {
+        const editForm = document.getElementById('caretakerEditForm');
+        const viewFields = document.getElementById('caretakerViewFields');
+        const editBtn = document.getElementById('editCaretakerBtn');
+        const saveBtn = document.getElementById('saveCaretakerBtn');
+        const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
+
+        if (!editForm || !viewFields) return;
+
+        editForm.innerHTML = `
+            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editCaretakerName" value="${escapeHtml(caretakerData.name)}"></div>
+            <div class="edit-field-row"><label>Caretaker ID</label><input type="text" id="editCaretakerId" value="${escapeHtml(caretakerData.id)}"></div>
+            <div class="edit-field-row"><label>Email</label><input type="email" id="editCaretakerEmail" value="${escapeHtml(caretakerData.email)}"></div>
+            <div class="edit-field-row"><label>Phone</label><input type="text" id="editCaretakerPhone" value="${escapeHtml(caretakerData.phone)}"></div>
+            <div class="edit-field-row"><label>Facility</label><input type="text" id="editCaretakerFacility" value="${escapeHtml(caretakerData.facility)}"></div>
+        `;
+
+        viewFields.style.display = 'none';
+        editForm.style.display = 'block';
+        if (editBtn) editBtn.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'inline-flex';
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    }
+
+    function cancelCaretakerEdit() {
+        renderCaretakerProfile();
+    }
+
+    async function saveCaretakerEdit() {
+        const newData = {
+            name: document.getElementById('editCaretakerName')?.value.trim() || caretakerData.name,
+            id: document.getElementById('editCaretakerId')?.value.trim() || caretakerData.id,
+            email: document.getElementById('editCaretakerEmail')?.value.trim() || caretakerData.email,
+            phone: document.getElementById('editCaretakerPhone')?.value.trim() || caretakerData.phone,
+            facility: document.getElementById('editCaretakerFacility')?.value.trim() || caretakerData.facility,
+            photo: caretakerData.photo,
+            role: caretakerData.role
         };
-    </script>
+
+        Object.assign(caretakerData, newData);
+
+        await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData);
+
+        renderCaretakerProfile();
+        addNotification('✅ Caretaker Updated', 'Saved permanently', false);
+    }
+
+    async function loadCaretakerFromFirestore() {
+        const refDoc = doc(db, "settings", "caretaker_profile");
+        const snap = await getDoc(refDoc);
+
+        if (snap.exists()) {
+            Object.assign(caretakerData, snap.data());
+            console.log("✅ Caretaker loaded:", caretakerData);
+        } else {
+            await setDoc(refDoc, caretakerData);
+        }
+        renderCaretakerProfile();
+    }
+
+    function listenDriveMode() {
+        const modeRef = doc(db, "settings", MODE_ID);
+        onSnapshot(modeRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().mode) {
+                const newMode = docSnap.data().mode;
+                if (newMode !== currentMode) {
+                    currentMode = newMode;
+                    document.getElementById('modeDisplay').innerText = currentMode;
+                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
+                    addNotification('🔄 Drive Mode Changed', `Mode changed to: ${currentMode}`, false);
+                }
+            }
+        });
+    }
+
+    function listenEmergencyFromPatient() {
+        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
+                emergencyActive = true;
+                sendEmergency();
+                document.body.classList.add('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'flex';
+                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
+            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
+                emergencyActive = false;
+                document.body.classList.remove('emergency-shutdown');
+                document.getElementById('shutdownOverlay').style.display = 'none';
+            }
+        });
+    }
+
+    // =============== PATIENT ACTIONS ===============
+    async function saveActionToFirestore(type, data) {
+        const actionsRef = doc(db, "patientActions", "feed");
+        try {
+            const docSnap = await getDoc(actionsRef);
+            if (docSnap.exists()) {
+                await updateDoc(actionsRef, {
+                    [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
+                });
+            } else {
+                await setDoc(actionsRef, { [type]: [data] });
+            }
+        } catch (error) {
+            console.error("Error saving action:", error);
+            await setDoc(actionsRef, { [type]: [data] });
+        }
+        addNotification('✅ Action Saved', `${type} saved to patient dashboard`, false);
+    }
+
+    window.sendMessage = async () => {
+        const msg = document.getElementById('messageText')?.value;
+        if (!msg) return showToast('Please enter a message');
+        await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleString() });
+        showToast(`💬 Message sent to patient`);
+        document.getElementById('messageText').value = '';
+        closePatientSubmenu();
+    };
+
+    window.saveCalendar = async () => {
+        const event = document.getElementById('calendarEvent')?.value;
+        const dt = document.getElementById('calendarDateTime')?.value;
+        if (!event) return showToast('Please enter an event');
+        await saveActionToFirestore("calendar", { title: event, detail: dt || "No time set", time: dt });
+        showToast(`📅 Calendar event added`);
+        closePatientSubmenu();
+    };
+
+    window.bookAppointment = async () => {
+        const dr = document.getElementById('apptDoctor')?.value;
+        const hosp = document.getElementById('apptHospital')?.value;
+        const dt = document.getElementById('apptDateTime')?.value;
+        if (!dr) return showToast('Please enter doctor name');
+        await saveActionToFirestore("appointments", { title: dr, detail: hosp || "Clinic visit", time: dt });
+        showToast(`📋 Appointment booked with ${dr}`);
+        closePatientSubmenu();
+    };
+
+    window.playMedia = async () => {
+        await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
+        showToast(`🎵 Media player started`);
+        closePatientSubmenu();
+    };
+
+    window.setAlarm = async () => {
+        const label = document.getElementById('alarmLabel')?.value;
+        const dt = document.getElementById('alarmDateTime')?.value;
+        if (!label) return showToast('Please enter alarm label');
+        await saveActionToFirestore("alarms", { title: label, detail: dt || "Now", time: dt });
+        showToast(`⏰ Alarm set: ${label}`);
+        closePatientSubmenu();
+    };
+
+    window.showPatientSubmenu = (option) => {
+        document.getElementById('patientMainMenu').style.display = 'none';
+        let title = '', content = '';
+        if (option === 'message') {
+            title = '💬 Send message';
+            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
+            <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        } else if (option === 'calendar') {
+            title = '📅 Mark calendar';
+            content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
+            <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+            <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        } else if (option === 'appointment') {
+            title = '📋 Book appointment';
+            content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
+            <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
+            <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+            <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        } else if (option === 'media') {
+            title = '🎵 Media & music';
+            content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
+        } else if (option === 'alarm') {
+            title = '⏰ Set alarm';
+            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
+            <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
+            <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
+        }
+        document.getElementById('submenuTitle').innerText = title;
+        document.getElementById('submenuContent').innerHTML = content;
+        document.getElementById('patientSubmenu').style.display = 'block';
+        
+        setTimeout(() => {
+            if (option === 'message') document.getElementById('sendMsgBtn')?.addEventListener('click', window.sendMessage);
+            if (option === 'calendar') {
+                if (typeof flatpickr !== 'undefined') {
+                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                }
+                document.getElementById('saveCalendarBtn')?.addEventListener('click', window.saveCalendar);
+            }
+            if (option === 'appointment') {
+                if (typeof flatpickr !== 'undefined') {
+                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                }
+                document.getElementById('bookApptBtn')?.addEventListener('click', window.bookAppointment);
+            }
+            if (option === 'media') document.getElementById('playMediaBtn')?.addEventListener('click', window.playMedia);
+            if (option === 'alarm') {
+                if (typeof flatpickr !== 'undefined') {
+                    flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+                }
+                document.getElementById('setAlarmBtn')?.addEventListener('click', window.setAlarm);
+            }
+        }, 50);
+    };
+
+    // =============== POPUP FUNCTIONS ===============
+    function closeAllPopups() {
+        document.querySelectorAll('.popup-panel').forEach(p => p.style.display = 'none');
+        document.getElementById('safetyPopup')?.remove();
+    }
+
+    window.setMode = function(mode) {
+        closeModePopup();
+        confirmModeSwitch(mode);
+    };
+
+    window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
+    window.closePopup = (type) => {
+        if (type === 'call') document.getElementById('callPopup').style.display = 'none';
+        if (type === 'health') document.getElementById('healthPopup').style.display = 'none';
+        if (type === 'wheel') document.getElementById('wheelPopup').style.display = 'none';
+    };
+    window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display = 'none';
+    window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display = 'none';
+    window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
+    window.closeCaretakerPopup = () => {
+        cancelCaretakerEdit();
+        document.getElementById('caretakerPopup').style.display = 'none';
+    };
+    window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
+    window.closeShutdown = closeShutdown;
+    window.clearAllNotifications = clearAllNotifications;
+    window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
+    window.toggleSerialConsole = () => {
+        const consoleDiv = document.getElementById('serialConsole');
+        consoleDiv.classList.toggle('show');
+    };
+    window.calibrateAngleSensor = async () => {
+        if (!esp32Connected) {
+            showToast("⚠️ ESP32 not connected!");
+            return false;
+        }
+        
+        try {
+            const response = await fetch(`http://${esp32IP}/cmd?data=CALIBRATE`, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache'
+            });
+            
+            if (response.ok) {
+                showToast("📐 Calibration requested - keep wheelchair level");
+                addNotification("Angle Calibration", "Gyro calibration initiated - keep wheelchair level for 5 seconds", false);
+                updateAngleDisplay(0);
+                
+                const calibrateBtn = document.getElementById('calibrateAngleBtn');
+                if (calibrateBtn) {
+                    calibrateBtn.textContent = 'Calibrating...';
+                    calibrateBtn.disabled = true;
+                    setTimeout(() => {
+                        calibrateBtn.textContent = 'Calibrate';
+                        calibrateBtn.disabled = false;
+                    }, 3000);
+                }
+                return true;
+            }
+        } catch (error) {
+            console.error("Calibration error:", error);
+            showToast("❌ Calibration failed");
+        }
+        return false;
+    };
+
+    // =============== INITIALIZATION ===============
+    document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.src = ev.target.result;
+
+            img.onload = async () => {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+
+                const maxWidth = 300;
+                const scale = maxWidth / img.width;
+
+                canvas.width = maxWidth;
+                canvas.height = img.height * scale;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+                patientData.photo = compressedBase64;
+
+                document.getElementById('patientPhoto').src = compressedBase64;
+                refreshPatientMarkerIcon();
+
+                await syncPatientToFirestore();
+
+                addNotification('📸 Photo Updated', 'Patient photo saved permanently', false);
+                showToast("✅ Image uploaded & synced");
+            };
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
+    document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
+    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
+    document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); renderCaretakerProfile(); document.getElementById('caretakerPopup').style.display = 'block'; };
+    document.getElementById('callIcon').onclick = () => { closeAllPopups(); renderEmergencyContacts(); document.getElementById('callPopup').style.display = 'block'; };
+    document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display = 'block'; };
+    document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display = 'block'; };
+    document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display = 'block'; };
+    document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
+    document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
+    document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
+    document.getElementById('serialConsoleBtn').onclick = () => {
+        const consoleDiv = document.getElementById('serialConsole');
+        consoleDiv.classList.toggle('show');
+    };
+    document.getElementById('connectBtn').onclick = connectToESP32;
+    document.getElementById('calibrateAngleBtn').onclick = () => window.calibrateAngleSensor();
+    document.getElementById('editCaretakerBtn').onclick = openCaretakerEditForm;
+    document.getElementById('saveCaretakerBtn').onclick = saveCaretakerEdit;
+    document.getElementById('cancelCaretakerEditBtn').onclick = cancelCaretakerEdit;
+    document.getElementById('editEmergencyBtn').onclick = openEmergencyEditForm;
+    document.getElementById('saveEmergencyBtn').onclick = saveEmergencyContacts;
+    document.getElementById('cancelEmergencyBtn').onclick = cancelEmergencyEdit;
+
+    document.querySelectorAll('.ctrl-btn').forEach(btn => {
+        btn.onclick = () => sendControlCommand(btn.dataset.cmd);
+    });
+
+    document.querySelectorAll('.mode-option').forEach(opt => {
+        opt.onclick = () => window.setMode(opt.dataset.mode);
+    });
+
+    const speedSlider = document.getElementById("speedSlider");
+    const speedPercent = document.getElementById("speedPercent");
+
+    if (speedSlider) {
+        speedSlider.addEventListener("input", () => {
+            const value = speedSlider.value;
+            speedPercent.innerText = value + "%";
+        });
+
+        speedSlider.addEventListener("change", async () => {
+            const value = speedSlider.value;
+            try {
+                await fetch(`http://${esp32IP}/speed?speed=${value}`, {
+                    method: "GET",
+                    mode: "cors"
+                });
+                showToast(`⚡ Speed set to ${value}%`);
+            } catch (err) {
+                showToast("❌ Speed update failed");
+            }
+        });
+    }
+
+    // Initialize
+    await loadPatientFromFirestore();
+    await loadCaretakerFromFirestore();
+    await loadEmergencyContacts();
+    initMap();
+    listenDriveMode();
+    listenEmergencyFromPatient();
+    listenPatientLocation();
+
+    window.onload = () => {
+        document.getElementById('controlPad').style.display = 'none';
+        updateAngleDisplay(0);
+        
+        setTimeout(() => {
+            testESP32Connection();
+        }, 1000);
+    };
+</script>
 </body>
 
 </html>
