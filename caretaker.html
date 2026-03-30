@@ -2379,7 +2379,7 @@ window.doc = doc;
                 if (Date.now() - lastPing > 5000) {
                     await testESP32Connection();
                 }
-            }, 3000);
+            }, 5000);
         } else {
             showToast("❌ Cannot reach ESP32. Check IP and WiFi.");
             addNotification("⚠️ Connection Failed", "Cannot reach ESP32 bridge", true);
