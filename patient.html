@@ -1109,31 +1109,103 @@ function listenEmergencyContacts() {
     });
 }
 
-    function updateAngleDisplay(angle) {
-        let valid = Math.min(45, Math.max(-45, angle));
-        document.getElementById('angleValue').innerHTML = valid.toFixed(1)+'<span>°</span>';
-        const track = document.getElementById('angleBarTrack');
-        if(track){
-            const w = track.offsetWidth, center = w/2, maxOff = (w/2)-13;
-            const leftPos = center + (valid/45)*maxOff;
-            document.getElementById('angleIndicatorDot').style.left = leftPos+'px';
-            const leftFill = valid>0 ? (valid/45)*100 : 0;
-            const rightFill = valid<0 ? (Math.abs(valid)/45)*100 : 0;
-            document.getElementById('angleFillLeft').style.width = leftFill+'%';
-            document.getElementById('angleFillRight').style.width = rightFill+'%';
-        }
-        let dirText='', dirClass='';
-        if(valid>5){ dirText=`LEFT TURN (${valid.toFixed(1)}° left)`; dirClass='left'; }
-        else if(valid<-5){ dirText=`RIGHT TURN (${Math.abs(valid).toFixed(1)}° right)`; dirClass='right'; }
-        else { dirText='STRAIGHT (centered)'; dirClass='straight'; }
-        const dirDiv=document.getElementById('angleDirection'); if(dirDiv){ dirDiv.className=`angle-direction ${dirClass}`; dirDiv.innerHTML=`${dirText}`; }
-        const statusDiv=document.getElementById('angleStatus');
-        if(Math.abs(valid)>25) statusDiv.innerHTML='⚠️ CRITICAL tilt! Risk of tipping!';
-        else if(Math.abs(valid)>18) statusDiv.innerHTML='⚠️ Warning: High tilt, reduce speed';
-        else if(Math.abs(valid)>10) statusDiv.innerHTML='⚠️ Moderate tilt, be cautious';
-        else statusDiv.innerHTML='✓ Normal operating range';
+function updateAngleDisplay(angle) {
+
+    let validAngle = Math.min(45, Math.max(-45, angle));
+
+    const angleValueElem = document.getElementById('angleValue');
+    if (angleValueElem) {
+        angleValueElem.innerHTML = `${validAngle.toFixed(1)}<span>°</span>`;
     }
-    
+
+    const track = document.getElementById('angleBarTrack');
+
+    if (track) {
+
+        const trackWidth = track.offsetWidth;
+        const centerX = trackWidth / 2;
+
+        const maxOffset = (trackWidth / 2) - 9;
+
+        const dotOffset = (validAngle / 45) * maxOffset;
+
+        const dotLeft = centerX - dotOffset;
+
+        const indicatorDot = document.getElementById('angleIndicatorDot');
+
+        if (indicatorDot) {
+            indicatorDot.style.left = `${dotLeft}px`;
+
+            if (Math.abs(validAngle) > 25) {
+                indicatorDot.style.background = '#dc2626';
+            } 
+            else if (Math.abs(validAngle) > 18) {
+                indicatorDot.style.background = '#f59e0b';
+            } 
+            else {
+                indicatorDot.style.background = '#3b82f6';
+            }
+        }
+
+        const leftFillPercent = validAngle > 0 
+            ? Math.min(100, (validAngle / 45) * 100) 
+            : 0;
+
+        const rightFillPercent = validAngle < 0 
+            ? Math.min(100, (Math.abs(validAngle) / 45) * 100) 
+            : 0;
+
+        const fillLeft = document.getElementById('angleFillLeft');
+        const fillRight = document.getElementById('angleFillRight');
+
+        if (fillLeft) fillLeft.style.width = `${leftFillPercent}%`;
+        if (fillRight) fillRight.style.width = `${rightFillPercent}%`;
+    }
+
+    const angleDirectionElem = document.getElementById('angleDirection');
+
+    let directionText = '';
+    let directionClass = '';
+
+    if (validAngle > 5) {
+
+        directionText = `⬅️ LEFT (${validAngle.toFixed(1)}°)`;
+        directionClass = 'left';
+
+    } else if (validAngle < -5) {
+
+        directionText = `➡️ RIGHT (${Math.abs(validAngle).toFixed(1)}°)`;
+        directionClass = 'right';
+
+    } else {
+
+        directionText = '✓ STRAIGHT';
+        directionClass = 'straight';
+    }
+
+    if (angleDirectionElem) {
+        angleDirectionElem.className = `angle-direction ${directionClass}`;
+        angleDirectionElem.innerHTML = directionText;
+    }
+
+    const statusDiv = document.getElementById('angleStatus');
+
+    if (Math.abs(validAngle) > 25) {
+
+        statusDiv.innerHTML = '⚠️ CRITICAL tilt risk';
+
+    } 
+    else if (Math.abs(validAngle) > 18) {
+
+        statusDiv.innerHTML = '⚠️ High tilt';
+
+    } 
+    else {
+
+        statusDiv.innerHTML = '✓ Stable';
+    }
+}
+
     async function sharePatientLocation(lat, lng) {
         try {
             await set(ref(dbRealtime, `patient_location/${PATIENT_ID}`), {
