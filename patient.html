@@ -720,23 +720,7 @@
         
         .direction-icon-large { font-size: 30px; }
         .direction-text-large { font-size: 16px; font-weight: 800; color: white; }
-        
-        .emergency-btn {
-            width: 100%;
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 60px;
-            padding: 14px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
+   
         
         .popup-panel {
             position: fixed;
@@ -1004,8 +988,6 @@
     <div class="direction-status-badge stop" id="directionBadge"><span class="direction-icon-large" id="dirIconLarge">⏹️</span><span class="direction-text-large" id="dirTextLarge">Stopped</span></div>
 </div>
 
-<button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
-
 <div id="callPopup" class="popup-panel square">
     <div class="popup-header"><h3>📞 Emergency Call</h3></div>
     <div class="popup-message">Tap contact to dial</div>
@@ -1020,8 +1002,6 @@
     <button class="popup-close-btn secondary" onclick="closeLogPopup()" style="margin-top: 10px;">Close</button>
 </div>
 
-<div class="shutdown-overlay" id="shutdownOverlay">
-    <div class="shutdown-card"><div style="font-size:42px;">⚠️</div><div style="font-size:20px; font-weight:700;">EMERGENCY HALT</div><button onclick="closeShutdown()" style="margin-top:14px; background:white; border:none; padding:10px 24px; border-radius:40px;">Dismiss</button></div>
 </div>
 <div class="connection-status disconnected" id="connectionStatus"><span class="status-dot"></span><span id="connectionText">Disconnected</span></div>
 
