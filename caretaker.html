@@ -69,10 +69,25 @@ window.doc = doc;
         }
 
         body {
-            background: var(--bg);
+            background: linear-gradient(135deg, #f0f4f8 0%, #f8fafd 50%, #e8f0f7 100%);
             padding: 12px;
             color: var(--text);
             font-size: 14px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(29, 78, 216, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
         }
 
     .connection-status {
@@ -215,12 +230,19 @@ window.doc = doc;
         }
 
         .health-item {
-            background: #f8fafc;
+            background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
             border-radius: 20px;
             padding: 16px 12px;
             text-align: center;
-            transition: all 0.2s ease;
-            border: 1px solid #eef2ff;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .health-item:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f7 100%);
         }
 
         .health-item span {
@@ -238,8 +260,13 @@ window.doc = doc;
         }
 
         .health-item.warning {
-            background: #fff5f5;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
             border-color: var(--danger);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+        }
+
+        .health-item.warning:hover {
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.15);
         }
 
         .health-item.warning .value {
@@ -247,7 +274,7 @@ window.doc = doc;
         }
 
         .wheel-detail {
-            background: #f8fafc;
+            background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
             border-radius: 20px;
             padding: 14px 18px;
             margin-bottom: 10px;
@@ -255,12 +282,25 @@ window.doc = doc;
             justify-content: space-between;
             align-items: center;
             font-size: 14px;
-            border: 1px solid #eef2ff;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        .wheel-detail:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f7 100%);
         }
 
         .wheel-detail.warning {
-            background: #fff5f5;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
             border-color: var(--danger);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+        }
+
+        .wheel-detail.warning:hover {
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.15);
         }
 
         .wheel-detail.warning strong {
@@ -279,7 +319,7 @@ window.doc = doc;
         }
 
         .contact-item {
-            background: #f1f5f9;
+            background: linear-gradient(135deg, #f1f5f9 0%, #f0f4f8 100%);
             border-radius: 40px;
             padding: 14px 18px;
             margin-bottom: 10px;
@@ -289,13 +329,16 @@ window.doc = doc;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
-            transition: 0.2s;
-            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .contact-item:hover {
-            background: #e5edff;
+            background: linear-gradient(135deg, #e5edff 0%, #d0dbff 100%);
             border-color: var(--blue);
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.2);
+            transform: translateY(-2px);
         }
 
         body.emergency-shutdown .shutdown-overlay {
@@ -316,14 +359,20 @@ window.doc = doc;
             display: flex;
             align-items: center;
             gap: 10px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             cursor: pointer;
-            transition: 0.1s;
+            transition: all 0.3s ease;
+        }
+
+        .profile-card:hover {
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
         }
 
         .profile-card:active {
             background: #f0f4ff;
+            transform: translateY(0);
         }
 
         .profile-img {
@@ -354,14 +403,19 @@ window.doc = doc;
             background: white;
             padding: 4px 8px;
             border-radius: 50px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             gap: 6px;
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .icon-group:hover {
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .icon-btn {
-            background: #f0f4fe;
+            background: linear-gradient(135deg, #f0f4fe 0%, #e8f0ff 100%);
             border: none;
             width: 38px;
             height: 38px;
@@ -372,6 +426,17 @@ window.doc = doc;
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn:hover {
+            background: linear-gradient(135deg, #d0dbff 0%, #bfccff 100%);
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
         }
 
         .notification-badge {
@@ -394,18 +459,25 @@ window.doc = doc;
             background: white;
             border-radius: 28px;
             padding: 16px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             margin-bottom: 14px;
             position: relative;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .patient-full-card:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
         }
 
         .edit-icon {
             position: absolute;
             top: 16px;
             right: 16px;
-            background: #eef2ff;
-            border: none;
+            background: linear-gradient(135deg, #f0f5ff 0%, #e8f0ff 100%);
+            border: 2px solid rgba(29, 78, 216, 0.15);
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -415,7 +487,18 @@ window.doc = doc;
             justify-content: center;
             color: var(--blue);
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .edit-icon:hover {
+            background: linear-gradient(135deg, #d0dbff 0%, #bfccff 100%);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.25);
+        }
+
+        .edit-icon:active {
+            transform: scale(0.95);
         }
 
         .patient-row {
@@ -480,9 +563,14 @@ window.doc = doc;
             background: white;
             padding: 12px 8px;
             border-radius: 60px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             margin-bottom: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .round-row:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
         }
 
         .round-item {
@@ -493,12 +581,19 @@ window.doc = doc;
             border: none;
             cursor: pointer;
             width: 60px;
+            transition: all 0.3s ease;
+        }
+
+        .round-item:hover .round-icon {
+            background: linear-gradient(135deg, #d0dbff 0%, #bfccff 100%);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.25);
         }
 
         .round-icon {
             width: 50px;
             height: 50px;
-            background: #f0f5ff;
+            background: linear-gradient(135deg, #f0f5ff 0%, #e8f0ff 100%);
             border: 2px solid rgba(29, 78, 216, 0.15);
             border-radius: 50%;
             display: flex;
@@ -506,6 +601,7 @@ window.doc = doc;
             justify-content: center;
             font-size: 24px;
             color: var(--blue);
+            transition: all 0.3s ease;
         }
 
         .round-item span {
@@ -516,33 +612,52 @@ window.doc = doc;
 
         .emergency-btn {
             width: 100%;
-            background: var(--danger);
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             color: white;
             border: none;
             border-radius: 50px;
             padding: 16px;
             font-size: 20px;
             font-weight: 700;
-            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 10px 30px rgba(220, 38, 38, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             margin-bottom: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .emergency-btn:hover {
+            box-shadow: 0 14px 40px rgba(220, 38, 38, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+        }
+
+        .emergency-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
 
         .drive-mode-card {
-            background: white;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
             border-radius: 40px;
             padding: 12px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             margin-bottom: 16px;
             font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .drive-mode-card:hover {
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
         }
 
         .mode-label {
@@ -552,10 +667,16 @@ window.doc = doc;
 
         .mode-value {
             font-weight: 700;
-            color: var(--blue);
-            background: #e5edff;
+            color: white;
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
             padding: 6px 24px;
             border-radius: 40px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+        }
+
+        .mode-value:hover {
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.35);
         }
 
         /* Fixed Angle Card Styles - Synchronized Bar and Dot */
@@ -563,10 +684,22 @@ window.doc = doc;
             background: white;
             border-radius: 28px;
             padding: 20px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             margin-bottom: 16px;
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .angle-card:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .angle-card.angle-warning {
+            border: 2px solid #dc2626;
+            animation: warning-pulse 1s ease-in-out;
+            box-shadow: 0 8px 24px rgba(220, 38, 38, 0.15), 0 2px 8px rgba(220, 38, 38, 0.08);
         }
 
         .angle-header {
@@ -741,8 +874,13 @@ window.doc = doc;
             background: white;
             border-radius: 28px;
             padding: 14px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .map-card:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
         }
 
         .gps-header {
@@ -765,6 +903,18 @@ window.doc = doc;
             font-weight: 600;
             font-size: 12px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.1);
+        }
+
+        .fullscreen-btn:hover {
+            background: #dde6ff;
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .fullscreen-btn:active {
+            transform: translateY(0px);
         }
 
         .patient-map-icon {
@@ -816,11 +966,66 @@ window.doc = doc;
             padding: 22px;
             width: calc(100% - 32px);
             max-width: 380px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0px rgba(255, 255, 255, 0.6);
             z-index: 1000;
             display: none;
             max-height: 85vh;
             overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            animation: slideInPopup 0.3s ease;
+        }
+
+        @keyframes slideInPopup {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -48%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes pulse-wave {
+            0% {
+                r: 0;
+                stroke-width: 3;
+                opacity: 0.8;
+            }
+            100% {
+                r: 80;
+                stroke-width: 1;
+                opacity: 0;
+            }
+        }
+
+        .center-map-btn {
+            border: none;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            display: none;
+        }
+
+        .center-map-btn:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .center-map-btn:active {
+            transform: translateY(0px);
+        }
+
+        .center-map-btn.show {
+            display: inline-block;
         }
 
         .popup-header {
@@ -842,7 +1047,7 @@ window.doc = doc;
         }
 
         .mode-option {
-            background: #f1f5f9;
+            background: linear-gradient(135deg, #f1f5f9 0%, #f0f4f8 100%);
             border-radius: 40px;
             padding: 16px 20px;
             margin-bottom: 10px;
@@ -851,11 +1056,19 @@ window.doc = doc;
             gap: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.1s;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .mode-option:hover {
-            background: #e5edff;
+            background: linear-gradient(135deg, #e5edff 0%, #d0dbff 100%);
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.2);
+            transform: translateX(4px);
+        }
+
+        .mode-option:active {
+            transform: translateX(2px);
         }
 
         .shutdown-overlay {
@@ -883,37 +1096,59 @@ window.doc = doc;
             background: white;
             border-radius: 40px;
             padding: 20px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             display: none;
+            transition: all 0.3s ease;
+        }
+
+        #controlPad:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
         }
 
         .ctrl-btn {
             width: 60px;
             height: 60px;
             border-radius: 30px;
-            background: #eef2ff;
-            border: none;
+            background: linear-gradient(135deg, #f0f5ff 0%, #e8f0ff 100%);
+            border: 2px solid rgba(29, 78, 216, 0.15);
             font-size: 28px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.1s;
+            transition: all 0.3s ease;
+            color: var(--blue);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.15);
+        }
+
+        .ctrl-btn:hover {
+            background: linear-gradient(135deg, #d0dbff 0%, #bfccff 100%);
+            transform: scale(1.08);
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.3);
         }
 
         .ctrl-btn:active {
-            background: #d0dbff;
+            background: linear-gradient(135deg, #bfccff 0%, #a5b4ff 100%);
             transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(29, 78, 216, 0.2);
         }
 
         .ctrl-stop {
-            background: #dc2626;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             color: white;
+            border-color: rgba(220, 38, 38, 0.2);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        }
+
+        .ctrl-stop:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
         }
 
         .ctrl-stop:active {
-            background: #b91c1c;
+            background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
         }
 
         .safety-check-item {
@@ -934,7 +1169,7 @@ window.doc = doc;
         }
 
         .patient-option-item {
-            background: #f1f5f9;
+            background: linear-gradient(135deg, #f1f5f9 0%, #f0f4f8 100%);
             border-radius: 30px;
             padding: 16px 20px;
             margin-bottom: 10px;
@@ -943,12 +1178,20 @@ window.doc = doc;
             gap: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.1s;
+            transition: all 0.3s ease;
             font-size: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .patient-option-item:hover {
-            background: #e5edff;
+            background: linear-gradient(135deg, #e5edff 0%, #d0dbff 100%);
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.2);
+            transform: translateX(4px);
+        }
+
+        .patient-option-item:active {
+            transform: translateX(2px);
         }
 
         .patient-option-item span {
@@ -972,10 +1215,25 @@ window.doc = doc;
             width: 100%;
             padding: 14px 18px;
             border-radius: 30px;
-            border: 1px solid #dbe0e8;
-            background: #f9fcff;
+            border: 2px solid #e2e8f0;
+            background: linear-gradient(135deg, #f9fcff 0%, #f0f4f8 100%);
             font-size: 15px;
             font-family: 'DM Sans', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--blue);
+            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1), 0 4px 12px rgba(29, 78, 216, 0.15);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
         }
 
         .button-group {
@@ -992,16 +1250,39 @@ window.doc = doc;
             border: none;
             cursor: pointer;
             font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .button-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .button-group button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .btn-primary {
-            background: var(--blue);
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
             color: white;
         }
 
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+        }
+
         .btn-secondary {
-            background: #eef2ff;
+            background: linear-gradient(135deg, #eef2ff 0%, #f0f4fe 100%);
             color: var(--text);
+            border: 1px solid rgba(29, 78, 216, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #e5edff 0%, #d0dbff 100%);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, 0.15);
         }
 
         .toast {
@@ -1009,22 +1290,25 @@ window.doc = doc;
             bottom: 30px;
             left: 20px;
             right: 20px;
-            background: #1e293b;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             color: white;
-            padding: 12px 20px;
+            padding: 14px 24px;
             border-radius: 50px;
             font-size: 13px;
             text-align: center;
             z-index: 3000;
-            animation: slideUp 0.3s ease;
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             max-width: 320px;
             margin: 0 auto;
             pointer-events: none;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
 
         @keyframes slideUp {
             from {
-                transform: translateY(100px);
+                transform: translateY(120px);
                 opacity: 0;
             }
             to {
@@ -1071,9 +1355,10 @@ window.doc = doc;
             max-width: 340px;
             text-align: center;
             z-index: 3500;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            animation: popIn 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3), 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
         }
 
         .alert-popup .alert-icon {
@@ -1090,24 +1375,36 @@ window.doc = doc;
 
         .alert-popup .alert-message {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.95);
             margin-bottom: 20px;
         }
 
         .alert-popup button {
-            background: white;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
             color: #1e3a8a;
             border: none;
             border-radius: 40px;
             padding: 10px 24px;
             font-weight: 700;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .alert-popup button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .alert-popup button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         @keyframes popIn {
             from {
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(0.9);
+                transform: translate(-50%, -50%) scale(0.85);
             }
             to {
                 opacity: 1;
@@ -1116,16 +1413,27 @@ window.doc = doc;
         }
 
         .notification-log-item {
-            background: #f8fafc;
+            background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
             border-radius: 16px;
             padding: 12px;
             margin-bottom: 10px;
             border-left: 4px solid var(--blue);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        .notification-log-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .notification-log-item.warning {
             border-left-color: var(--danger);
-            background: #fff5f5;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+        }
+
+        .notification-log-item.warning:hover {
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);
         }
 
         .notification-log-item .log-title {
@@ -1196,6 +1504,41 @@ window.doc = doc;
             padding: 8px 10px;
             outline: none;
         }
+
+        .clear-all-btn {
+            width: 100%;
+            padding: 14px 18px;
+            margin-top: 16px;
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .clear-all-btn:hover {
+            background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+            border-color: #9ca3af;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .clear-all-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .clear-all-btn span {
+            font-size: 16px;
+        }
     </style>
 </head>
 
@@ -1221,18 +1564,19 @@ window.doc = doc;
     </div>
 
     <div class="patient-full-card" id="patientCard">
-        <button class="edit-icon" id="editPatientBtn">✎</button>
         <div class="patient-row">
-            <img class="patient-photo" id="patientPhoto" src="" alt="patient" onclick="triggerPhotoUpload()">
+            <img class="patient-photo" id="patientPhoto" src="" alt="patient" onclick="triggerPhotoUpload()" style="cursor: pointer;">
             <div class="patient-name-id">
                 <h2 id="patientNameDisplay">Loading...</h2>
                 <span class="light" id="patientIdDisplay"></span>
             </div>
         </div>
+        <button class="edit-icon" id="editPatientBtn" style="top: 8px; right: 8px;">✏️</button>
         <div class="details-grid" id="patientDetailsGrid"></div>
     </div>
 
     <input type="file" id="patientPhotoInput" accept="image/*" style="display:none;">
+    <input type="file" id="caretakerPhotoInput" accept="image/*" style="display:none;">
 
     <div class="round-row">
         <button class="round-item" id="callIcon">
@@ -1294,6 +1638,7 @@ window.doc = doc;
         <div class="gps-header">
     <h3>📍 Patient GPS</h3>
     <div style="display:flex; gap:8px;">
+        <button class="center-map-btn" id="centerMapBtn" onclick="centerMapOnMarker()">🎯 Center</button>
         <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
     </div>
 </div>
@@ -1445,20 +1790,24 @@ window.doc = doc;
             <button class="close-popup" onclick="closeNotificationPopup()">×</button>
         </div>
         <div id="notificationList" style="max-height: 400px; overflow-y: auto;"></div>
-        <button class="btn-secondary" style="margin-top: 16px; width: 100%;" onclick="clearAllNotifications()">Clear All</button>
+        <button class="clear-all-btn" onclick="clearAllNotifications()"><span>🗑️</span> Clear All Notifications</button>
     </div>
 
     <div id="caretakerPopup" class="popup-panel caretaker-popup">
         <div class="popup-header">
-            <h3>👤 Caretaker</h3>
-            <button class="close-popup" onclick="closeCaretakerPopup()">×</button>
+            <h3>👤 Caretaker Profile</h3>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="editCaretakerIconBtn" style="background: none; border: none; font-size: 24px; cursor: pointer; transition: all 0.3s ease; color: #1d4ed8; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;" onmouseover="this.style.background='linear-gradient(135deg, #f0f5ff 0%, #e8f0ff 100%)'; this.style.boxShadow='0 4px 12px rgba(29, 78, 216, 0.2)';" onmouseout="this.style.background='none'; this.style.boxShadow='none';" onmousedown="this.style.transform='scale(0.95)';" onmouseup="this.style.transform='scale(1)';">✏️</button>
+                <button class="close-popup" onclick="closeCaretakerPopup()">×</button>
+            </div>
         </div>
         <div id="caretakerViewFields">
-            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-                <img id="caretakerPhoto" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
+            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px; position:relative;">
+                <img id="caretakerPhoto" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caretaker" style="width:80px; height:80px; border-radius:40px; object-fit:cover; cursor:pointer; transition:all 0.3s ease;" onclick="triggerCaretakerPhotoUpload()" onmouseover="this.style.opacity='0.7'; this.style.transform='scale(1.05)';" onmouseout="this.style.opacity='1'; this.style.transform='scale(1)';"/>
                 <div>
                     <strong id="caretakerName">John Doe</strong><br>
-                    <span id="caretakerIdDisplay" style="color:var(--muted);">ID: CT-2210</span>
+                    <span id="caretakerIdDisplay" style="color:var(--muted); font-size:12px;">ID: CT-2210</span><br>
+                    <small style="color: #10b981; font-weight: 600;">Click photo to update</small>
                 </div>
             </div>
             <div class="detail-row"><span>📧 Email</span> <span id="caretakerEmail">john.d@care.com</span></div>
@@ -1467,7 +1816,7 @@ window.doc = doc;
         </div>
         <div id="caretakerEditForm" class="edit-fields-container" style="display:none; margin-top:12px;"></div>
         <div class="button-group" style="margin-top:16px; gap:10px;">
-            <button class="btn-secondary" id="editCaretakerBtn" style="flex:1;">Edit profile</button>
+            <button class="btn-secondary" id="editCaretakerBtn" style="flex:1; display:none;">Edit profile</button>
             <button class="btn-primary" id="saveCaretakerBtn" style="flex:1; display:none;">Save changes</button>
             <button class="btn-secondary" id="cancelCaretakerEditBtn" style="flex:1; display:none;">Cancel</button>
         </div>
@@ -1482,15 +1831,6 @@ window.doc = doc;
         <div class="button-group" style="margin-top: 20px;">
             <button class="btn-primary" id="savePatientEditBtn">💾 Save Changes</button>
             <button class="btn-secondary" onclick="closeEditPatientPopup()">Cancel</button>
-        </div>
-    </div>
-
-    <div class="shutdown-overlay" id="shutdownOverlay">
-        <div class="shutdown-card">
-            <div style="font-size:40px;">⚠️</div>
-            <div style="font-size:22px; font-weight:700;">EMERGENCY HALT</div>
-            <p style="margin:12px 0;">Emergency stop activated</p>
-            <button onclick="closeShutdown()" style="background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
         </div>
     </div>
 
@@ -1605,6 +1945,60 @@ window.doc = doc;
             });
         } catch (error) {
             console.error("Failed to sync telemetry:", error);
+        }
+    }
+
+    // =============== LISTEN TO FIREBASE TELEMETRY FOR SYNC ===============
+    function listenToTelemetryUpdates() {
+        try {
+            const telemetryRef = ref(dbRealtime, 'esp32/telemetry');
+            onValue(telemetryRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data && esp32Connected) {
+                    console.log("📡 Synced telemetry from Firebase:", data);
+                    
+                    // Update angle display
+                    if (data.angle !== undefined) {
+                        updateAngleDisplay(data.angle);
+                    }
+                    
+                    // Update other telemetry if needed
+                    if (data.speed !== undefined) {
+                        const speedElem = document.getElementById('speedValue');
+                        if (speedElem) speedElem.innerText = data.speed.toFixed(1) + ' m/s';
+                    }
+                    
+                    if (data.battery !== undefined) {
+                        const batteryElem = document.getElementById('batteryValue');
+                        if (batteryElem) {
+                            const batteryVal = Math.round(data.battery);
+                            batteryElem.innerText = batteryVal + '%';
+                        }
+                    }
+                    
+                    if (data.obstacle !== undefined) {
+                        const obstacleElem = document.getElementById('obstacleValue');
+                        if (obstacleElem) {
+                            obstacleElem.innerText = data.obstacle;
+                            obstacleElem.className = 'tele-value ' + (data.obstacle === 'Clear' ? 'obstacle-clear' : data.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+                        }
+                    }
+                    
+                    if (data.direction !== undefined) {
+                        const dirBadge = document.getElementById('directionBadge');
+                        if (dirBadge) {
+                            const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
+                            const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
+                            dirBadge.innerHTML = icons[data.direction] || '⏹️';
+                            dirBadge.title = texts[data.direction] || 'Stopped';
+                        }
+                    }
+                }
+            }, (error) => {
+                console.error("Error listening to Firebase telemetry:", error);
+            });
+        } catch (error) {
+            console.error("Failed to set up telemetry listener:", error);
         }
     }
 
@@ -2207,10 +2601,11 @@ window.doc = doc;
         addNotification('✅ Patient Updated', 'Patient details have been updated successfully', false);
     }
 
-    // =============== MAP FUNCTIONS ===============
     let map;
     let currentLocationMarker;
     let currentLocationCircle;
+    let waveCircles = [];
+    let mapCenterVisible = true;
     let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
 
     function initMap() {
@@ -2230,7 +2625,119 @@ window.doc = doc;
         
         currentLocationMarker = L.marker([12.9716, 77.5946], { icon: createPatientMapIcon(patientData.photo) }).addTo(map);
         currentLocationCircle = L.circle([12.9716, 77.5946], { radius: 50, color: '#3b82f6', fillColor: '#bfdbfe', fillOpacity: 0.2 }).addTo(map);
+        
+        // Add animated wave circles
+        const waveRadii = [20, 40, 60];
+        waveRadii.forEach((radius, index) => {
+            const waveCircle = L.circle([12.9716, 77.5946], { 
+                radius: radius, 
+                color: '#3b82f6', 
+                weight: 2,
+                fillOpacity: 0,
+                className: 'wave-circle',
+                dashArray: '5, 5'
+            }).addTo(map);
+            waveCircles.push(waveCircle);
+            animateWaveCircle(waveCircle, index);
+        });
+        
+        // Add map event listeners for center button
+        map.on('movestart', () => mapCenterVisible = false);
+        map.on('zoomstart', () => mapCenterVisible = false);
+        map.on('moveend', checkIfMarkerInView);
+        map.on('zoomend', checkIfMarkerInView);
     }
+
+    function animateWaveCircle(circle, index) {
+        const baseRadii = [20, 40, 60];
+        const startRadius = baseRadii[index];
+        const duration = 2500;
+        const delay = index * 800;
+        
+        let startTime = Date.now() + delay;
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = (elapsed % duration) / duration;
+            
+            const currentRadius = startRadius + (progress * 60);
+            const opacity = Math.max(0, 1 - progress);
+            
+            if (circle && circle.setRadius && circle.setStyle) {
+                circle.setRadius(currentRadius);
+                circle.setStyle({ opacity: opacity });
+            }
+            
+            requestAnimationFrame(animate);
+        };
+        
+        animate();
+    }
+
+    function checkIfMarkerInView() {
+        if (!map || !currentLocationMarker) return;
+        
+        const markerLatLng = currentLocationMarker.getLatLng();
+        const bounds = map.getBounds();
+        
+        const isInView = bounds.contains(markerLatLng);
+        const centerBtn = document.getElementById('centerMapBtn');
+        
+        if (!isInView && centerBtn) {
+            centerBtn.classList.add('show');
+        } else if (centerBtn) {
+            centerBtn.classList.remove('show');
+        }
+    }
+
+    function centerMapOnMarker() {
+        try {
+            if (!map) {
+                console.error('Map not initialized');
+                return;
+            }
+            if (!currentLocationMarker) {
+                console.error('Marker not initialized');
+                return;
+            }
+            
+            const position = currentLocationMarker.getLatLng();
+            if (!position) {
+                console.error('Could not get marker position');
+                return;
+            }
+            
+            // Use flyTo for smooth animated transition to marker position
+            map.flyTo(position, 16, {
+                duration: 1.5,
+                easeLinearity: 0.25
+            });
+            
+            const centerBtn = document.getElementById('centerMapBtn');
+            if (centerBtn) centerBtn.classList.remove('show');
+            
+            console.log('✅ Centered map on marker at:', position);
+        } catch (err) {
+            console.error('Error centering map:', err);
+        }
+    }
+
+    function toggleGpsFullscreen() {
+        const mapCard = document.querySelector('.map-card');
+        if (!document.fullscreenElement) {
+            mapCard.requestFullscreen?.().catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+            });
+        } else {
+            document.exitFullscreen?.();
+        }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        setTimeout(() => {
+            if (map) map.invalidateSize();
+        }, 200);
+    });
 
     function refreshPatientMarkerIcon() {
         if (typeof currentLocationMarker !== 'undefined' && currentLocationMarker && patientData.photo) {
@@ -2253,8 +2760,17 @@ window.doc = doc;
         map.setView(position, 16);
         currentLocationMarker.setLatLng(position);
         currentLocationCircle.setLatLng(position);
+        
+        // Update wave circles position
+        waveCircles.forEach(circle => {
+            circle.setLatLng(position);
+        });
+        
         if (accuracy) currentLocationCircle.setRadius(Math.max(accuracy, 20));
         currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
+        
+        // Check if marker is in view
+        checkIfMarkerInView();
     }
 
     function listenPatientLocation() {
@@ -2401,6 +2917,7 @@ window.doc = doc;
         const editForm = document.getElementById('caretakerEditForm');
         const viewFields = document.getElementById('caretakerViewFields');
         const editBtn = document.getElementById('editCaretakerBtn');
+        const editIconBtn = document.getElementById('editCaretakerIconBtn');
         const saveBtn = document.getElementById('saveCaretakerBtn');
         const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
 
@@ -2419,7 +2936,8 @@ window.doc = doc;
 
         if (editForm) editForm.style.display = 'none';
         if (viewFields) viewFields.style.display = 'block';
-        if (editBtn) editBtn.style.display = 'inline-flex';
+        if (editBtn) editBtn.style.display = 'none';
+        if (editIconBtn) editIconBtn.style.display = 'block';
         if (saveBtn) saveBtn.style.display = 'none';
         if (cancelBtn) cancelBtn.style.display = 'none';
     }
@@ -2428,12 +2946,17 @@ window.doc = doc;
         const editForm = document.getElementById('caretakerEditForm');
         const viewFields = document.getElementById('caretakerViewFields');
         const editBtn = document.getElementById('editCaretakerBtn');
+        const editIconBtn = document.getElementById('editCaretakerIconBtn');
         const saveBtn = document.getElementById('saveCaretakerBtn');
         const cancelBtn = document.getElementById('cancelCaretakerEditBtn');
 
         if (!editForm || !viewFields) return;
 
         editForm.innerHTML = `
+            <div style="background: linear-gradient(135deg, #f0f5ff 0%, #e8f0ff 100%); padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #1d4ed8;">
+                <p style="font-size: 12px; color: #5b687c; margin: 0; font-weight: 600;">📸 Update Photo</p>
+                <small style="color: #1d4ed8; cursor: pointer;" onclick="window.triggerCaretakerPhotoUpload();">Click here to upload a new profile picture</small>
+            </div>
             <div class="edit-field-row"><label>Full Name</label><input type="text" id="editCaretakerName" value="${escapeHtml(caretakerData.name)}"></div>
             <div class="edit-field-row"><label>Caretaker ID</label><input type="text" id="editCaretakerId" value="${escapeHtml(caretakerData.id)}"></div>
             <div class="edit-field-row"><label>Email</label><input type="email" id="editCaretakerEmail" value="${escapeHtml(caretakerData.email)}"></div>
@@ -2444,6 +2967,7 @@ window.doc = doc;
         viewFields.style.display = 'none';
         editForm.style.display = 'block';
         if (editBtn) editBtn.style.display = 'none';
+        if (editIconBtn) editIconBtn.style.display = 'none';
         if (saveBtn) saveBtn.style.display = 'inline-flex';
         if (cancelBtn) cancelBtn.style.display = 'inline-flex';
     }
@@ -2563,9 +3087,177 @@ window.doc = doc;
         closePatientSubmenu();
     };
 
+    // Custom Media Presets Management
+    window.getCustomMediaPresets = () => {
+        const presets = localStorage.getItem('customMediaPresets');
+        return presets ? JSON.parse(presets) : [];
+    };
+
+    window.saveCustomMediaPresets = (presets) => {
+        localStorage.setItem('customMediaPresets', JSON.stringify(presets.slice(0, 4)));
+    };
+
+    window.addCustomMediaPreset = (name, url) => {
+        if (!name || !url) return false;
+        const presets = window.getCustomMediaPresets();
+        if (presets.length >= 4) {
+            showToast('❌ Maximum 4 presets allowed');
+            return false;
+        }
+        presets.push({ name, url });
+        window.saveCustomMediaPresets(presets);
+        return true;
+    };
+
+    window.removeCustomMediaPreset = (index) => {
+        const presets = window.getCustomMediaPresets();
+        presets.splice(index, 1);
+        window.saveCustomMediaPresets(presets);
+    };
+
+    // Extract YouTube video ID from URL
+    window.getYouTubeVideoId = (url) => {
+        try {
+            const urlParams = new URL(url).searchParams;
+            return urlParams.get('v') || url.split('v=')[1]?.substring(0, 11) || url.split('/').pop();
+        } catch {
+            return null;
+        }
+    };
+
+    // Extract video title from YouTube URL (basic attempt)
+    window.extractYouTubeTitle = (url) => {
+        const videoId = window.getYouTubeVideoId(url);
+        return videoId ? `Video: ${videoId.substring(0, 8)}...` : "YouTube Video";
+    };
+
+    window.loadYouTubeVideo = () => {
+        const youtubeUrl = document.getElementById('youtubeUrl')?.value;
+        if (!youtubeUrl) {
+            return showToast('❌ Please enter a YouTube URL');
+        }
+        
+        const videoId = window.getYouTubeVideoId(youtubeUrl);
+        if (!videoId) {
+            return showToast('❌ Invalid YouTube URL');
+        }
+
+        // Display embedded YouTube player with autoplay enabled
+        const playerContainer = document.getElementById('youtubePlayerContainer');
+        playerContainer.innerHTML = `
+            <div style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin: 16px 0; background: #000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen
+                    style="position: absolute; top: 0; left: 0;">
+                </iframe>
+            </div>
+        `;
+        
+        // Auto-save to Firestore
+        const videoTitle = window.extractYouTubeTitle(youtubeUrl);
+        saveActionToFirestore("media", { 
+            title: videoTitle, 
+            detail: "YouTube video playing", 
+            time: new Date().toLocaleString(),
+            youtubeUrl: youtubeUrl,
+            videoId: videoId
+        });
+        
+        showToast(`🎵 Now Playing: ${videoTitle}`);
+    };
+
+    window.loadPresetVideo = (presetUrl, presetTitle) => {
+        document.getElementById('youtubeUrl').value = presetUrl;
+        const videoId = window.getYouTubeVideoId(presetUrl);
+        const playerContainer = document.getElementById('youtubePlayerContainer');
+        playerContainer.innerHTML = `
+            <div style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin: 16px 0; background: #000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen
+                    style="position: absolute; top: 0; left: 0;">
+                </iframe>
+            </div>
+        `;
+        
+        // Auto-save preset to Firestore
+        saveActionToFirestore("media", { 
+            title: presetTitle, 
+            detail: "Preset video playing", 
+            time: new Date().toLocaleString(),
+            youtubeUrl: presetUrl,
+            videoId: videoId,
+            preset: true
+        });
+        
+        showToast(`🎵 Now Playing: ${presetTitle}`);
+    };
+
+    window.showMediaPresetsManager = () => {
+        const presets = window.getCustomMediaPresets();
+        let presetsHtml = `<div style="padding: 20px;">
+            <h4 style="margin-bottom: 16px; color: #0f172a; font-size: 16px;">📋 Manage Custom Presets</h4>
+            
+            <div style="margin-bottom: 18px; padding: 14px; background: #f0f4f8; border-radius: 8px; border-left: 4px solid #1d4ed8;">
+                <p style="font-size: 12px; color: #5b687c; margin-bottom: 12px;">Add a new preset (max 4):</p>
+                <input type="text" id="presetName" placeholder="Preset name (e.g., Meditation)" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 8px; font-size: 13px; box-sizing: border-box;">
+                <input type="text" id="presetUrl" placeholder="YouTube URL" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 10px; font-size: 13px; box-sizing: border-box;">
+                <button onclick="
+                    const name = document.getElementById('presetName')?.value;
+                    const url = document.getElementById('presetUrl')?.value;
+                    if (!name) { showToast('❌ Please enter preset name'); return; }
+                    if (!url) { showToast('❌ Please enter YouTube URL'); return; }
+                    if (window.getYouTubeVideoId(url)) {
+                        if (window.addCustomMediaPreset(name, url)) {
+                            showToast('✅ Preset added successfully!');
+                            document.getElementById('presetName').value = '';
+                            document.getElementById('presetUrl').value = '';
+                            setTimeout(() => window.showMediaPresetsManager(), 300);
+                        }
+                    } else {
+                        showToast('❌ Invalid YouTube URL');
+                    }
+                " style="width: 100%; padding: 10px 12px; background: #1d4ed8; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;">+ Add Preset</button>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <h5 style="font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 10px;">Your Presets (${presets.length}/4):</h5>`;
+        
+        if (presets.length === 0) {
+            presetsHtml += `<p style="font-size: 12px; color: #5b687c; text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px;">No presets yet. Add your first one above!</p>`;
+        } else {
+            presets.forEach((preset, idx) => {
+                presetsHtml += `
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e5e7eb;">
+                        <div style="flex: 1;">
+                            <p style="font-weight: 600; font-size: 13px; color: #0f172a; margin-bottom: 2px;">${preset.name}</p>
+                            <p style="font-size: 11px; color: #5b687c; word-break: break-all;">${preset.url.substring(0, 40)}...</p>
+                        </div>
+                        <button onclick="window.removeCustomMediaPreset(${idx}); showToast('✅ Preset removed'); setTimeout(() => window.showMediaPresetsManager(), 300);" style="padding: 6px 10px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;">🗑️</button>
+                    </div>
+                `;
+            });
+        }
+        
+        presetsHtml += `</div><button onclick="closePatientSubmenu(); showPatientSubmenu('media');" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;">← Back to Media Player</button></div>`;
+        
+        document.getElementById('submenuTitle').innerText = '⚙️ Media Presets Settings';
+        document.getElementById('submenuContent').innerHTML = presetsHtml;
+    };
+
     window.playMedia = async () => {
-        await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
-        showToast(`🎵 Media player started`);
+        showToast(`✅ Video is now playing for patient`);
         closePatientSubmenu();
     };
 
@@ -2597,8 +3289,61 @@ window.doc = doc;
             <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
             <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
         } else if (option === 'media') {
-            title = '🎵 Media & music';
-            content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
+            const presets = window.getCustomMediaPresets();
+            let presetsButtonsHtml = '';
+            
+            if (presets.length > 0) {
+                presetsButtonsHtml = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">`;
+                presets.forEach(preset => {
+                    presetsButtonsHtml += `
+                        <button onclick="window.loadPresetVideo('${preset.url}', '${preset.name}')" 
+                            style="padding: 12px 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); text-align: center; word-wrap: break-word;"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(102, 126, 234, 0.4)';"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)';">
+                            ▶️ ${preset.name}
+                        </button>
+                    `;
+                });
+                presetsButtonsHtml += `</div>`;
+            }
+            
+            title = '🎵 YouTube Media Player';
+            content = `<div style="padding:20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <p style="font-size: 13px; color: #5b687c; margin: 0;">Your custom presets (${presets.length}/4)</p>
+                    <button onclick="window.showMediaPresetsManager()" 
+                        style="padding: 6px 12px; background: #f3f4f6; color: #0f172a; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;"
+                        onmouseover="this.style.background='#e5e7eb'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';"
+                        onmouseout="this.style.background='#f3f4f6'; this.style.boxShadow='none';">
+                        ⚙️ Settings
+                    </button>
+                </div>
+                
+                ${presetsButtonsHtml}
+                
+                <div style="margin-bottom: 16px; padding: 14px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 10px; border-left: 4px solid #1d4ed8;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #0f172a;">🎥 Play any YouTube URL:</label>
+                    <input type="text" id="youtubeUrl" placeholder="Paste YouTube URL here..." style="width: 100%; padding: 12px 14px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; box-sizing: border-box; transition: all 0.2s; margin-bottom: 10px;"
+                        onkeypress="if(event.key==='Enter') window.loadYouTubeVideo()"
+                        onfocus="this.style.borderColor='#1d4ed8'; this.style.boxShadow='0 0 0 3px rgba(29, 78, 216, 0.1)';"
+                        onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';">
+                    <button class="btn-primary" id="loadVideoBtn" 
+                        style="width: 100%; padding: 12px 14px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(16, 185, 129, 0.3)';">
+                        ▶️ Play Video
+                    </button>
+                </div>
+                
+                <div id="youtubePlayerContainer" style="margin: 16px 0;"></div>
+                
+                <button onclick="closePatientSubmenu()" 
+                    style="width: 100%; margin-top: 12px; padding: 12px 14px; background: #f3f4f6; color: #0f172a; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;"
+                    onmouseover="this.style.background='#e5e7eb'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';"
+                    onmouseout="this.style.background='#f3f4f6'; this.style.boxShadow='none';">
+                    ✕ Close
+                </button>
+            </div>`;
         } else if (option === 'alarm') {
             title = '⏰ Set alarm';
             content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
@@ -2623,7 +3368,9 @@ window.doc = doc;
                 }
                 document.getElementById('bookApptBtn')?.addEventListener('click', window.bookAppointment);
             }
-            if (option === 'media') document.getElementById('playMediaBtn')?.addEventListener('click', window.playMedia);
+            if (option === 'media') {
+                document.getElementById('loadVideoBtn')?.addEventListener('click', window.loadYouTubeVideo);
+            }
             if (option === 'alarm') {
                 if (typeof flatpickr !== 'undefined') {
                     flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
@@ -2661,6 +3408,7 @@ window.doc = doc;
     window.closeShutdown = closeShutdown;
     window.clearAllNotifications = clearAllNotifications;
     window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
+    window.triggerCaretakerPhotoUpload = () => document.getElementById('caretakerPhotoInput').click();
     window.toggleSerialConsole = () => {
         const consoleDiv = document.getElementById('serialConsole');
         consoleDiv.classList.toggle('show');
@@ -2741,6 +3489,49 @@ window.doc = doc;
         reader.readAsDataURL(file);
     });
 
+    // Caretaker Photo Upload Handler
+    document.getElementById('caretakerPhotoInput').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.src = ev.target.result;
+
+            img.onload = async () => {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+
+                const maxWidth = 300;
+                const scale = maxWidth / img.width;
+
+                canvas.width = maxWidth;
+                canvas.height = img.height * scale;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+                caretakerData.photo = compressedBase64;
+
+                document.getElementById('caretakerPhoto').src = compressedBase64;
+
+                // Save to localStorage
+                localStorage.setItem('caretakerData', JSON.stringify(caretakerData));
+
+                // Save to Firestore
+                await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData);
+
+                addNotification('📸 Photo Updated', 'Caretaker photo saved permanently', false);
+                showToast("✅ Profile image uploaded & synced");
+            };
+        };
+
+        reader.readAsDataURL(file);
+    });
+
     document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
     document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
     document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
@@ -2758,6 +3549,7 @@ window.doc = doc;
     };
     document.getElementById('connectBtn').onclick = connectToESP32;
     document.getElementById('calibrateAngleBtn').onclick = () => window.calibrateAngleSensor();
+    document.getElementById('editCaretakerIconBtn').onclick = openCaretakerEditForm;
     document.getElementById('editCaretakerBtn').onclick = openCaretakerEditForm;
     document.getElementById('saveCaretakerBtn').onclick = saveCaretakerEdit;
     document.getElementById('cancelCaretakerEditBtn').onclick = cancelCaretakerEdit;
@@ -2804,6 +3596,7 @@ window.doc = doc;
     listenDriveMode();
     listenEmergencyFromPatient();
     listenPatientLocation();
+    listenToTelemetryUpdates();  // Start listening to Firebase telemetry for sync with untitled-3
 
     window.onload = () => {
         document.getElementById('controlPad').style.display = 'none';
