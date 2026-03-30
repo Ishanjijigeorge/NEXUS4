@@ -66,8 +66,10 @@
             --amber: #f59e0b;
             --green: #10b981;
             --radius: 24px;
-            --shadow: 0 6px 16px rgba(0,0,0,0.05);
-            --outline: 1px solid rgba(29,78,216,0.1);
+--shadow: 
+0 10px 30px rgba(0,0,0,0.08),
+0 2px 8px rgba(0,0,0,0.04);
+--outline: 1px solid rgba(29,78,216,0.1);
         }
         body {
             background: var(--bg);
@@ -76,6 +78,17 @@
             font-size: 14px;
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
+        
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.telemetry-card:hover,
+.angle-card:hover,
+.direction-container:hover,
+.carousel-container:hover {
+transform: translateY(-2px);
+box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+}
 
         .connection-status {
     position: fixed;
@@ -1409,8 +1422,8 @@ function listenESP32Status() {
     
     
     function updatePatientDisplay(){ 
-        document.getElementById('patientFirstName').innerText=patientData.fullName.split(' ')[0]; 
-        document.getElementById('patientIdSmall').innerHTML=`ID: ${patientData.patientId} · ${patientData.age}y`; 
+document.getElementById('patientFirstName').innerText = patientData.fullName;
+document.getElementById('patientIdSmall').innerHTML=`ID: ${patientData.patientId} · ${patientData.age}y`; 
         document.getElementById('profileImage').src=patientData.photo; 
     }
     
@@ -1484,15 +1497,22 @@ function listenESP32Status() {
         });
     }
 
-    function getWheelchairIcon() {
-        return L.divIcon({
-            className: 'device-marker-icon',
-            html: `<div class="location-marker-wrap"><div class="location-marker-dot"></div></div>`,
-            iconSize: [42, 42],
-            iconAnchor: [21, 42],
-            popupAnchor: [0, -42]
-        });
-    }
+function getWheelchairIcon() {
+    return L.divIcon({
+        className: 'device-marker-icon',
+        html: `
+        <div class="location-marker-wrap">
+            <div class="location-wave"></div>
+            <div class="location-wave"></div>
+            <div class="location-wave"></div>
+            <div class="location-marker-dot"></div>
+        </div>
+        `,
+        iconSize: [42, 42],
+        iconAnchor: [21, 42],
+        popupAnchor: [0, -42]
+    });
+}
 
     function updateDeviceLocation(lat, lng) {
         const coords = [lat, lng];
