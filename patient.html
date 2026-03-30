@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -78,30 +78,37 @@
         body.emergency-shutdown .shutdown-overlay { display: flex; }
 
         .connection-status {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: #dc2626;
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            cursor: pointer;
-        }
-        .connection-status.connected { background: #10b981; }
-        .connection-status .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: white;
-            animation: pulse 1.5s infinite;
-        }
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: #dc2626;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    border: 2px solid white;
+    backdrop-filter: blur(2px);
+}
+
+.connection-status.connected {
+    background: #10b981;
+    border-color: white;
+}
+
+.connection-status .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    animation: pulse 1.5s infinite;
+}
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -1052,8 +1059,18 @@
     function showAlertPopup(title, msg) { const pop=document.createElement('div'); pop.className='alert-popup'; pop.innerHTML=`<div class="alert-icon">⚠️</div><div class="alert-title">${escapeHtml(title)}</div><div class="alert-message">${escapeHtml(msg)}</div><button onclick="this.parentElement.remove()">Dismiss</button>`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),8000); }
     function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>]/g,function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
     
-    function updateConnectionStatus(connected) { const s=document.getElementById('connectionStatus'); s.className=connected?'connection-status connected':'connection-status disconnected'; document.getElementById('connectionText').innerText=connected?'Connected':'Disconnected'; }
+function updateConnectionStatus(connected) {
+    const statusDiv = document.getElementById('connectionStatus');
+    const statusText = document.getElementById('connectionText');
     
+    if (connected) {
+        statusDiv.className = 'connection-status connected';
+        statusText.innerText = 'ESP32 Connected';
+    } else {
+        statusDiv.className = 'connection-status disconnected';
+        statusText.innerText = 'ESP32 Disconnected';
+    }
+}    
     async function setEmergencyState(active, source='remote') {
         const overlay = document.getElementById('shutdownOverlay');
         if (active && !emergencyActive) {
@@ -1164,35 +1181,67 @@ function listenEmergencyContacts() {
         );
     }
     
-    function listenESP32Status() {
-        const statusRef = ref(dbRealtime, 'status');
-        onValue(statusRef, (snap) => {
-            const s = snap.val();
-            if(s){
-                updateConnectionStatus(true);
-                if(s.angle!==undefined) updateAngleDisplay(s.angle);
-                if(s.speed!==undefined) document.getElementById('speedValue').innerText = s.speed.toFixed(1)+' m/s';
-                if(s.battery!==undefined) document.getElementById('batteryValue').innerText = Math.round(s.battery)+'%';
-                if(s.obstacle!==undefined){
-                    const obsSpan=document.getElementById('obstacleValue');
-                    obsSpan.innerText = s.obstacle;
-                    obsSpan.className = 'tele-value '+(s.obstacle==='Clear'?'obstacle-clear':s.obstacle==='Nearby'?'obstacle-warn':'obstacle-block');
-                }
-                if(s.battery!==undefined) document.getElementById('rangeValue').innerText = ((s.battery/100)*8).toFixed(1)+' km';
-                if(s.direction!==undefined){
-                    currentDirection=s.direction;
-                    const badge=document.getElementById('directionBadge'), icon=document.getElementById('dirIconLarge'), text=document.getElementById('dirTextLarge');
-                    badge.className='direction-status-badge '+s.direction;
-                    const icons={forward:'⬆️',backward:'⬇️',left:'⬅️',right:'➡️',stop:'⏹️'};
-                    const texts={forward:'Moving forward',backward:'Moving backward',left:'Turning left',right:'Turning right',stop:'STOPPED'};
-                    icon.innerHTML=icons[s.direction]||'⏹️';
-                    text.innerHTML=texts[s.direction]||'Stopped';
-                }
-                if(s.mode && s.mode!==currentMode){ currentMode=s.mode; updateModeUI(currentMode); addToNotificationLog('🔄 Drive Mode',`Mode: ${currentMode}`,new Date().toLocaleString(),false); }
-            } else updateConnectionStatus(false);
-        }, (err)=>{ updateConnectionStatus(false); });
-    }
+function listenESP32Status() {
+    console.log("🔍 Listening for ESP32 status...");
     
+    // Listen to the ESP32 connection status from caretaker
+    const connectionRef = ref(dbRealtime, 'esp32/connection');
+    let lastConnected = false;
+    
+    onValue(connectionRef, (snap) => {
+        const connectionStatus = snap.val();
+        const isConnected = connectionStatus && connectionStatus.connected === true;
+        
+        console.log("📡 ESP32 connection status:", isConnected);
+        
+        if (isConnected) {
+            updateConnectionStatus(true);
+            
+            // Also listen to telemetry data
+            const telemetryRef = ref(dbRealtime, 'esp32/telemetry');
+            onValue(telemetryRef, (teleSnap) => {
+                const tele = teleSnap.val();
+                if (tele && isConnected) {
+                    console.log("📊 Telemetry received:", tele);
+                    
+                    if (tele.angle !== undefined) updateAngleDisplay(tele.angle);
+                    if (tele.speed !== undefined) document.getElementById('speedValue').innerText = tele.speed.toFixed(1) + ' m/s';
+                    if (tele.battery !== undefined) {
+                        const batteryVal = Math.round(tele.battery);
+                        document.getElementById('batteryValue').innerText = batteryVal + '%';
+                        const rangeVal = ((batteryVal / 100) * 8).toFixed(1);
+                        document.getElementById('rangeValue').innerText = rangeVal + ' km';
+                    }
+                    if (tele.obstacle !== undefined) {
+                        const obsSpan = document.getElementById('obstacleValue');
+                        obsSpan.innerText = tele.obstacle;
+                        obsSpan.className = 'tele-value ' + (tele.obstacle === 'Clear' ? 'obstacle-clear' : tele.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+                    }
+                    if (tele.direction !== undefined) {
+                        currentDirection = tele.direction;
+                        const badge = document.getElementById('directionBadge');
+                        const icon = document.getElementById('dirIconLarge');
+                        const text = document.getElementById('dirTextLarge');
+                        badge.className = 'direction-status-badge ' + tele.direction;
+                        const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
+                        const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
+                        icon.innerHTML = icons[tele.direction] || '⏹️';
+                        text.innerHTML = texts[tele.direction] || 'Stopped';
+                    }
+                }
+            });
+            
+        } else {
+            updateConnectionStatus(false);
+        }
+        
+        lastConnected = isConnected;
+    }, (error) => {
+        console.error("Error listening to ESP32 status:", error);
+        updateConnectionStatus(false);
+    });
+}
+
     async function sendCommandToESP32(type, value) {
         try{ await set(ref(dbRealtime, 'commands/lastCommand'), JSON.stringify({type,value,timestamp:Date.now(),source:'patient'})); showToast(`Command: ${value}`); return true; }
         catch(e){ showToast('Failed'); return false; }
@@ -1480,4 +1529,4 @@ function listenEmergencyContacts() {
     init();
 </script>
 </body>
-</html>
+</html> 
