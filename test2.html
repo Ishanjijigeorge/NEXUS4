@@ -3,18 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>CareTaker · Wheelchair Control System</title>
-
+    <title>My Companion · Health + Wheelchair Dashboard</title>
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+    <!-- DM Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, onValue, set, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        
+        const firebaseConfig = {
+             apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+  authDomain: "nexus-org-6e7e9.firebaseapp.com",
+  databaseURL: "https://nexus-org-6e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "nexus-org-6e7e9",
+  storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+  messagingSenderId: "989376914258",
+  appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+  measurementId: "G-TP1CVNYHNE"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const dbRealtime = getDatabase(app);
+        
+        window.db = db;
+        window.dbRealtime = dbRealtime;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.getDoc = getDoc;
+        window.updateDoc = updateDoc;
+        window.collection = collection;
+        window.ref = ref;
+        window.onValue = onValue;
+        window.set = set;
+        window.push = push;
+        window.onDisconnect = onDisconnect;
+        
+        console.log("Patient page Firebase initialized");
+    </script>
     <style>
         * {
             margin: 0;
@@ -22,55 +55,46 @@
             box-sizing: border-box;
             font-family: 'DM Sans', sans-serif;
         }
-
         :root {
             --bg: #f4f7fd;
             --card: #ffffff;
             --text: #0f172a;
             --muted: #5b687c;
             --blue: #1d4ed8;
+            --soft-blue: #e5edff;
             --danger: #dc2626;
             --amber: #f59e0b;
             --green: #10b981;
             --radius: 24px;
-            --shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
-            --outline: 1px solid rgba(29, 78, 216, 0.1);
+            --shadow: 0 6px 16px rgba(0,0,0,0.05);
+            --outline: 1px solid rgba(29,78,216,0.1);
         }
-
         body {
             background: var(--bg);
             padding: 12px;
             color: var(--text);
             font-size: 14px;
         }
+        body.emergency-shutdown .shutdown-overlay { display: flex; }
 
         .connection-status {
             position: fixed;
             bottom: 20px;
-            right: 20px;
+            left: 20px;
             padding: 8px 16px;
             border-radius: 20px;
             background: #dc2626;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             z-index: 1000;
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             cursor: pointer;
-            transition: all 0.3s ease;
         }
-
-        .connection-status.connected {
-            background: #10b981;
-        }
-
-        .connection-status.disconnected {
-            background: #dc2626;
-        }
-
+        .connection-status.connected { background: #10b981; }
         .connection-status .status-dot {
             width: 8px;
             height: 8px;
@@ -78,254 +102,773 @@
             background: white;
             animation: pulse 1.5s infinite;
         }
-
-        .connection-status .baud-rate {
-            font-size: 9px;
-            opacity: 0.8;
-            margin-left: 8px;
-        }
-
         @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
-.connect-btn {
-    position: fixed;
-    bottom: 15px;
-    left: 15px;
-    background: var(--blue);
-    color: white;
-    border: none;
-    border-radius: 30px;
-
-    padding: 6px 12px;     /* smaller padding */
-    font-size: 11px;       /* smaller text */
-    font-weight: 600;
-
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.connect-btn.connected {
-            background: var(--green);
-        }
-
-        .connect-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .serial-console {
-            position: fixed;
-            bottom: 80px;
-            left: 20px;
-            right: 20px;
-            max-width: 400px;
-            background: #1e293b;
-            color: #a5f3c3;
-            border-radius: 16px;
-            padding: 12px;
-            font-family: monospace;
-            font-size: 11px;
-            z-index: 1000;
-            display: none;
-            max-height: 200px;
-            overflow-y: auto;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .serial-console.show {
-            display: block;
-        }
-
-        .serial-console .console-header {
+        .top-row {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            color: #94a3b8;
-            font-size: 10px;
-        }
-
-        .serial-console .console-content {
-            font-family: 'Courier New', monospace;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .health-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-top: 8px;
+            margin-bottom: 18px;
         }
-
-        .health-item {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 16px 12px;
-            text-align: center;
-            transition: all 0.2s ease;
-            border: 1px solid #eef2ff;
-        }
-
-        .health-item span {
-            font-size: 12px;
-            color: var(--muted);
-            font-weight: 500;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .health-item .value {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--blue);
-        }
-
-        .health-item.warning {
-            background: #fff5f5;
-            border-color: var(--danger);
-        }
-
-        .health-item.warning .value {
-            color: var(--danger);
-        }
-
-        .wheel-detail {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
+        
+        .welcome-card {
+            background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 28px;
+            padding: 16px;
+            color: white;
+            box-shadow: 0 10px 24px rgba(29,78,216,0.3);
+            flex: 1.2;
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            border: 1px solid #eef2ff;
         }
-
-        .wheel-detail.warning {
-            background: #fff5f5;
-            border-color: var(--danger);
-        }
-
-        .wheel-detail.warning strong {
-            color: var(--danger);
-        }
-
-        .wheel-detail span {
-            color: var(--muted);
-            font-weight: 500;
-        }
-
-        .wheel-detail strong {
-            color: var(--text);
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .contact-item {
-            background: #f1f5f9;
-            border-radius: 40px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
-            font-size: 14px;
-            font-weight: 500;
+        
+        .welcome-top {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: 0.2s;
-            border: 1px solid #e2e8f0;
+            gap: 12px;
+            margin-bottom: 12px;
         }
-
-        .contact-item:hover {
-            background: #e5edff;
-            border-color: var(--blue);
-        }
-
-        body.emergency-shutdown .shutdown-overlay {
-            display: flex;
-        }
-
-        .header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 14px;
-        }
-
-        .profile-card {
-            background: white;
-            border-radius: 40px;
-            padding: 6px 16px 6px 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            cursor: pointer;
-            transition: 0.1s;
-        }
-
-        .profile-card:active {
-            background: #f0f4ff;
-        }
-
-        .profile-img {
-            width: 44px;
-            height: 44px;
-            border-radius: 30px;
+        
+        .profile-image {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
             object-fit: cover;
             border: 2px solid white;
             background: #cbd5e1;
         }
-
-        .profile-details {
-            text-align: left;
+        
+        .greeting-text {
+            flex: 1;
         }
-
-        .profile-name {
+        
+        .greeting-text .hello {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.9;
+            display: block;
+        }
+        
+        .greeting-text .name-large {
+            font-size: 22px;
             font-weight: 700;
-            font-size: 15px;
+            line-height: 1.2;
+            display: block;
+            margin-top: 2px;
         }
-
-        .profile-role {
+        
+        .patient-id-small {
             font-size: 11px;
-            color: var(--muted);
+            font-weight: 500;
+            opacity: 0.85;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 4px;
         }
-
-        .icon-group {
+        
+        .datetime-display {
+            font-size: 12px;
+            font-weight: 500;
             display: flex;
-            background: white;
-            padding: 4px 8px;
-            border-radius: 50px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            gap: 6px;
-            position: relative;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.15);
+            padding: 5px 12px;
+            border-radius: 30px;
+            width: fit-content;
+            margin-top: 8px;
         }
-
-        .icon-btn {
-            background: #f0f4fe;
+        
+        .datetime-display .time {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .welcome-icons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        
+        .icon-small, .profile-icon-btn {
+            background: rgba(255,255,255,0.18);
             border: none;
             width: 38px;
             height: 38px;
-            border-radius: 50%;
+            border-radius: 19px;
             font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
+            color: white;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        
+        .map-card {
+            background: white;
+            border-radius: 28px;
+            padding: 0;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        #map {
+            height: 100%;
+            min-height: 148px;
+            width: 100%;
+            border-radius: 28px;
+            background: #e2e8f0;
+        }
+        
+        .leaflet-control-zoom, .leaflet-control-attribution {
+            display: none !important;
+        }
+        .device-marker-icon {
+            background: transparent;
+        }
+        .device-marker-wrap,
+        .location-marker-wrap {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid rgba(59,130,246,0.95);
+            box-shadow: 0 3px 10px rgba(30,64,175,0.18);
+            overflow: hidden;
+        }
+        .device-marker-wrap img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        .location-marker-wrap {
+            background: rgba(59,130,246,0.95);
+            border: 2px solid rgba(59,130,246,0.95);
+            box-shadow: 0 0 0 4px rgba(255,255,255,1), 0 0 0 8px rgba(59,130,246,0.2), 0 3px 10px rgba(30,64,175,0.18);
+        }
+        .location-marker-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: white;
+        }
+        
+        .patient-details-section {
+            background: white;
+            border-radius: 28px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+            background: #f8fafd;
+            padding: 16px;
+            border-radius: 22px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 3px;
+            color: var(--text);
         }
 
+        .metrics-two-column {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        .telemetry-card {
+            background: white;
+            padding: 16px 12px;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            flex: 1;
+        }
+        
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 12px;
+        }
+        
+        .telemetry-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .tele-icon {
+            width: 52px;
+            height: 52px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29,78,216,0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        
+        .tele-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        
+        .tele-value {
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 3px;
+            color: var(--text);
+        }
+        
+        .obstacle-clear { color: var(--green); }
+        .obstacle-warn { color: var(--amber); }
+        .obstacle-block { color: var(--danger); }
+        
+        .angle-card {
+            background: white;
+            border-radius: 28px;
+            padding: 12px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        .angle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .angle-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .angle-value {
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--blue);
+            font-family: monospace;
+        }
+        .angle-bar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 6px;
+            position: relative;
+            margin: 10px 0;
+        }
+        .angle-center-marker {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            width: 3px;
+            height: 28px;
+            background: #dc2626;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        .angle-bar-fill-left {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6);
+            border-radius: 20px 0 0 20px;
+            right: 50%;
+            transition: width 0.05s linear;
+        }
+        .angle-bar-fill-right {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626);
+            border-radius: 0 20px 20px 0;
+            left: 50%;
+            transition: width 0.05s linear;
+        }
+        .angle-indicator-dot {
+            position: absolute;
+            top: -6px;
+            width: 18px;
+            height: 18px;
+            background: #1d4ed8;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid white;
+            z-index: 3;
+        }
+        .angle-direction {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 6px;
+            padding: 6px;
+            border-radius: 40px;
+            background: #f1f5f9;
+        }
+        .angle-direction.left { background: #dbeafe; color: #1e3a8a; }
+        .angle-direction.right { background: #fee2e2; color: #991b1b; }
+        .angle-direction.straight { background: #dcfce7; color: #166534; }
+        .angle-status {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 6px;
+            padding: 6px;
+            border-radius: 20px;
+        }
+        
+        .carousel-container {
+            background: white;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+        }
+        
+        .carousel-slides {
+            display: flex;
+            transition: transform 0.4s ease-in-out;
+            touch-action: pan-y pinch-zoom;
+        }
+        
+        .carousel-slide {
+            flex: 0 0 100%;
+            padding: 16px 12px;
+            min-height: 180px;
+        }
+        
+        .vital-signs-slide {
+            height: 100%;
+        }
+        
+        .health-header-compact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .health-header-compact h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .health-metrics-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .health-metric-compact {
+            text-align: center;
+            background: white;
+            padding: 10px 6px;
+            border-radius: 18px;
+            transition: all 0.2s;
+            border: 2px solid var(--green);
+        }
+        
+        .health-metric-compact.unstable {
+            border: 2px solid var(--danger);
+            background: #fff5f5;
+        }
+        
+        .health-metric-compact .metric-value-compact {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+        
+        .health-metric-compact.unstable .metric-value-compact {
+            color: var(--danger);
+        }
+        
+        .health-metric-compact .metric-label-compact {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+        
+        .content-slide {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content-slide-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .content-slide-header span {
+            font-size: 24px;
+        }
+        
+        .content-slide-header h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .content-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 130px;
+        }
+        
+        .content-item {
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .content-item .title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .content-item .detail {
+            color: var(--muted);
+            font-size: 11px;
+        }
+        
+        .empty-message {
+            text-align: center;
+            color: var(--muted);
+            padding: 20px;
+            font-size: 13px;
+        }
+        
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 0 12px;
+            background: white;
+            border-top: 1px solid #eef2ff;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .dot.active {
+            background: var(--blue);
+            width: 20px;
+            border-radius: 4px;
+        }
+        
+        .drive-mode-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 8px 6px;
+            border-radius: 40px;
+            min-height: auto;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, var(--blue) 0%, #3b82f6 100%);
+            border-color: var(--blue);
+        }
+        
+        .mode-btn.active .mode-name {
+            color: white;
+        }
+        
+        .mode-emoji {
+            font-size: 20px;
+        }
+        
+        .mode-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .direction-container {
+            background: white;
+            border-radius: 28px;
+            padding: 14px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        
+        .direction-header h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        
+        .direction-status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 36px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        }
+        
+        .direction-status-badge.forward { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+        .direction-status-badge.backward { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+        .direction-status-badge.left { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+        .direction-status-badge.right { background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); }
+        .direction-status-badge.stop {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.01); opacity: 0.95; }
+        }
+        
+        .direction-icon-large { font-size: 30px; }
+        .direction-text-large { font-size: 16px; font-weight: 800; color: white; }
+        
+        .emergency-btn {
+            width: 100%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .popup-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 28px;
+            padding: 28px 24px;
+            width: calc(100% - 48px);
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+        
+        .popup-panel.square {
+            border-radius: 28px;
+        }
+        
+        .popup-header {
+            margin-bottom: 16px;
+        }
+        
+        .popup-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+        
+        .popup-message {
+            font-size: 16px;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 24px;
+            padding: 0 8px;
+        }
+        
+        .popup-close-btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        
+        .popup-close-btn.secondary {
+            background: #eef2ff;
+            color: var(--text);
+            margin-top: 10px;
+        }
+        
+        .contact-item {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        
+        .shutdown-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .shutdown-card {
+            background: #0f172a;
+            padding: 24px;
+            border-radius: 48px;
+            color: white;
+            text-align: center;
+            width: 280px;
+        }
+        
+        .alert-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 32px;
+            padding: 28px 24px;
+            min-width: 280px;
+            max-width: 340px;
+            text-align: center;
+            z-index: 3000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .alert-popup .alert-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .alert-popup .alert-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+        }
+        .alert-popup .alert-message {
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
+        }
+        .alert-popup button {
+            background: white;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
         .notification-badge {
+            position: relative;
+        }
+        .notification-badge .badge-count {
             position: absolute;
             top: -5px;
             right: -5px;
@@ -340,638 +883,21 @@
             align-items: center;
             justify-content: center;
         }
-
-        .patient-full-card {
-            background: white;
-            border-radius: 28px;
-            padding: 16px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            margin-bottom: 14px;
-            position: relative;
-        }
-
-        .edit-icon {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: #eef2ff;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--blue);
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .patient-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 12px;
-        }
-
-        .patient-photo {
-            width: 70px;
-            height: 70px;
-            border-radius: 24px;
-            object-fit: cover;
-            background: #cbd5e1;
-            border: 2px solid white;
-            cursor: pointer;
-        }
-
-        .patient-name-id {
-            flex: 1;
-        }
-
-        .patient-name-id h2 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 2px;
-        }
-
-        .patient-name-id .light {
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .detail-label {
-            font-size: 10px;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-
-        .detail-value {
-            font-weight: 600;
-            font-size: 15px;
-            margin-top: 2px;
-        }
-
-        .round-row {
-            display: flex;
-            justify-content: space-around;
-            background: white;
-            padding: 12px 8px;
-            border-radius: 60px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            margin-bottom: 14px;
-        }
-
-        .round-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            width: 60px;
-        }
-
-        .round-icon {
-            width: 50px;
-            height: 50px;
-            background: #f0f5ff;
-            border: 2px solid rgba(29, 78, 216, 0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: var(--blue);
-        }
-
-        .round-item span {
-            font-size: 11px;
-            font-weight: 600;
-            margin-top: 4px;
-        }
-
-        .emergency-btn {
-            width: 100%;
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 16px;
-            font-size: 20px;
-            font-weight: 700;
-            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.3);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .drive-mode-card {
-            background: white;
-            border-radius: 40px;
-            padding: 12px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-
-        .mode-label {
-            font-weight: 600;
-            color: var(--muted);
-        }
-
-        .mode-value {
-            font-weight: 700;
-            color: var(--blue);
-            background: #e5edff;
-            padding: 6px 24px;
-            border-radius: 40px;
-        }
-
-        .angle-card {
-            background: white;
-            border-radius: 28px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            margin-bottom: 16px;
-            position: relative;
-        }
-
-        .angle-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .angle-header h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .angle-value {
-            font-size: 56px;
-            font-weight: 800;
-            text-align: center;
-            color: var(--blue);
-            margin: 10px 0;
-            font-family: monospace;
-            letter-spacing: 2px;
-        }
-
-        .angle-value span {
-            font-size: 32px;
-        }
-
-        .angle-bar-track {
-            background: #e2e8f0;
-            border-radius: 20px;
-            height: 8px;
-            position: relative;
-            margin: 20px 0;
-            overflow: visible;
-        }
-
-        .angle-center-marker {
-            position: absolute;
-            left: 50%;
-            top: -12px;
-            width: 3px;
-            height: 32px;
-            background: #dc2626;
-            transform: translateX(-50%);
-            border-radius: 2px;
-            z-index: 2;
-        }
-
-        .angle-bar-fill-left {
-            position: absolute;
-            height: 100%;
-            background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6);
-            border-radius: 20px 0 0 20px;
-            right: 50%;
-            transition: width 0.05s linear;
-            transform-origin: right center;
-        }
-
-        .angle-bar-fill-right {
-            position: absolute;
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626);
-            border-radius: 0 20px 20px 0;
-            left: 50%;
-            transition: width 0.05s linear;
-            transform-origin: left center;
-        }
-
-        .angle-indicator-dot {
-            position: absolute;
-            top: -10px;
-            width: 28px;
-            height: 28px;
-            background: #1d4ed8;
-            border-radius: 50%;
-            transform: translateX(-50%);
-            transition: left 0.05s linear;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 3;
-            border: 2px solid white;
-            cursor: pointer;
-        }
-
-        .angle-markers {
-            display: flex;
-            justify-content: space-between;
-            padding: 0 10px;
-            margin-top: 12px;
-            color: var(--muted);
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .angle-direction {
-            text-align: center;
-            font-size: 16px;
-            font-weight: 700;
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 40px;
-            background: #f1f5f9;
-            transition: all 0.2s ease;
-        }
-
-        .angle-direction.left {
-            background: #dbeafe;
-            color: #1e3a8a;
-        }
-
-        .angle-direction.right {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .angle-direction.straight {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .angle-warning {
-            border: 2px solid #dc2626;
-            animation: warning-pulse 1s ease-in-out;
-        }
-
-        @keyframes warning-pulse {
-            0%, 100% { border-color: #dc2626; }
-            50% { border-color: #ff6b6b; }
-        }
-
-        .angle-status {
-            font-size: 11px;
-            text-align: center;
-            margin-top: 12px;
-            padding: 8px;
-            border-radius: 20px;
-            transition: all 0.2s ease;
-        }
-
-        .angle-debug {
-            font-size: 9px;
-            text-align: center;
-            margin-top: 8px;
-            color: #94a3b8;
-            font-family: monospace;
-        }
-
-        .calibrate-btn {
-            background: #eef2ff;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--blue);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .calibrate-btn:active {
-            transform: scale(0.95);
-        }
-
-        .map-card {
-            background: white;
-            border-radius: 28px;
-            padding: 14px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-        }
-
-        .gps-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .gps-header h3 {
-            font-size: 16px;
-        }
-
-        .fullscreen-btn {
-            border: none;
-            background: #eef2ff;
-            color: #1e3a8a;
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .patient-map-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid rgba(59, 130, 246, 0.9);
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85);
-            background: white;
-        }
-
-        .patient-map-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #map {
-            height: 170px;
-            border-radius: 20px;
-            background: #e2e8f0;
-        }
-
-        .map-card:fullscreen,
-        .map-card:-webkit-full-screen {
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0;
-            padding: 18px;
-        }
-
-        .map-card:fullscreen #map,
-        .map-card:-webkit-full-screen #map {
-            height: calc(100vh - 80px);
-            border-radius: 16px;
-        }
-
-        .popup-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 36px;
-            padding: 22px;
-            width: calc(100% - 32px);
-            max-width: 380px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: none;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-
-        .popup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-
-        .popup-header h3 {
-            font-size: 20px;
-        }
-
-        .close-popup {
-            background: none;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-        }
-
-        .mode-option {
-            background: #f1f5f9;
-            border-radius: 40px;
-            padding: 16px 20px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-
-        .mode-option:hover {
-            background: #e5edff;
-        }
-
-        .shutdown-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(3px);
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .shutdown-card {
-            background: #0f172a;
-            padding: 24px;
-            border-radius: 40px;
-            color: white;
-            text-align: center;
-            width: 280px;
-        }
-
-        #controlPad {
-            margin-top: 16px;
-            background: white;
-            border-radius: 40px;
-            padding: 12px;
-            box-shadow: var(--shadow);
-            border: var(--outline);
-            display: none;
-        }
-        
-        @media (max-width: 480px) {
-
-    .ctrl-btn{
-        width: 44px;
-        height: 44px;
-        font-size: 20px;
-    }
-
-    #controlPad{
-        padding: 10px;
-    }
-
-}
-
-
-        .ctrl-btn {
-    width: 14vw;
-    height: 14vw;
-    max-width: 60px;
-    max-height: 60px;
-    min-width: 42px;
-    min-height: 42px;
-
-    border-radius: 50%;
-    background: #eef2ff;
-    border: none;
-
-    font-size: 6vw;
-    max-font-size: 28px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-        .ctrl-btn:active {
-            background: #d0dbff;
-            transform: scale(0.95);
-        }
-
-        .ctrl-stop {
-            background: #dc2626;
-            color: white;
-        }
-
-        .ctrl-stop:active {
-            background: #b91c1c;
-        }
-
-        .safety-check-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
+        .notification-log-item {
             background: #f8fafc;
-            padding: 8px 12px;
-            border-radius: 30px;
-        }
-
-        .safety-check-item input[type="checkbox"] {
-            width: 22px;
-            height: 22px;
-            cursor: pointer;
-            accent-color: var(--blue);
-        }
-
-        .patient-option-item {
-            background: #f1f5f9;
-            border-radius: 30px;
-            padding: 16px 20px;
+            border-radius: 16px;
+            padding: 12px;
             margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.1s;
-            font-size: 16px;
+            border-left: 4px solid var(--blue);
+            text-align: left;
         }
-
-        .patient-option-item:hover {
-            background: #e5edff;
+        .notification-log-item.warning {
+            border-left-color: var(--danger);
+            background: #fff5f5;
         }
-
-        .patient-option-item span {
-            font-size: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 14px 18px;
-            border-radius: 30px;
-            border: 1px solid #dbe0e8;
-            background: #f9fcff;
-            font-size: 15px;
-            font-family: 'DM Sans', sans-serif;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .button-group button {
-            flex: 1;
-            padding: 14px;
-            border-radius: 40px;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            font-size: 15px;
-        }
-
-        .btn-primary {
-            background: var(--blue);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #eef2ff;
-            color: var(--text);
-        }
-
         .toast {
             position: fixed;
-            bottom: 30px;
+            bottom: 80px;
             left: 20px;
             right: 20px;
             background: #1e293b;
@@ -986,1668 +912,617 @@
             margin: 0 auto;
             pointer-events: none;
         }
-
         @keyframes slideUp {
             from { transform: translateY(100px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-
-        .edit-fields-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .edit-field-row {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .edit-field-row label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-
-        .edit-field-row input {
-            padding: 10px 14px;
-            border-radius: 16px;
-            border: 1px solid #d0d5dd;
-            font-size: 14px;
-        }
-
-        .alert-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-            border-radius: 32px;
-            padding: 28px 24px;
-            min-width: 280px;
-            max-width: 340px;
-            text-align: center;
-            z-index: 3500;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            animation: popIn 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .alert-popup .alert-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-
-        .alert-popup .alert-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 8px;
-        }
-
-        .alert-popup .alert-message {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 20px;
-        }
-
-        .alert-popup button {
-            background: white;
-            color: #1e3a8a;
-            border: none;
-            border-radius: 40px;
-            padding: 10px 24px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        @keyframes popIn {
-            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
-
-        .notification-log-item {
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--blue);
-        }
-
-        .notification-log-item.warning {
-            border-left-color: var(--danger);
-            background: #fff5f5;
-        }
-
-        .notification-log-item .log-title {
-            font-weight: 700;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-
-        .notification-log-item .log-message {
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
-
-        .notification-log-item .log-time {
-            font-size: 10px;
-            color: var(--muted);
-        }
-
-        .command-feedback {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--blue);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-            z-index: 1000;
-            animation: fadeOut 2s ease forwards;
-            pointer-events: none;
-        }
-
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: translateY(0); }
-            70% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-20px); }
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #eef2ff;
-        }
-
-        @media (max-width: 768px) {
-            .angle-value {
-                font-size: 42px;
-            }
-
-            .popup-panel {
-                border-radius: 24px;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="header-row">
-        <div class="profile-card" id="caretakerProfileBtn">
-            <img class="profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="caregiver">
-            <div class="profile-details">
-                <div class="profile-name"></div>
-                <div class="profile-role">caretaker</div>
-            </div>
-        </div>
-        <div class="icon-group">
-            <button class="icon-btn" id="notificationBtn" style="position: relative;">
-                🔔
-                <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
-            </button>
-            <button class="icon-btn" id="modeSwitchIcon">⚙️</button>
-            <button class="icon-btn" id="openLogBtn">📋</button>
-            <button class="icon-btn" id="serialConsoleBtn">📟</button>
-        </div>
-    </div>
 
-    <div class="patient-full-card" id="patientCard">
-        <button class="edit-icon" id="editPatientBtn">✎</button>
-        <div class="patient-row">
-            <img class="patient-photo" id="patientPhoto" src="" alt="patient" onclick="triggerPhotoUpload()">
-            <div class="patient-name-id">
-                <h2 id="patientNameDisplay">Loading...</h2>
-                <span class="light" id="patientIdDisplay"></span>
-            </div>
-        </div>
-        <div class="details-grid" id="patientDetailsGrid"></div>
-    </div>
-
-    <input type="file" id="patientPhotoInput" accept="image/*" style="display:none;">
-
-    <div class="round-row">
-        <button class="round-item" id="callIcon">
-            <div class="round-icon">📞</div><span>Call</span>
-        </button>
-        <button class="round-item" id="healthIcon">
-            <div class="round-icon">❤️</div><span>Health</span>
-        </button>
-        <button class="round-item" id="wheelIcon">
-            <div class="round-icon">🦽</div><span>Wheel</span>
-        </button>
-        <button class="round-item" id="patientIcon">
-            <div class="round-icon">👤</div><span>Patient</span>
-        </button>
-    </div>
-
-    <button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
-
-    <div class="drive-mode-card">
-        <span class="mode-label">Drive mode</span>
-        <span class="mode-value" id="modeDisplay">Line Following</span>
-    </div>
-
-    <div class="angle-card" id="angleCard">
-        <div class="angle-header">
-            <h3>📐 Tilt Angle</h3>
-            <button class="calibrate-btn" id="calibrateAngleBtn">Calibrate</button>
-        </div>
-        <div class="angle-value" id="angleValue">0.0<span>°</span></div>
-        <div class="angle-bar-track" id="angleBarTrack">
-            <div class="angle-bar-fill-left" id="angleFillLeft"></div>
-            <div class="angle-bar-fill-right" id="angleFillRight"></div>
-            <div class="angle-center-marker"></div>
-            <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
-        </div>
-        <div class="angle-markers">
-            <span>45° LEFT</span>
-            <span>|</span>
-            <span>CENTER</span>
-            <span>|</span>
-            <span>45° RIGHT</span>
-        </div>
-        <div class="angle-direction" id="angleDirection">✓ STRAIGHT</div>
-        <div class="angle-status" id="angleStatus">Waiting for data...</div>
-        <div class="angle-debug" id="angleDebug"></div>
-    </div>
-
-    <div class="map-card">
-        <div class="gps-header">
-            <h3>📍 Patient GPS</h3>
-            <div style="display:flex; gap:8px;">
-                <button class="fullscreen-btn" onclick="toggleGpsFullscreen()">⛶ Full</button>
-            </div>
-        </div>
-        <div id="map"></div>
-    </div>
-
-    <div id="controlPad">
-<div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <button class="ctrl-btn" data-cmd="forward">⬆️</button>
-            <div style="display: flex; gap: 10px;">
-                <button class="ctrl-btn" data-cmd="left">⬅️</button>
-                <button class="ctrl-btn ctrl-stop" data-cmd="stop">⏹️</button>
-                <button class="ctrl-btn" data-cmd="right">➡️</button>
-            </div>
-            <button class="ctrl-btn" data-cmd="back">⬇️</button>
-        </div>
-        <p style="text-align: center; margin-top: 12px; color: var(--muted); font-size: 13px;">Control active · tap to move</p>
-        <div style="margin-top:20px; text-align:center;">
-            <label style="font-weight:600;">⚡ Speed Control</label><br>
-            <input type="range" id="speedSlider" min="0" max="100" value="20" style="width:90%;">
-            <div style="margin-top:6px;">
-                <span id="speedPercent">20%</span>
-            </div>
-        </div>
-    </div>
-
-    <button class="connect-btn" id="connectBtn">🔌 Connect to Bridge</button>
-
-    <div class="serial-console" id="serialConsole">
-        <div class="console-header">
-            <span>📟 Command Log</span>
-            <button onclick="toggleSerialConsole()" style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
-        </div>
-        <div class="console-content" id="consoleContent"></div>
-    </div>
-
-    <div id="modePopup" class="popup-panel">
-        <div class="popup-header">
-            <h3>⚙️ Select mode</h3>
-            <button class="close-popup" onclick="closeModePopup()">×</button>
-        </div>
-        <div class="mode-option" data-mode="Line Following">➖ Line Following</div>
-        <div class="mode-option" data-mode="Control">🎮 Control</div>
-        <div class="mode-option" data-mode="Self Drive">🤖 Self Drive</div>
-    </div>
-
-    <div id="callPopup" class="popup-panel">
-        <div class="popup-header">
-            <h3>📞 Emergency</h3>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button class="btn-secondary" id="editEmergencyBtn" style="padding:8px 16px; font-size:12px;">✎ Edit</button>
-                <button class="close-popup" onclick="closePopup('call')">×</button>
-            </div>
-        </div>
-        <div id="emergencyViewFields"></div>
-        <div id="emergencyEditForm" class="edit-fields-container" style="display:none; margin-top:12px;"></div>
-        <div class="button-group" style="margin-top:16px; gap:10px;">
-            <button class="btn-primary" id="saveEmergencyBtn" style="flex:1; display:none;">Save</button>
-            <button class="btn-secondary" id="cancelEmergencyBtn" style="flex:1; display:none;">Cancel</button>
-        </div>
-    </div>
-
-    <div id="healthPopup" class="popup-panel">
-        <div class="popup-header">
-            <h3>❤️ Health Monitoring</h3>
-            <button class="close-popup" onclick="closePopup('health')">×</button>
-        </div>
-        <div class="health-grid">
-            <div class="health-item" id="healthHeartItem">
-                <span>Heart Rate</span>
-                <div class="value" id="hrValue">84</div>
-                <small>bpm</small>
-            </div>
-            <div class="health-item" id="healthBPItem">
-                <span>Blood Pressure</span>
-                <div class="value" id="bpValue">130/80</div>
-                <small>mmHg</small>
-            </div>
-            <div class="health-item" id="healthTempItem">
-                <span>Temperature</span>
-                <div class="value" id="tempValue">36.8</div>
-                <small>°C</small>
-            </div>
-            <div class="health-item" id="healthO2Item">
-                <span>SpO₂</span>
-                <div class="value" id="o2Value">98</div>
-                <small>%</small>
-            </div>
-        </div>
-    </div>
-
-    <div id="wheelPopup" class="popup-panel">
-        <div class="popup-header">
-            <h3>🦽 Wheelchair Status</h3>
-            <button class="close-popup" onclick="closePopup('wheel')">×</button>
-        </div>
-        <div class="wheel-detail" id="batteryDetail">
-            <span>🔋 Battery</span>
-            <strong id="batteryValue">82%</strong>
-        </div>
-        <div class="wheel-detail" id="speedDetail">
-            <span>⚡ Speed</span>
-            <strong id="speedValue">0.00 m/s</strong>
-        </div>
-        <div class="wheel-detail">
-            <span>🚧 Obstacle</span>
-            <strong id="obstacleValue">Clear</strong>
-        </div>
-        <div class="wheel-detail">
-            <span>📍 Range</span>
-            <strong id="rangeValue">5.2 km</strong>
-        </div>
-        <div class="wheel-detail">
-            <span>📐 Tilt Angle</span>
-            <strong id="tiltValue">0.0°</strong>
-        </div>
-    </div>
-
-    <div id="patientMainMenu" class="popup-panel">
-        <div class="popup-header">
-            <h3>👤 Patient menu</h3>
-            <button class="close-popup" onclick="closePatientMainMenu()">×</button>
-        </div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('message')"><span>💬</span> Send message</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('calendar')"><span>📅</span> Mark calendar</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('appointment')"><span>📋</span> Book appointment</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('media')"><span>🎵</span> Media & music</div>
-        <div class="patient-option-item" onclick="showPatientSubmenu('alarm')"><span>⏰</span> Set alarm</div>
-    </div>
-
-    <div id="patientSubmenu" class="popup-panel" style="display:none;">
-        <div class="popup-header">
-            <h3 id="submenuTitle">Title</h3>
-            <button class="close-popup" onclick="closePatientSubmenu()">×</button>
-        </div>
-        <div id="submenuContent"></div>
-    </div>
-
-    <div id="notificationPopup" class="popup-panel" style="max-width: 400px;">
-        <div class="popup-header">
-            <h3>🔔 Notifications</h3>
-            <button class="close-popup" onclick="closeNotificationPopup()">×</button>
-        </div>
-        <div id="notificationList" style="max-height: 400px; overflow-y: auto;"></div>
-        <button class="btn-secondary" style="margin-top: 16px; width: 100%;" onclick="clearAllNotifications()">Clear All</button>
-    </div>
-
-    <div id="caretakerPopup" class="popup-panel caretaker-popup">
-        <div class="popup-header">
-            <h3>👤 Caretaker</h3>
-            <button class="close-popup" onclick="closeCaretakerPopup()">×</button>
-        </div>
-        <div id="caretakerViewFields">
-            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-                <img id="caretakerPhoto" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:60px; height:60px; border-radius:30px; object-fit:cover;">
-                <div>
-                    <strong id="caretakerName">John Doe</strong><br>
-                    <span id="caretakerIdDisplay" style="color:var(--muted);">ID: CT-2210</span>
+<div class="top-row">
+    <div class="welcome-card">
+        <div>
+            <div class="welcome-top">
+                <img class="profile-image" id="profileImage" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile">
+                <div class="greeting-text">
+                    <span class="hello">Welcome back,</span>
+                    <span class="name-large" id="patientFirstName">Loading...</span>
+                    <span class="patient-id-small" id="patientIdSmall"></span>
                 </div>
             </div>
-            <div class="detail-row"><span>📧 Email</span> <span id="caretakerEmail">john.d@care.com</span></div>
-            <div class="detail-row"><span>📞 Phone</span> <span id="caretakerPhone">+1 555 7700</span></div>
-            <div class="detail-row"><span>🏥 Facility</span> <span id="caretakerFacility">HomeCare Plus</span></div>
-        </div>
-        <div id="caretakerEditForm" class="edit-fields-container" style="display:none; margin-top:12px;"></div>
-        <div class="button-group" style="margin-top:16px; gap:10px;">
-            <button class="btn-secondary" id="editCaretakerBtn" style="flex:1;">Edit profile</button>
-            <button class="btn-primary" id="saveCaretakerBtn" style="flex:1; display:none;">Save changes</button>
-            <button class="btn-secondary" id="cancelCaretakerEditBtn" style="flex:1; display:none;">Cancel</button>
-        </div>
-    </div>
-
-    <div id="editPatientPopup" class="popup-panel" style="max-width: 420px;">
-        <div class="popup-header">
-            <h3>✏️ Edit Patient Details</h3>
-            <button class="close-popup" onclick="closeEditPatientPopup()">×</button>
-        </div>
-        <div id="editPatientForm" class="edit-fields-container"></div>
-        <div class="button-group" style="margin-top: 20px;">
-            <button class="btn-primary" id="savePatientEditBtn">💾 Save Changes</button>
-            <button class="btn-secondary" onclick="closeEditPatientPopup()">Cancel</button>
-        </div>
-    </div>
-
-    <div class="shutdown-overlay" id="shutdownOverlay">
-        <div class="shutdown-card">
-            <div style="font-size:40px;">⚠️</div>
-            <div style="font-size:22px; font-weight:700;">EMERGENCY HALT</div>
-            <p style="margin:12px 0;">Emergency stop activated</p>
-            <button onclick="closeShutdown()" style="background:white; border:none; padding:10px 28px; border-radius:40px;">Dismiss</button>
-        </div>
-    </div>
-
-    <div class="connection-status disconnected" id="connectionStatus">
-        <span class="status-dot"></span>
-        <span id="connectionText">Disconnected</span>
-        <span id="baudRate" class="baud-rate">(Firebase Bridge)</span>
-    </div>
-
- <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
-        authDomain: "nexus-org-6e7e9.firebaseapp.com",
-        databaseURL: "https://nexus-org-6e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "nexus-org-6e7e9",
-        storageBucket: "nexus-org-6e7e9.firebasestorage.app",
-        messagingSenderId: "989376914258",
-        appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
-        measurementId: "G-TP1CVNYHNE"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const dbRealtime = getDatabase(app);
-
-    const PATIENT_ID = "patient_main";
-    const MODE_ID = "drive_mode";
-    const EMERGENCY_ID = "emergency_status";
-
-    let patientData = {
-        fullName: 'Rebecca Rowe',
-        patientId: 'PT-10234',
-        age: '67',
-        bloodGroup: 'A+',
-        doctor: 'Dr. Sarah Adams',
-        contactNo: '+1 555 0199',
-        photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
-    };
-
-    let caretakerData = {
-        name: 'John Doe',
-        id: 'CT-2210',
-        email: 'john.d@care.com',
-        phone: '+1 555 7700',
-        facility: 'HomeCare Plus',
-        photo: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-        role: 'caretaker'
-    };
-
-    let emergencyContacts = [
-        { icon: '🚑', label: 'Ambulance', value: '108' },
-        { icon: '👨‍⚕️', label: 'Dr. Adams', value: '+1 555 1234' },
-        { icon: '🏠', label: 'Michael', value: '+1 555 8723' }
-    ];
-
-    let currentMode = 'Line Following';
-    let notifications = [];
-    let notificationCount = 0;
-    let emergencyActive = false;
-
-    let esp32IP = localStorage.getItem("esp32_bridge_ip") || "192.168.234.126";
-    let esp32Connected = false;
-    let telemetryInterval = null;
-    let lastCommandTime = 0;
-    let lastAngleValue = 0;
-    let angleUpdateCount = 0;
-    let lastPatientLocation = { lat: 12.9716, lng: 77.5946 };
-
-    let lastHealthState = {
-        hr: 84,
-        bp: '130/80',
-        temp: 36.8,
-        o2: 98
-    };
-
-    let lastWheelState = {
-        battery: 82,
-        speed: 0,
-        angle: 0
-    };
-
-    const safetyChecks = {
-        'Line Following': [
-            'Ensure path is clear of obstacles',
-            'Check that line sensors are clean',
-            'Confirm maximum speed setting is safe',
-            'Verify emergency stop works'
-        ],
-        'Control': [
-            'Ensure joystick/control is responsive',
-            'Confirm user is ready to manual drive',
-            'Check area around wheelchair is clear',
-            'Verify speed limit is set to low'
-        ],
-        'Self Drive': [
-            'Ensure autonomy mode is enabled',
-            'Check map data is up-to-date',
-            'Verify obstacle detection is active',
-            'Confirm area is safe for self drive'
-        ]
-    };
-
-    const map = L.map('map').setView([12.9716, 77.5946], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
-    }).addTo(map);
-
-    function createPatientMapIcon(photoUrl) {
-        const imageUrl = photoUrl || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
-        return L.divIcon({
-            className: 'patient-map-icon',
-            html: `<img src="${imageUrl}" alt="Patient">`,
-            iconSize: [48, 48],
-            iconAnchor: [24, 24],
-            popupAnchor: [0, -26]
-        });
-    }
-
-    const currentLocationMarker = L.marker(
-        [12.9716, 77.5946],
-        { icon: createPatientMapIcon(patientData.photo) }
-    ).addTo(map);
-
-    const currentLocationCircle = L.circle(
-        [12.9716, 77.5946],
-        { radius: 50, color: '#3b82f6', fillColor: '#bfdbfe', fillOpacity: 0.2 }
-    ).addTo(map);
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    function showToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-
-    function showCommandFeedback(command) {
-        const feedback = document.createElement('div');
-        feedback.className = 'command-feedback';
-        feedback.textContent = `📡 ${command}`;
-        document.body.appendChild(feedback);
-        setTimeout(() => feedback.remove(), 2000);
-    }
-
-    function addToSerialConsole(message, isOutgoing = false) {
-        const consoleContent = document.getElementById('consoleContent');
-        if (!consoleContent) return;
-
-        const time = new Date().toLocaleTimeString();
-        const color = isOutgoing ? '#a5f3c3' : '#fbbf24';
-
-        const line = document.createElement('div');
-        line.innerHTML = `<span style="color:${color}">${isOutgoing ? '→' : '←'}</span> <span style="color:#94a3b8;">[${time}]</span> ${escapeHtml(message)}`;
-        consoleContent.appendChild(line);
-        line.scrollIntoView();
-
-        while (consoleContent.children.length > 200) {
-            consoleContent.removeChild(consoleContent.firstChild);
-        }
-    }
-
-    function toggleSerialConsole() {
-        document.getElementById('serialConsole').classList.toggle('show');
-    }
-
-    function showAlertPopup(title, message) {
-        const existingPopup = document.querySelector('.alert-popup');
-        if (existingPopup) existingPopup.remove();
-
-        const popup = document.createElement('div');
-        popup.className = 'alert-popup';
-        popup.innerHTML = `
-            <div class="alert-icon">⚠️</div>
-            <div class="alert-title">${escapeHtml(title)}</div>
-            <div class="alert-message">${escapeHtml(message)}</div>
-            <button onclick="this.parentElement.remove()">Dismiss</button>
-        `;
-        document.body.appendChild(popup);
-
-        setTimeout(() => {
-            if (popup.parentElement) popup.remove();
-        }, 8000);
-    }
-
-    function addNotification(title, message, isWarning = false) {
-        const notification = {
-            id: Date.now() + Math.random(),
-            title,
-            message,
-            time: new Date().toLocaleString(),
-            isWarning
-        };
-        notifications.unshift(notification);
-        notificationCount++;
-        updateNotificationBadge();
-        updateNotificationList();
-
-        if (isWarning) showAlertPopup(title, message);
-        showToast(`📢 ${title}`);
-    }
-
-    function updateNotificationBadge() {
-        const badge = document.getElementById('notificationBadge');
-        if (notificationCount > 0) {
-            badge.style.display = 'flex';
-            badge.innerText = notificationCount > 9 ? '9+' : notificationCount;
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-    function updateNotificationList() {
-        const container = document.getElementById('notificationList');
-        if (!container) return;
-
-        if (notifications.length === 0) {
-            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No notifications yet</div>';
-            return;
-        }
-
-        container.innerHTML = notifications.map(n => `
-            <div class="notification-log-item ${n.isWarning ? 'warning' : ''}">
-                <div class="log-title">${escapeHtml(n.title)}</div>
-                <div class="log-message">${escapeHtml(n.message)}</div>
-                <div class="log-time">${n.time}</div>
+            <div class="datetime-display" id="datetimeDisplay">
+                <span>📅</span>
+                <span id="dateText"></span>
+                <span>⏰</span>
+                <span class="time" id="timeText">--:-- --</span>
             </div>
-        `).join('');
+        </div>
+        <div class="welcome-icons">
+            <button class="icon-small notification-badge" id="welcomeNotifBtn">🔔<span id="notificationBadge" class="badge-count" style="display: none;">0</span></button>
+            <button class="icon-small" id="welcomeLogBtn">📋</button>
+            <button class="icon-small" id="welcomeCallBtn">📞</button>
+            <button class="profile-icon-btn" id="profileIconBtn">👤</button>
+        </div>
+    </div>
+    <div class="map-card">
+        <div id="map"></div>
+    </div>
+</div>
+
+<div id="patientDetailsSection" class="patient-details-section" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="font-size: 18px;">📋 Patient Information</h3>
+        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px; background: none; border: none; cursor: pointer;">×</button>
+    </div>
+    <div class="details-grid" id="patientDetailsGrid"></div>
+</div>
+
+<div class="metrics-two-column">
+    <div class="telemetry-card">
+        <div class="telemetry-grid">
+            <div class="telemetry-item"><div class="tele-icon">⚡</div><span class="tele-label">SPEED</span><span class="tele-value" id="speedValue">0.0 m/s</span></div>
+            <div class="telemetry-item"><div class="tele-icon">🔋</div><span class="tele-label">BATTERY</span><span class="tele-value" id="batteryValue">--%</span></div>
+            <div class="telemetry-item"><div class="tele-icon">🚧</div><span class="tele-label">OBSTACLE</span><span class="tele-value" id="obstacleValue">--</span></div>
+            <div class="telemetry-item"><div class="tele-icon">📍</div><span class="tele-label">RANGE</span><span class="tele-value" id="rangeValue">-- km</span></div>
+        </div>
+    </div>
+    <div class="carousel-container">
+        <div class="carousel-wrapper"><div class="carousel-slides" id="carouselSlides"></div></div>
+        <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+</div>
+
+<div class="angle-card" id="angleCard">
+    <div class="angle-header"><h4>📐 Tilt Angle (Stability)</h4></div>
+    <div class="angle-value" id="angleValue">0.0<span>°</span></div>
+    <div class="angle-bar-track" id="angleBarTrack">
+        <div class="angle-bar-fill-left" id="angleFillLeft"></div>
+        <div class="angle-bar-fill-right" id="angleFillRight"></div>
+        <div class="angle-center-marker"></div>
+        <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
+    </div>
+    <div class="angle-direction" id="angleDirection">✓ STRAIGHT</div>
+    <div class="angle-status" id="angleStatus">Waiting for data...</div>
+</div>
+
+<div class="drive-mode-row">
+    <div class="mode-btn" data-mode="Line Following"><span class="mode-emoji">➖</span><span class="mode-name">Line Following</span></div>
+    <div class="mode-btn" data-mode="Control"><span class="mode-emoji">🎮</span><span class="mode-name">Control</span></div>
+    <div class="mode-btn" data-mode="Self Drive"><span class="mode-emoji">🤖</span><span class="mode-name">Self Drive</span></div>
+</div>
+
+<div class="direction-container">
+    <div class="direction-header"><h4>🔄 CURRENT MOVEMENT</h4></div>
+    <div class="direction-status-badge stop" id="directionBadge"><span class="direction-icon-large" id="dirIconLarge">⏹️</span><span class="direction-text-large" id="dirTextLarge">Stopped</span></div>
+</div>
+
+<button class="emergency-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
+
+<div id="callPopup" class="popup-panel square">
+    <div class="popup-header"><h3>📞 Emergency Call</h3></div>
+    <div class="popup-message">Tap contact to dial</div>
+    <div id="emergencyContactsList" style="margin-bottom: 16px;"></div>
+    <button class="popup-close-btn" onclick="closePopup('call')">Close</button>
+</div>
+
+<div id="logPopup" class="popup-panel square">
+    <div class="popup-header"><h3>📋 Notifications Log</h3></div>
+    <div id="notificationLog" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;"></div>
+    <button class="popup-close-btn" id="clearAllNotificationsBtn">🗑️ Clear All</button>
+    <button class="popup-close-btn secondary" onclick="closeLogPopup()" style="margin-top: 10px;">Close</button>
+</div>
+
+<div class="shutdown-overlay" id="shutdownOverlay">
+    <div class="shutdown-card"><div style="font-size:42px;">⚠️</div><div style="font-size:20px; font-weight:700;">EMERGENCY HALT</div><button onclick="closeShutdown()" style="margin-top:14px; background:white; border:none; padding:10px 24px; border-radius:40px;">Dismiss</button></div>
+</div>
+<div class="connection-status disconnected" id="connectionStatus"><span class="status-dot"></span><span id="connectionText">Disconnected</span></div>
+
+<script type="module">
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, onValue, set, push, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    
+    const db = window.db;
+    const dbRealtime = window.dbRealtime;
+    const PATIENT_ID = "patient_main";
+    let patientData = { fullName: 'Rebecca Rowe', patientId: 'PT-10234', age: '67', bloodGroup: 'A+', doctor: 'Dr. Sarah Adams', contactNo: '+1 555 0199', photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png' };
+    let currentMode = 'Line Following', currentDirection = 'stop', emergencyActive = false;
+    let notifications = [], notificationCount = 0;
+    let processedItems = { messages: new Set(), alarms: new Set(), appointments: new Set(), media: new Set(), calendar: new Set(), healthAlerts: new Set() };
+    let dataStore = { messages: [], alarms: [], appointments: [], media: [], calendar: [] };
+    let carouselIndex = 0, slides = [], autoSlideInterval = null, isVitalsAbnormal = false;
+    let touchStartX = 0, touchEndX = 0;
+    let lastHealthState = { hr: 84, temp: 36.8, o2: 98, bp: '130/80' };
+    const locationNameCache = new Map();
+    let currentLocation = { lat: 12.9716, lng: 77.5946 };
+    let gpsWatchId = null;
+    
+    let emergencyContacts = [];
+    
+    function renderEmergencyContacts() {
+        const container = document.getElementById('emergencyContactsList');
+        if(!container) return;
+        container.innerHTML = emergencyContacts.map(cont => `<div class="contact-item" data-number="${cont.number}">${cont.label}<span>${cont.number}</span></div>`).join('');
+        document.querySelectorAll('#emergencyContactsList .contact-item').forEach(el => {
+            el.addEventListener('click', () => { window.location.href = `tel:${el.dataset.number}`; });
+        });
     }
-
-    function clearAllNotifications() {
-        notifications = [];
-        notificationCount = 0;
-        updateNotificationBadge();
-        updateNotificationList();
-        showToast('All notifications cleared');
-    }
-
-    function refreshPatientMarkerIcon() {
-        if (currentLocationMarker && patientData.photo) {
-            currentLocationMarker.setIcon(createPatientMapIcon(patientData.photo));
-        }
-    }
-
-    function updateMapLocation(lat, lng, accuracy) {
-        const position = [lat, lng];
-        map.setView(position, 16);
-        currentLocationMarker.setLatLng(position);
-        currentLocationCircle.setLatLng(position);
-        if (accuracy) currentLocationCircle.setRadius(Math.max(accuracy, 20));
-        currentLocationMarker.bindPopup(`📍 ${patientData.fullName}<br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-    }
-
-    function updateConnectionStatus(connected) {
-        const statusDiv = document.getElementById('connectionStatus');
-        const statusText = document.getElementById('connectionText');
-        const connectBtn = document.getElementById('connectBtn');
-        const angleStatus = document.getElementById('angleStatus');
-
-        if (connected) {
-            statusDiv.className = 'connection-status connected';
-            statusText.innerText = `ESP32 Online (${esp32IP})`;
-            connectBtn.innerHTML = '🔌 Disconnect';
-            connectBtn.classList.add('connected');
-            if (angleStatus) {
-                angleStatus.innerHTML = '✓ Connected - Receiving live ESP32 telemetry';
-                angleStatus.style.background = '#dcfce7';
-                angleStatus.style.color = '#166534';
-            }
-        } else {
-            statusDiv.className = 'connection-status disconnected';
-            statusText.innerText = 'ESP32 Offline';
-            connectBtn.innerHTML = '🔌 Connect to Bridge';
-            connectBtn.classList.remove('connected');
-            if (angleStatus) {
-                angleStatus.innerHTML = '⚠️ Waiting for ESP32 telemetry';
-                angleStatus.style.background = '#fee2e2';
-                angleStatus.style.color = '#dc2626';
-            }
-        }
-    }
-
-    async function fetchWithTimeout(url, timeout = 1500) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        try {
-            const res = await fetch(url, {
-                method: "GET",
-                mode: "cors",
-                cache: "no-cache",
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            return res;
-        } catch (err) {
-            clearTimeout(timeoutId);
-            throw err;
-        }
-    }
-
-    async function promptForESP32IP() {
-        const value = prompt("Enter ESP32 IP address", esp32IP || "192.168.1.100");
-        if (!value) return false;
-        esp32IP = value.trim();
-        localStorage.setItem("esp32_bridge_ip", esp32IP);
-        return true;
-    }
-
-    async function testESP32Connection() {
-        try {
-            const res = await fetchWithTimeout(`http://${esp32IP}/ping`, 2000);
-            if (!res.ok) return false;
-            const text = await res.text();
-            return text.trim() === "PONG";
-        } catch (err) {
-            return false;
-        }
-    }
-
-    async function fetchTelemetry() {
-        if (!esp32Connected) return;
-
-        try {
-            const res = await fetchWithTimeout(`http://${esp32IP}/telemetry`, 1200);
-            if (!res.ok) throw new Error("telemetry fetch failed");
-
-            const data = await res.json();
-            updateESP32Telemetry(data);
-        } catch (err) {
-            esp32Connected = false;
-            stopTelemetryPolling();
-            updateConnectionStatus(false);
-            showToast("⚠️ Lost connection to ESP32");
-        }
-    }
-
-    function startTelemetryPolling() {
-        stopTelemetryPolling();
-        telemetryInterval = setInterval(fetchTelemetry, 250);
-    }
-
-    function stopTelemetryPolling() {
-        if (telemetryInterval) {
-            clearInterval(telemetryInterval);
-            telemetryInterval = null;
-        }
-    }
-
-    function updateESP32Telemetry(data) {
-        const angle = Number(data.angle || 0);
-        const speed = Number(data.speed || 0);
-        const emergency = !!data.emergency;
-
-        updateAngleDisplay(angle);
-
-        document.getElementById('speedValue').innerText = `${speed.toFixed(2)} m/s`;
-        document.getElementById('batteryValue').innerText = `89%`;
-        document.getElementById('obstacleValue').innerText = 'Clear';
-        document.getElementById('rangeValue').innerText = `5.2 km`;
-
-        if (speed > 1.2) {
-            document.getElementById('speedDetail').classList.add('warning');
-        } else {
-            document.getElementById('speedDetail').classList.remove('warning');
-        }
-
-        if (emergency && !emergencyActive) {
+    
+    function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+    function showAlertPopup(title, msg) { const pop=document.createElement('div'); pop.className='alert-popup'; pop.innerHTML=`<div class="alert-icon">⚠️</div><div class="alert-title">${escapeHtml(title)}</div><div class="alert-message">${escapeHtml(msg)}</div><button onclick="this.parentElement.remove()">Dismiss</button>`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),8000); }
+    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>]/g,function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
+    
+    function updateConnectionStatus(connected) { const s=document.getElementById('connectionStatus'); s.className=connected?'connection-status connected':'connection-status disconnected'; document.getElementById('connectionText').innerText=connected?'Connected':'Disconnected'; }
+    
+    async function setEmergencyState(active, source='remote') {
+        const overlay = document.getElementById('shutdownOverlay');
+        if (active && !emergencyActive) {
             emergencyActive = true;
             document.body.classList.add('emergency-shutdown');
-            document.getElementById('shutdownOverlay').style.display = 'flex';
-            addNotification('🚨 Emergency Active', 'ESP32 reports emergency stop state', true);
-        }
-
-        if (!emergency && emergencyActive) {
+            if (overlay) overlay.style.display = 'flex';
+            addToNotificationLog('🚨 EMERGENCY', source === 'patient' ? 'Emergency stop activated on this device.' : 'Emergency stop activated by caretaker.', true);
+            await set(ref(dbRealtime, 'emergency_status/active'), true);
+            await setDoc(doc(db,"settings","emergency_status"), { active: true, source: source, timestamp: new Date().toISOString() }, { merge: true });
+        } else if (!active && emergencyActive) {
             emergencyActive = false;
             document.body.classList.remove('emergency-shutdown');
-            document.getElementById('shutdownOverlay').style.display = 'none';
-        }
-
-        addToSerialConsole(`ANGLE:${angle.toFixed(2)} | SPEED:${speed.toFixed(2)}`, false);
-    }
-
-    async function sendESP32Command(path) {
-        if (!esp32Connected) {
-            showToast("⚠️ ESP32 not connected");
-            return false;
-        }
-
-        try {
-            const res = await fetchWithTimeout(`http://${esp32IP}${path}`, 1500);
-            if (!res.ok) throw new Error("request failed");
-            return true;
-        } catch (err) {
-            esp32Connected = false;
-            stopTelemetryPolling();
-            updateConnectionStatus(false);
-            showToast("❌ ESP32 command failed");
-            return false;
+            if (overlay) overlay.style.display = 'none';
+            await set(ref(dbRealtime, 'emergency_status/active'), false);
+            await setDoc(doc(db,"settings","emergency_status"), { active: false, timestamp: new Date().toISOString() }, { merge: true });
         }
     }
+    
+function listenEmergencyContacts() {
+    const refContacts = doc(db, "settings", "emergency_contacts");
 
-    async function sendBridgeCommand(cmd) {
-        const ok = await sendESP32Command(`/cmd?data=${encodeURIComponent(cmd)}`);
-        if (ok) {
-            addToSerialConsole(cmd, true);
-            showCommandFeedback(cmd);
-        }
-        return ok;
-    }
-
-    async function connectToBridge() {
-        if (esp32Connected) {
-            esp32Connected = false;
-            stopTelemetryPolling();
-            updateConnectionStatus(false);
-            showToast("ESP32 disconnected");
-            return;
-        }
-
-        const hasIP = await promptForESP32IP();
-        if (!hasIP) return;
-
-        showToast("🔍 Connecting to ESP32...");
-        const ok = await testESP32Connection();
-
-        if (ok) {
-            esp32Connected = true;
-            updateConnectionStatus(true);
-            startTelemetryPolling();
-            await fetchTelemetry();
-            addNotification("🔌 Connected", `Connected to ESP32 at ${esp32IP}`, false);
-            showToast("✅ ESP32 connected");
-        } else {
-            esp32Connected = false;
-            updateConnectionStatus(false);
-            showToast("❌ Could not reach ESP32");
-        }
-    }
-
-    function updateAngleDisplay(angle) {
-        let validAngle = Math.min(45, Math.max(-45, angle));
-        lastAngleValue = validAngle;
-        angleUpdateCount++;
-
-        const angleValueElem = document.getElementById('angleValue');
-        if (angleValueElem) {
-            angleValueElem.innerHTML = `${validAngle.toFixed(1)}<span>°</span>`;
-        }
-
-        const track = document.getElementById('angleBarTrack');
-        if (track) {
-            const trackWidth = track.offsetWidth;
-            const centerX = trackWidth / 2;
-            const maxOffset = (trackWidth / 2) - 14;
-            const dotOffset = (validAngle / 45) * maxOffset;
-            const dotLeft = centerX + dotOffset;
-
-            const indicatorDot = document.getElementById('angleIndicatorDot');
-            if (indicatorDot) {
-                indicatorDot.style.left = `${dotLeft}px`;
-            }
-
-            const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
-            const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
-
-            document.getElementById('angleFillLeft').style.width = `${leftFillPercent}%`;
-            document.getElementById('angleFillRight').style.width = `${rightFillPercent}%`;
-        }
-
-        const angleDirectionElem = document.getElementById('angleDirection');
-        const angleCard = document.getElementById('angleCard');
-        const angleStatus = document.getElementById('angleStatus');
-        const tiltValueInWheel = document.getElementById('tiltValue');
-
-        let directionText = '';
-        let directionClass = '';
-        let directionIcon = '';
-
-        if (validAngle > 5) {
-            directionIcon = '⬅️';
-            directionText = `LEFT TURN (${validAngle.toFixed(1)}° left)`;
-            directionClass = 'left';
-        } else if (validAngle < -5) {
-            directionIcon = '➡️';
-            directionText = `RIGHT TURN (${Math.abs(validAngle).toFixed(1)}° right)`;
-            directionClass = 'right';
-        } else {
-            directionIcon = '✓';
-            directionText = 'STRAIGHT (centered)';
-            directionClass = 'straight';
-        }
-
-        angleDirectionElem.className = `angle-direction ${directionClass}`;
-        angleDirectionElem.innerHTML = `${directionIcon} ${directionText}`;
-        tiltValueInWheel.innerText = `${validAngle.toFixed(1)}°`;
-
-        if (Math.abs(validAngle) > 25) {
-            angleCard.classList.add('angle-warning');
-            angleStatus.innerHTML = '⚠️ CRITICAL: Severe tilt! Risk of tipping!';
-            angleStatus.style.background = '#fee2e2';
-            angleStatus.style.color = '#dc2626';
-        } else if (Math.abs(validAngle) > 18) {
-            angleCard.classList.add('angle-warning');
-            angleStatus.innerHTML = `⚠️ Warning: High tilt (${Math.abs(validAngle).toFixed(1)}°)`;
-            angleStatus.style.background = '#fffbeb';
-            angleStatus.style.color = '#f59e0b';
-        } else {
-            angleCard.classList.remove('angle-warning');
-            if (esp32Connected) {
-                angleStatus.innerHTML = '✓ Normal operating range - Wheelchair stable';
-                angleStatus.style.background = '#dcfce7';
-                angleStatus.style.color = '#166534';
-            }
-        }
-
-        const debugElem = document.getElementById('angleDebug');
-        if (debugElem && angleUpdateCount % 10 === 0) {
-            debugElem.innerHTML = `Raw: ${angle.toFixed(2)}° | Display: ${validAngle.toFixed(1)}° | Updates: ${angleUpdateCount}`;
-        }
-
-        lastWheelState.angle = validAngle;
-    }
-
-    async function calibrateAngleSensor() {
-        const ok = await sendBridgeCommand("CALIBRATE");
-        if (!ok) return false;
-
-        showToast("📐 Calibration command sent");
-        return true;
-    }
-
-    async function sendControlCommand(cmd) {
-        if (currentMode !== 'Control') {
-            showToast("Not in Control mode");
-            return;
-        }
-
-        const now = Date.now();
-        if (now - lastCommandTime < 100) return;
-        lastCommandTime = now;
-
-        await sendBridgeCommand(`CMD:${cmd}`);
-    }
-
-    async function triggerEmergency() {
-        emergencyActive = true;
-        const ok = await sendESP32Command(`/emergency`);
-        if (!ok) return;
-
-        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-        await setDoc(emergencyRef, {
-            active: true,
-            triggeredBy: 'caretaker',
-            timestamp: new Date().toISOString()
-        });
-
-        document.body.classList.add('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'flex';
-        addNotification('🚨 EMERGENCY STOP', 'Emergency stop activated by caretaker', true);
-    }
-
-    function closeShutdown() {
-        emergencyActive = false;
-        document.body.classList.remove('emergency-shutdown');
-        document.getElementById('shutdownOverlay').style.display = 'none';
-        sendESP32Command(`/reset`);
-    }
-
-    function listenEmergencyFromPatient() {
-        const emergencyRef = doc(db, "settings", EMERGENCY_ID);
-        onSnapshot(emergencyRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().active === true && !emergencyActive) {
-                emergencyActive = true;
-                sendESP32Command(`/emergency`);
-                document.body.classList.add('emergency-shutdown');
-                document.getElementById('shutdownOverlay').style.display = 'flex';
-                addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop', true);
-            } else if (docSnap.exists() && docSnap.data().active === false && emergencyActive) {
-                emergencyActive = false;
-                document.body.classList.remove('emergency-shutdown');
-                document.getElementById('shutdownOverlay').style.display = 'none';
-            }
-        });
-    }
-
-    function renderEmergencyContacts() {
-        const viewFields = document.getElementById('emergencyViewFields');
-        const editForm = document.getElementById('emergencyEditForm');
-        const editBtn = document.getElementById('editEmergencyBtn');
-        const saveBtn = document.getElementById('saveEmergencyBtn');
-        const cancelBtn = document.getElementById('cancelEmergencyBtn');
-
-        viewFields.innerHTML = emergencyContacts.map((contact, index) =>
-            `<div class="contact-item emergency-contact" data-contact-index="${index}">${contact.icon} ${contact.label} <span style="margin-left:auto;">${contact.value}</span></div>`
-        ).join('');
-
-        viewFields.querySelectorAll('.emergency-contact').forEach(contactEl => {
-            contactEl.onclick = () => {
-                const index = Number(contactEl.dataset.contactIndex);
-                if (!Number.isNaN(index) && emergencyContacts[index]) {
-                    callEmergencyNumber(emergencyContacts[index].value);
-                }
-            };
-        });
-
-        editForm.style.display = 'none';
-        saveBtn.style.display = 'none';
-        cancelBtn.style.display = 'none';
-        editBtn.style.display = 'inline-flex';
-        viewFields.style.display = 'block';
-    }
-
-    function openEmergencyEditForm() {
-        const editForm = document.getElementById('emergencyEditForm');
-        const viewFields = document.getElementById('emergencyViewFields');
-        const editBtn = document.getElementById('editEmergencyBtn');
-        const saveBtn = document.getElementById('saveEmergencyBtn');
-        const cancelBtn = document.getElementById('cancelEmergencyBtn');
-
-        editForm.innerHTML = emergencyContacts.map((contact, index) => `
-            <div class="edit-field-row"><label>Contact ${index + 1} Label</label><input type="text" id="editEmergencyLabel${index}" value="${escapeHtml(contact.label)}"></div>
-            <div class="edit-field-row"><label>Contact ${index + 1} Number</label><input type="text" id="editEmergencyValue${index}" value="${escapeHtml(contact.value)}"></div>
-        `).join('');
-
-        viewFields.style.display = 'none';
-        editForm.style.display = 'block';
-        editBtn.style.display = 'none';
-        saveBtn.style.display = 'inline-flex';
-        cancelBtn.style.display = 'inline-flex';
-    }
-
-    function cancelEmergencyEdit() {
-        renderEmergencyContacts();
-    }
-
-    async function saveEmergencyContacts() {
-        emergencyContacts = emergencyContacts.map((contact, index) => ({
-            icon: contact.icon,
-            label: document.getElementById(`editEmergencyLabel${index}`)?.value.trim() || contact.label,
-            value: document.getElementById(`editEmergencyValue${index}`)?.value.trim() || contact.value
-        }));
-
-        const formatted = emergencyContacts.map(c => ({
-            label: `${c.icon} ${c.label}`,
-            number: c.value
-        }));
-
-        try {
-            await setDoc(doc(db, "settings", "emergency_contacts"), { contacts: formatted });
-            renderEmergencyContacts();
-            addNotification('✅ Emergency contacts saved', 'Saved permanently', false);
-            showToast("💾 Saved successfully");
-        } catch (error) {
-            showToast("❌ Failed to save contacts");
-        }
-    }
-
-    function callEmergencyNumber(number) {
-        const normalized = String(number).replace(/[^0-9+]/g, '');
-        if (!normalized) return;
-        window.location.href = `tel:${normalized}`;
-    }
-
-    async function loadEmergencyContacts() {
-        const refDoc = doc(db, "settings", "emergency_contacts");
-        const snap = await getDoc(refDoc);
-
-        if (snap.exists()) {
-            const data = snap.data();
-            if (data.contacts && Array.isArray(data.contacts)) {
-                emergencyContacts = data.contacts.map(c => {
-                    const parts = c.label.split(" ");
-                    return {
-                        icon: parts[0],
-                        label: parts.slice(1).join(" "),
-                        value: c.number
-                    };
-                });
-            }
-        } else {
-            await setDoc(refDoc, {
-                contacts: emergencyContacts.map(c => ({
-                    label: `${c.icon} ${c.label}`,
-                    number: c.value
-                }))
-            });
-        }
-
-        renderEmergencyContacts();
-    }
-
-    function listenEmergencyContacts() {
-        const refDoc = doc(db, "settings", "emergency_contacts");
-        onSnapshot(refDoc, (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                emergencyContacts = data.contacts.map(c => {
-                    const parts = c.label.split(" ");
-                    return {
-                        icon: parts[0],
-                        label: parts.slice(1).join(" "),
-                        value: c.number
-                    };
-                });
-                renderEmergencyContacts();
-            }
-        });
-    }
-
-    function renderCaretakerProfile() {
-        document.getElementById('caretakerName').textContent = caretakerData.name;
-        document.getElementById('caretakerIdDisplay').textContent = `ID: ${caretakerData.id}`;
-        document.getElementById('caretakerEmail').textContent = caretakerData.email;
-        document.getElementById('caretakerPhone').textContent = caretakerData.phone;
-        document.getElementById('caretakerFacility').textContent = caretakerData.facility;
-        document.getElementById('caretakerPhoto').src = caretakerData.photo;
-
-        const profileNameEl = document.querySelector('#caretakerProfileBtn .profile-name');
-        const profileRoleEl = document.querySelector('#caretakerProfileBtn .profile-role');
-
-        if (profileNameEl) profileNameEl.textContent = caretakerData.name;
-        if (profileRoleEl) profileRoleEl.textContent = caretakerData.role;
-
-        document.getElementById('caretakerEditForm').style.display = 'none';
-        document.getElementById('caretakerViewFields').style.display = 'block';
-        document.getElementById('editCaretakerBtn').style.display = 'inline-flex';
-        document.getElementById('saveCaretakerBtn').style.display = 'none';
-        document.getElementById('cancelCaretakerEditBtn').style.display = 'none';
-    }
-
-    function openCaretakerEditForm() {
-        const editForm = document.getElementById('caretakerEditForm');
-        editForm.innerHTML = `
-            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editCaretakerName" value="${escapeHtml(caretakerData.name)}"></div>
-            <div class="edit-field-row"><label>Caretaker ID</label><input type="text" id="editCaretakerId" value="${escapeHtml(caretakerData.id)}"></div>
-            <div class="edit-field-row"><label>Email</label><input type="email" id="editCaretakerEmail" value="${escapeHtml(caretakerData.email)}"></div>
-            <div class="edit-field-row"><label>Phone</label><input type="text" id="editCaretakerPhone" value="${escapeHtml(caretakerData.phone)}"></div>
-            <div class="edit-field-row"><label>Facility</label><input type="text" id="editCaretakerFacility" value="${escapeHtml(caretakerData.facility)}"></div>
-        `;
-
-        document.getElementById('caretakerViewFields').style.display = 'none';
-        editForm.style.display = 'block';
-        document.getElementById('editCaretakerBtn').style.display = 'none';
-        document.getElementById('saveCaretakerBtn').style.display = 'inline-flex';
-        document.getElementById('cancelCaretakerEditBtn').style.display = 'inline-flex';
-    }
-
-    function cancelCaretakerEdit() {
-        renderCaretakerProfile();
-    }
-
-    async function saveCaretakerEdit() {
-        const newData = {
-            name: document.getElementById('editCaretakerName')?.value.trim() || caretakerData.name,
-            id: document.getElementById('editCaretakerId')?.value.trim() || caretakerData.id,
-            email: document.getElementById('editCaretakerEmail')?.value.trim() || caretakerData.email,
-            phone: document.getElementById('editCaretakerPhone')?.value.trim() || caretakerData.phone,
-            facility: document.getElementById('editCaretakerFacility')?.value.trim() || caretakerData.facility,
-            photo: caretakerData.photo,
-            role: caretakerData.role
-        };
-
-        Object.assign(caretakerData, newData);
-        await setDoc(doc(db, "settings", "caretaker_profile"), caretakerData);
-        renderCaretakerProfile();
-        addNotification('✅ Caretaker Updated', 'Saved permanently', false);
-    }
-
-    async function loadCaretakerFromFirestore() {
-        const refDoc = doc(db, "settings", "caretaker_profile");
-        const snap = await getDoc(refDoc);
-
-        if (snap.exists()) {
-            Object.assign(caretakerData, snap.data());
-        } else {
-            await setDoc(refDoc, caretakerData);
-        }
-
-        renderCaretakerProfile();
-    }
-
-    function listenCaretakerProfile() {
-        const refDoc = doc(db, "settings", "caretaker_profile");
-        onSnapshot(refDoc, (snap) => {
-            if (snap.exists()) {
-                Object.assign(caretakerData, snap.data());
-                renderCaretakerProfile();
-            }
-        });
-    }
-
-    async function loadPatientFromFirestore() {
-        const patientRef = doc(db, "patients", PATIENT_ID);
-        const docSnap = await getDoc(patientRef);
+    onSnapshot(refContacts, (docSnap) => {
+        console.log("🔥 SNAPSHOT RECEIVED");
 
         if (docSnap.exists()) {
-            Object.assign(patientData, docSnap.data());
+            const data = docSnap.data();
+            console.log("🔥 DATA:", data);
+
+            if (data.contacts) {
+                emergencyContacts = data.contacts;
+                renderEmergencyContacts();
+            }
         } else {
-            await setDoc(patientRef, patientData);
+            console.log("❌ No document found");
         }
+    });
+}
 
-        renderPatientDetails();
+    function updateAngleDisplay(angle) {
+        let valid = Math.min(45, Math.max(-45, angle));
+        document.getElementById('angleValue').innerHTML = valid.toFixed(1)+'<span>°</span>';
+        const track = document.getElementById('angleBarTrack');
+        if(track){
+            const w = track.offsetWidth, center = w/2, maxOff = (w/2)-13;
+            const leftPos = center + (valid/45)*maxOff;
+            document.getElementById('angleIndicatorDot').style.left = leftPos+'px';
+            const leftFill = valid>0 ? (valid/45)*100 : 0;
+            const rightFill = valid<0 ? (Math.abs(valid)/45)*100 : 0;
+            document.getElementById('angleFillLeft').style.width = leftFill+'%';
+            document.getElementById('angleFillRight').style.width = rightFill+'%';
+        }
+        let dirText='', dirClass='';
+        if(valid>5){ dirText=`LEFT TURN (${valid.toFixed(1)}° left)`; dirClass='left'; }
+        else if(valid<-5){ dirText=`RIGHT TURN (${Math.abs(valid).toFixed(1)}° right)`; dirClass='right'; }
+        else { dirText='STRAIGHT (centered)'; dirClass='straight'; }
+        const dirDiv=document.getElementById('angleDirection'); if(dirDiv){ dirDiv.className=`angle-direction ${dirClass}`; dirDiv.innerHTML=`${dirText}`; }
+        const statusDiv=document.getElementById('angleStatus');
+        if(Math.abs(valid)>25) statusDiv.innerHTML='⚠️ CRITICAL tilt! Risk of tipping!';
+        else if(Math.abs(valid)>18) statusDiv.innerHTML='⚠️ Warning: High tilt, reduce speed';
+        else if(Math.abs(valid)>10) statusDiv.innerHTML='⚠️ Moderate tilt, be cautious';
+        else statusDiv.innerHTML='✓ Normal operating range';
     }
-
-    async function syncPatientToFirestore() {
-        const patientRef = doc(db, "patients", PATIENT_ID);
-        await setDoc(patientRef, patientData, { merge: true });
-        showToast('✅ Patient data saved permanently');
-    }
-
-    function renderPatientDetails() {
-        const grid = document.getElementById('patientDetailsGrid');
-        const fields = [
-            { label: 'Blood Group', key: 'bloodGroup' },
-            { label: 'Age', key: 'age' },
-            { label: 'Doctor', key: 'doctor' },
-            { label: 'Contact', key: 'contactNo' }
-        ];
-
-        grid.innerHTML = '';
-        fields.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'detail-item';
-            div.innerHTML = `<span class="detail-label">${f.label}</span><div class="detail-value">${patientData[f.key] || '—'}</div>`;
-            grid.appendChild(div);
-        });
-
-        document.getElementById('patientNameDisplay').innerText = patientData.fullName;
-        document.getElementById('patientIdDisplay').innerHTML = `ID ${patientData.patientId} · ${patientData.age}y`;
-        document.getElementById('patientPhoto').src = patientData.photo;
-        refreshPatientMarkerIcon();
-    }
-
-    function openEditPatientPopup() {
-        const formContainer = document.getElementById('editPatientForm');
-        formContainer.innerHTML = `
-            <div class="edit-field-row"><label>Full Name</label><input type="text" id="editFullName" value="${escapeHtml(patientData.fullName)}"></div>
-            <div class="edit-field-row"><label>Patient ID</label><input type="text" id="editPatientId" value="${escapeHtml(patientData.patientId)}"></div>
-            <div class="edit-field-row"><label>Age</label><input type="text" id="editAge" value="${escapeHtml(patientData.age)}"></div>
-            <div class="edit-field-row"><label>Blood Group</label><input type="text" id="editBloodGroup" value="${escapeHtml(patientData.bloodGroup)}"></div>
-            <div class="edit-field-row"><label>Doctor Name</label><input type="text" id="editDoctor" value="${escapeHtml(patientData.doctor)}"></div>
-            <div class="edit-field-row"><label>Contact Number</label><input type="text" id="editContactNo" value="${escapeHtml(patientData.contactNo)}"></div>
-            <div class="edit-field-row"><label>Photo URL</label><input type="text" id="editPhotoUrl" value="${escapeHtml(patientData.photo)}"></div>
-        `;
-        document.getElementById('editPatientPopup').style.display = 'block';
-    }
-
-    async function savePatientEdits() {
-        const newData = {
-            fullName: document.getElementById('editFullName')?.value || patientData.fullName,
-            patientId: document.getElementById('editPatientId')?.value || patientData.patientId,
-            age: document.getElementById('editAge')?.value || patientData.age,
-            bloodGroup: document.getElementById('editBloodGroup')?.value || patientData.bloodGroup,
-            doctor: document.getElementById('editDoctor')?.value || patientData.doctor,
-            contactNo: document.getElementById('editContactNo')?.value || patientData.contactNo,
-            photo: document.getElementById('editPhotoUrl')?.value || patientData.photo
-        };
-
-        Object.assign(patientData, newData);
-        renderPatientDetails();
-        await syncPatientToFirestore();
-        closeEditPatientPopup();
-        addNotification('✅ Patient Updated', 'Patient details updated successfully', false);
-    }
-
-    async function saveActionToFirestore(type, data) {
-        const actionsRef = doc(db, "patientActions", "feed");
+    
+    async function sharePatientLocation(lat, lng) {
         try {
-            const docSnap = await getDoc(actionsRef);
-            if (docSnap.exists()) {
-                await updateDoc(actionsRef, {
-                    [type]: arrayUnion({ ...data, timestamp: new Date().toISOString() })
-                });
-            } else {
-                await setDoc(actionsRef, { [type]: [{ ...data, timestamp: new Date().toISOString() }] });
-            }
-        } catch (error) {
-            console.error("Error saving action:", error);
-            await setDoc(actionsRef, { [type]: [{ ...data, timestamp: new Date().toISOString() }] }, { merge: true });
-        }
-        addNotification('✅ Action Saved', `${type} saved to patient dashboard`, false);
-    }
-
-    window.sendMessage = async () => {
-        const msg = document.getElementById('messageText')?.value;
-        if (!msg) return showToast('Please enter a message');
-        await saveActionToFirestore("messages", { text: msg, time: new Date().toLocaleString() });
-        showToast('💬 Message sent to patient');
-        document.getElementById('messageText').value = '';
-        closePatientSubmenu();
-    };
-
-    window.saveCalendar = async () => {
-        const event = document.getElementById('calendarEvent')?.value;
-        const dt = document.getElementById('calendarDateTime')?.value;
-        if (!event) return showToast('Please enter an event');
-        await saveActionToFirestore("calendar", { title: event, detail: dt || "No time set", time: dt });
-        showToast('📅 Calendar event added');
-        closePatientSubmenu();
-    };
-
-    window.bookAppointment = async () => {
-        const dr = document.getElementById('apptDoctor')?.value;
-        const hosp = document.getElementById('apptHospital')?.value;
-        const dt = document.getElementById('apptDateTime')?.value;
-        if (!dr) return showToast('Please enter doctor name');
-        await saveActionToFirestore("appointments", { title: dr, detail: hosp || "Clinic visit", time: dt });
-        showToast(`📋 Appointment booked with ${dr}`);
-        closePatientSubmenu();
-    };
-
-    window.playMedia = async () => {
-        await saveActionToFirestore("media", { title: "Relaxing Playlist", detail: "Started by caretaker", time: new Date().toLocaleString() });
-        showToast('🎵 Media player started');
-        closePatientSubmenu();
-    };
-
-    window.setAlarm = async () => {
-        const label = document.getElementById('alarmLabel')?.value;
-        const dt = document.getElementById('alarmDateTime')?.value;
-        if (!label) return showToast('Please enter alarm label');
-        await saveActionToFirestore("alarms", { title: label, detail: dt || "Now", time: dt });
-        showToast(`⏰ Alarm set: ${label}`);
-        closePatientSubmenu();
-    };
-
-    window.showPatientSubmenu = (option) => {
-        document.getElementById('patientMainMenu').style.display = 'none';
-        let title = '';
-        let content = '';
-
-        if (option === 'message') {
-            title = '💬 Send message';
-            content = `<div class="form-group"><label>Message to patient</label><textarea id="messageText" placeholder="Type your message..." rows="3"></textarea></div>
-            <div class="button-group"><button class="btn-primary" id="sendMsgBtn">Send</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-        } else if (option === 'calendar') {
-            title = '📅 Mark calendar';
-            content = `<div class="form-group"><label>Event</label><input type="text" id="calendarEvent" placeholder="e.g., Doctor visit"></div>
-            <div class="form-group"><label>Date & time</label><input type="text" id="calendarDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-            <div class="button-group"><button class="btn-primary" id="saveCalendarBtn">Save</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-        } else if (option === 'appointment') {
-            title = '📋 Book appointment';
-            content = `<div class="form-group"><label>Doctor name</label><input type="text" id="apptDoctor" placeholder="Doctor name"></div>
-            <div class="form-group"><label>Hospital / Clinic</label><input type="text" id="apptHospital" placeholder="Clinic name"></div>
-            <div class="form-group"><label>Date & time</label><input type="text" id="apptDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-            <div class="button-group"><button class="btn-primary" id="bookApptBtn">Book</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-        } else if (option === 'media') {
-            title = '🎵 Media & music';
-            content = `<div style="text-align:center;padding:20px;"><p style="margin-bottom:20px;">🎧 Play relaxing music for patient?</p><div class="button-group"><button class="btn-primary" id="playMediaBtn">Play</button><button class="btn-secondary" onclick="closePatientSubmenu()">Close</button></div></div>`;
-        } else if (option === 'alarm') {
-            title = '⏰ Set alarm';
-            content = `<div class="form-group"><label>Alarm label</label><input type="text" id="alarmLabel" placeholder="e.g., Medication time"></div>
-            <div class="form-group"><label>Date & time</label><input type="text" id="alarmDateTime" class="datetime-picker" placeholder="Pick date & time"></div>
-            <div class="button-group"><button class="btn-primary" id="setAlarmBtn">Set Alarm</button><button class="btn-secondary" onclick="closePatientSubmenu()">Cancel</button></div>`;
-        }
-
-        document.getElementById('submenuTitle').innerText = title;
-        document.getElementById('submenuContent').innerHTML = content;
-        document.getElementById('patientSubmenu').style.display = 'block';
-
-        setTimeout(() => {
-            if (option === 'message') document.getElementById('sendMsgBtn')?.addEventListener('click', window.sendMessage);
-            if (option === 'calendar') {
-                flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-                document.getElementById('saveCalendarBtn')?.addEventListener('click', window.saveCalendar);
-            }
-            if (option === 'appointment') {
-                flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-                document.getElementById('bookApptBtn')?.addEventListener('click', window.bookAppointment);
-            }
-            if (option === 'media') document.getElementById('playMediaBtn')?.addEventListener('click', window.playMedia);
-            if (option === 'alarm') {
-                flatpickr(".datetime-picker", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
-                document.getElementById('setAlarmBtn')?.addEventListener('click', window.setAlarm);
-            }
-        }, 50);
-    };
-
-    function simulateHealthMonitoring() {
-        let hr = lastHealthState.hr + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 2 : -2) : 0);
-        hr = Math.min(120, Math.max(55, hr));
-
-        let temp = lastHealthState.temp + (Math.random() - 0.5) * 0.2;
-        temp = Math.min(39, Math.max(35, temp));
-
-        let o2 = lastHealthState.o2 + (Math.random() > 0.8 ? (Math.random() > 0.5 ? -1 : 1) : 0);
-        o2 = Math.min(100, Math.max(90, o2));
-
-        let systolic = 120 + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 8 : -8) : 0);
-        let diastolic = 80 + (systolic - 120) * 0.6;
-        systolic = Math.min(160, Math.max(90, systolic));
-        diastolic = Math.min(100, Math.max(60, diastolic));
-        const bp = `${Math.round(systolic)}/${Math.round(diastolic)}`;
-
-        document.getElementById('hrValue').innerText = hr;
-        document.getElementById('tempValue').innerText = temp.toFixed(1);
-        document.getElementById('o2Value').innerText = o2;
-        document.getElementById('bpValue').innerText = bp;
-
-        document.getElementById('healthHeartItem').classList.toggle('warning', hr < 60 || hr > 100);
-        document.getElementById('healthTempItem').classList.toggle('warning', temp < 36.1 || temp > 37.2);
-        document.getElementById('healthO2Item').classList.toggle('warning', o2 < 95);
-        document.getElementById('healthBPItem').classList.toggle('warning', systolic < 90 || systolic > 140 || diastolic < 60 || diastolic > 90);
-
-        lastHealthState = { hr, temp, o2, bp };
-    }
-
-    async function saveModeToFirestore(mode) {
-        const modeRef = doc(db, "settings", MODE_ID);
-        await setDoc(modeRef, { mode, timestamp: new Date().toISOString() });
-    }
-
-    function confirmModeSwitch(mode) {
-        const checks = safetyChecks[mode];
-        if (!checks) return;
-
-        const existingPopup = document.getElementById('safetyPopup');
-        if (existingPopup) existingPopup.remove();
-
-        const modal = document.createElement('div');
-        modal.className = 'popup-panel';
-        modal.id = 'safetyPopup';
-        modal.innerHTML = `
-            <div class="popup-header"><h3>⚠️ Verify before ${mode}</h3><button class="close-popup" onclick="this.closest('.popup-panel').remove()">×</button></div>
-            <div style="margin: 16px 0;">
-                ${checks.map((text, index) => `<div class="safety-check-item"><input type="checkbox" id="check_${index}" class="safety-checkbox"><span>${text}</span></div>`).join('')}
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button style="flex:1; background: var(--blue); color: white; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" id="confirmSwitchBtn">Confirm & Switch</button>
-                <button style="flex:1; background: #eef2ff; border: none; border-radius: 40px; padding: 14px; font-weight: 700;" onclick="this.closest('.popup-panel').remove()">Cancel</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.style.display = 'block';
-
-        document.getElementById('confirmSwitchBtn').onclick = async () => {
-            const checkboxes = document.querySelectorAll('#safetyPopup .safety-checkbox');
-            let allChecked = true;
-            checkboxes.forEach(cb => {
-                if (!cb.checked) allChecked = false;
+            await set(ref(dbRealtime, `patient_location/${PATIENT_ID}`), {
+                lat: lat,
+                lng: lng,
+                timestamp: serverTimestamp(),
+                accuracy: 10,
+                source: 'patient_device'
             });
-
-            if (!allChecked) {
-                showToast('⚠️ Please tick all safety checkboxes');
-                return;
-            }
-
-            await sendBridgeCommand("CMD:stop");
-            currentMode = mode;
-            document.getElementById('modeDisplay').innerText = currentMode;
-            document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-            modal.remove();
-            await saveModeToFirestore(currentMode);
-            addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
-        };
+            await setDoc(doc(db, "locations", PATIENT_ID), {
+                lat: lat,
+                lng: lng,
+                timestamp: new Date().toISOString(),
+                source: 'patient_device'
+            }, { merge: true });
+        } catch (error) {
+            console.warn("Failed to share location:", error);
+        }
     }
-
-    function listenDriveMode() {
-        const modeRef = doc(db, "settings", MODE_ID);
-        onSnapshot(modeRef, (docSnap) => {
-            if (docSnap.exists() && docSnap.data().mode) {
-                const newMode = docSnap.data().mode;
-                if (newMode !== currentMode) {
-                    currentMode = newMode;
-                    document.getElementById('modeDisplay').innerText = currentMode;
-                    document.getElementById('controlPad').style.display = (currentMode === 'Control') ? 'block' : 'none';
-                }
-            }
-        });
-    }
-
-    function listenPatientLocation() {
-        if (unsubscribePatientLocation) unsubscribePatientLocation();
-
-        unsubscribePatientLocation = onValue(ref(dbRealtime, "patient_location/patient_main"), (snap) => {
-            const data = snap.val();
-            if (data && data.lat && data.lng) {
-                lastPatientLocation = {
-                    lat: data.lat,
-                    lng: data.lng
-                };
-                updateMapLocation(data.lat, data.lng, data.accuracy);
-            }
-        });
-    }
-
-    function closeAllPopups() {
-        document.querySelectorAll('.popup-panel').forEach(p => p.style.display = 'none');
-        document.getElementById('safetyPopup')?.remove();
-    }
-
-    window.setMode = function(mode) {
-        closeModePopup();
-        confirmModeSwitch(mode);
-    };
-
-    window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
-    window.closePopup = (type) => {
-        if (type === 'call') document.getElementById('callPopup').style.display = 'none';
-        if (type === 'health') document.getElementById('healthPopup').style.display = 'none';
-        if (type === 'wheel') document.getElementById('wheelPopup').style.display = 'none';
-    };
-    window.closePatientMainMenu = () => document.getElementById('patientMainMenu').style.display = 'none';
-    window.closePatientSubmenu = () => document.getElementById('patientSubmenu').style.display = 'none';
-    window.closeNotificationPopup = () => document.getElementById('notificationPopup').style.display = 'none';
-    window.closeCaretakerPopup = () => {
-        cancelCaretakerEdit();
-        document.getElementById('caretakerPopup').style.display = 'none';
-    };
-    window.closeEditPatientPopup = () => document.getElementById('editPatientPopup').style.display = 'none';
-    window.closeShutdown = closeShutdown;
-    window.clearAllNotifications = clearAllNotifications;
-    window.triggerPhotoUpload = () => document.getElementById('patientPhotoInput').click();
-    window.toggleSerialConsole = toggleSerialConsole;
-    window.toggleGpsFullscreen = () => {
-        const card = document.querySelector('.map-card');
-        if (!document.fullscreenElement) card.requestFullscreen();
-        else document.exitFullscreen();
-    };
-
-    document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 150));
-
-    document.getElementById('patientPhotoInput').addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = new Image();
-            img.src = ev.target.result;
-            img.onload = async () => {
-                const canvas = document.createElement("canvas");
-                const ctx = canvas.getContext("2d");
-                const maxWidth = 300;
-                const scale = maxWidth / img.width;
-
-                canvas.width = maxWidth;
-                canvas.height = img.height * scale;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-                patientData.photo = compressedBase64;
-                document.getElementById('patientPhoto').src = compressedBase64;
-                refreshPatientMarkerIcon();
-                await syncPatientToFirestore();
-                addNotification('📸 Photo Updated', 'Patient photo saved permanently', false);
-                showToast("✅ Image uploaded & synced");
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-
-    const speedSlider = document.getElementById("speedSlider");
-    const speedPercent = document.getElementById("speedPercent");
-
-    speedSlider.addEventListener("input", () => {
-        speedPercent.innerText = `${speedSlider.value}%`;
-    });
-
-    speedSlider.addEventListener("change", async () => {
-        if (!esp32Connected) {
-            showToast("⚠️ ESP32 not connected");
+    
+    function startGPSSharing() {
+        if (!navigator.geolocation) {
+            showToast('GPS not supported');
             return;
         }
+        
+        if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+        
+        gpsWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude, accuracy } = position.coords;
+                currentLocation = { lat: latitude, lng: longitude };
+                updateWheelchairLocation(latitude, longitude);
+                sharePatientLocation(latitude, longitude);
+            },
+            (error) => {
+                console.warn('GPS error:', error);
+                showToast('⚠️ Unable to get GPS location');
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000
+            }
+        );
+    }
+    
+function listenESP32Status() {
 
-        const value = speedSlider.value;
-        const ok = await sendESP32Command(`/speed?speed=${encodeURIComponent(value)}`);
-        if (ok) {
-            addToSerialConsole(`CMD:SPEED:${value}`, true);
-            showToast(`⚡ Speed set to ${value}%`);
+    const statusRef = ref(dbRealtime, 'wheelchair/status');
+
+    onValue(statusRef, (snap) => {
+
+        const s = snap.val();
+
+        if (s) {
+
+            updateConnectionStatus(true);
+
+            if (s.angle !== undefined)
+                updateAngleDisplay(s.angle);
+
+            if (s.speed !== undefined)
+                document.getElementById('speedValue').innerText =
+                    s.speed.toFixed(1) + ' m/s';
+
+            if (s.battery !== undefined)
+                document.getElementById('batteryValue').innerText =
+                    Math.round(s.battery) + '%';
+
+            if (s.obstacle !== undefined) {
+
+                const obsSpan = document.getElementById('obstacleValue');
+
+                obsSpan.innerText = s.obstacle;
+
+                obsSpan.className =
+                    'tele-value ' +
+                    (s.obstacle === 'Clear'
+                        ? 'obstacle-clear'
+                        : s.obstacle === 'Nearby'
+                        ? 'obstacle-warn'
+                        : 'obstacle-block');
+            }
+
+            if (s.direction !== undefined) {
+
+                const badge = document.getElementById('directionBadge');
+                const icon = document.getElementById('dirIconLarge');
+                const text = document.getElementById('dirTextLarge');
+
+                const icons = {
+                    forward: '⬆️',
+                    backward: '⬇️',
+                    left: '⬅️',
+                    right: '➡️',
+                    stop: '⏹️'
+                };
+
+                const texts = {
+                    forward: 'Moving forward',
+                    backward: 'Moving backward',
+                    left: 'Turning left',
+                    right: 'Turning right',
+                    stop: 'STOPPED'
+                };
+
+                badge.className = 'direction-status-badge ' + s.direction;
+                icon.innerHTML = icons[s.direction] || '⏹️';
+                text.innerHTML = texts[s.direction] || 'Stopped';
+            }
+
+        } else {
+
+            updateConnectionStatus(false);
+
         }
+
     });
 
-    document.getElementById('editPatientBtn').onclick = openEditPatientPopup;
-    document.getElementById('savePatientEditBtn').onclick = savePatientEdits;
-    document.getElementById('modeSwitchIcon').onclick = () => { closeAllPopups(); document.getElementById('modePopup').style.display = 'block'; };
-    document.getElementById('caretakerProfileBtn').onclick = () => { closeAllPopups(); renderCaretakerProfile(); document.getElementById('caretakerPopup').style.display = 'block'; };
-    document.getElementById('callIcon').onclick = () => { closeAllPopups(); renderEmergencyContacts(); document.getElementById('callPopup').style.display = 'block'; };
-    document.getElementById('healthIcon').onclick = () => { closeAllPopups(); document.getElementById('healthPopup').style.display = 'block'; };
-    document.getElementById('wheelIcon').onclick = () => { closeAllPopups(); document.getElementById('wheelPopup').style.display = 'block'; };
-    document.getElementById('patientIcon').onclick = () => { closeAllPopups(); document.getElementById('patientMainMenu').style.display = 'block'; };
-    document.getElementById('openLogBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
-    document.getElementById('notificationBtn').onclick = () => { closeAllPopups(); document.getElementById('notificationPopup').style.display = 'block'; };
-    document.getElementById('emergencyStopBtn').onclick = triggerEmergency;
-    document.getElementById('serialConsoleBtn').onclick = toggleSerialConsole;
-    document.getElementById('connectBtn').onclick = connectToBridge;
-    document.getElementById('calibrateAngleBtn').onclick = calibrateAngleSensor;
-    document.getElementById('editCaretakerBtn').onclick = openCaretakerEditForm;
-    document.getElementById('saveCaretakerBtn').onclick = saveCaretakerEdit;
-    document.getElementById('cancelCaretakerEditBtn').onclick = cancelCaretakerEdit;
-    document.getElementById('editEmergencyBtn').onclick = openEmergencyEditForm;
-    document.getElementById('saveEmergencyBtn').onclick = saveEmergencyContacts;
-    document.getElementById('cancelEmergencyBtn').onclick = cancelEmergencyEdit;
+}    
+    async function sendCommandToESP32(type, value) {
+        try{ await set(ref(dbRealtime, 'commands/lastCommand'), JSON.stringify({type,value,timestamp:Date.now(),source:'patient'})); showToast(`Command: ${value}`); return true; }
+        catch(e){ showToast('Failed'); return false; }
+    }
+    
+    async function triggerEmergency(){
+        if(emergencyActive) return;
+        await setEmergencyState(true, 'patient');
+        addToNotificationLog('🚨 EMERGENCY','You activated emergency stop!',new Date().toLocaleString(),true);
+        setTimeout(async()=>{ await setEmergencyState(false, 'patient'); },5000);
+    }
+    
+    async function closeShutdown(){ await setEmergencyState(false, 'patient'); }
+    
+    function listenEmergency(){
+        onValue(ref(dbRealtime,'emergency_status/active'),(snap)=>{
+            const active = snap.val()===true;
+            if(active !== emergencyActive) setEmergencyState(active, 'remote');
+        });
+    }
+    
+    function listenEmergencyStatus() {
+        const emergencyRef = doc(db, "settings", "emergency_status");
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (!docSnap.exists()) return;
+            const data = docSnap.data();
+            if(data.active === true && !emergencyActive) setEmergencyState(true, 'caretaker');
+            else if(data.active === false && emergencyActive) setEmergencyState(false, 'caretaker');
+        });
+    }
+    
+    function listenDriveMode() {
+        const modeRef = doc(db, "settings", "drive_mode");
+        onSnapshot(modeRef, (docSnap) => {
+            if (!docSnap.exists()) return;
+            const data = docSnap.data();
+            if (data.mode && data.mode !== currentMode) {
+                currentMode = data.mode;
+                updateModeUI(currentMode);
+                addToNotificationLog('🔄 Drive Mode Changed', `Mode changed to: ${currentMode}`, new Date().toLocaleString(), false);
+            }
+        });
+    }
 
-    document.querySelectorAll('.ctrl-btn').forEach(btn => {
-        btn.onclick = () => sendControlCommand(btn.dataset.cmd);
-    });
+    function listenPatientProfileUpdates() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        onSnapshot(patientRef, (docSnap) => {
+            if (docSnap.exists()) {
+                Object.assign(patientData, docSnap.data());
+                updatePatientDisplay();
+                renderPatientDetails();
+            }
+        });
+    }
 
-    document.querySelectorAll('.mode-option').forEach(opt => {
-        opt.onclick = () => setMode(opt.dataset.mode);
-    });
-
-    window.addEventListener('resize', () => {
-        if (lastAngleValue !== undefined) {
-            setTimeout(() => updateAngleDisplay(lastAngleValue), 50);
+    function addToNotificationLog(title,msg,time,isWarning=false){
+        const id=Date.now()+Math.random();
+        notifications.unshift({id,title,message:msg,time,isWarning});
+        notificationCount=notifications.length;
+        const badge=document.getElementById('notificationBadge');
+        if(notificationCount>0){ badge.style.display='flex'; badge.innerText=notificationCount>9?'9+':notificationCount; }
+        else badge.style.display='none';
+        updateNotificationLogDisplay();
+    }
+    
+    function updateNotificationLogDisplay(){
+        const container=document.getElementById('notificationLog');
+        if(!container) return;
+        if(notifications.length===0){ container.innerHTML='<div class="empty-message">No notifications</div>'; return; }
+        container.innerHTML=notifications.slice(0,50).map(n=>`<div class="notification-log-item ${n.isWarning?'warning':''}"><div class="log-title">${escapeHtml(n.title)}</div><div class="log-message">${escapeHtml(n.message)}</div><div class="log-time">${n.time}</div></div>`).join('');
+    }
+    
+    function clearAllNotifications(){ notifications=[]; notificationCount=0; updateNotificationLogDisplay(); document.getElementById('notificationBadge').style.display='none'; showToast('Cleared'); }
+    
+    function rebuildCarousel(){
+        const container=document.getElementById('carouselSlides');
+        if(!container)return;
+        container.innerHTML='';
+        slides=[];
+        const vitalsSlide=document.createElement('div');
+        vitalsSlide.className='carousel-slide vital-signs-slide';
+        vitalsSlide.innerHTML=`<div class="health-header-compact"><span>❤️</span><h4>Vital Signs</h4></div><div class="health-metrics-compact"><div class="health-metric-compact" id="hrMetricSlide"><div class="metric-value-compact" id="healthHeartRateSlide">84</div><div class="metric-label-compact">HR</div><small>bpm</small></div><div class="health-metric-compact" id="bpMetricSlide"><div class="metric-value-compact" id="healthBPSlide">130/80</div><div class="metric-label-compact">BP</div><small>mmHg</small></div><div class="health-metric-compact" id="tempMetricSlide"><div class="metric-value-compact" id="healthTempSlide">36.8</div><div class="metric-label-compact">TEMP</div><small>°C</small></div><div class="health-metric-compact" id="o2MetricSlide"><div class="metric-value-compact" id="healthO2Slide">98</div><div class="metric-label-compact">SpO₂</div><small>%</small></div></div>`;
+        container.appendChild(vitalsSlide);
+        slides.push({type:'vitals',element:vitalsSlide});
+        const configs=[{key:'messages',icon:'💬',title:'Messages'},{key:'alarms',icon:'⏰',title:'Alarms'},{key:'appointments',icon:'📋',title:'Appointments'},{key:'media',icon:'🎵',title:'Media'},{key:'calendar',icon:'📅',title:'Calendar'}];
+        configs.forEach(cfg=>{ const items=dataStore[cfg.key]||[]; const slideDiv=document.createElement('div'); slideDiv.className='carousel-slide content-slide'; slideDiv.innerHTML=`<div class="content-slide-header"><span>${cfg.icon}</span><h4>${cfg.title}</h4></div><div class="content-list">${items.length?items.slice().reverse().slice(0,5).map(i=>`<div class="content-item"><div class="title">${escapeHtml(i.title||i.text||'Update')}</div><div class="detail">${escapeHtml(i.detail||'')} ${i.time?'• '+i.time:''}</div></div>`).join(''):'<div class="empty-message">No items</div>'}</div>`; container.appendChild(slideDiv); slides.push({type:cfg.key,element:slideDiv}); });
+        updateCarouselDots(); updateCarouselPosition();
+    }
+    
+    function updateCarouselDots(){ const dots=document.getElementById('carouselDots'); if(!dots)return; dots.innerHTML=''; slides.forEach((_,idx)=>{ const dot=document.createElement('div'); dot.className='dot'+(idx===carouselIndex?' active':''); dot.onclick=()=>goToSlide(idx); dots.appendChild(dot); }); }
+    function updateCarouselPosition(){ document.querySelector('.carousel-slides').style.transform=`translateX(-${carouselIndex*100}%)`; updateCarouselDots(); }
+    function goToSlide(idx){ carouselIndex=Math.min(Math.max(idx,0),slides.length-1); updateCarouselPosition(); resetAutoSlideTimer(); }
+    function nextSlide(){ if(isVitalsAbnormal)return; carouselIndex=(carouselIndex+1)%slides.length; updateCarouselPosition(); }
+    function resetAutoSlideTimer(){ if(autoSlideInterval)clearInterval(autoSlideInterval); if(!isVitalsAbnormal) autoSlideInterval=setInterval(nextSlide,10000); }
+    function initTouchEvents(){ const wrap=document.querySelector('.carousel-wrapper'); wrap?.addEventListener('touchstart',e=>touchStartX=e.changedTouches[0].screenX); wrap?.addEventListener('touchend',e=>{ touchEndX=e.changedTouches[0].screenX; if(touchEndX<touchStartX-50 && carouselIndex<slides.length-1){ carouselIndex++; updateCarouselPosition(); resetAutoSlideTimer(); } else if(touchEndX>touchStartX+50 && carouselIndex>0){ carouselIndex--; updateCarouselPosition(); resetAutoSlideTimer(); } }); }
+    
+    function listenCaretakerActions(){
+        const actionsRef=doc(db,"patientActions","feed");
+        onSnapshot(actionsRef,(docSnap)=>{
+            if(docSnap.exists()){ const data=docSnap.data(); ['messages','alarms','appointments','media','calendar'].forEach(type=>{ if(data[type] && Array.isArray(data[type])){ data[type].forEach(item=>{ const id=`${type}_${item.timestamp||item.time||Date.now()}_${item.title||item.text||''}`; if(!processedItems[type].has(id)){ processedItems[type].add(id); dataStore[type].push({...item}); addToNotificationLog(`📢 New ${type}`, item.title||item.text||'Update', item.time||new Date().toLocaleString(), false); } }); } }); rebuildCarousel(); }
+        });
+    }
+    
+    async function loadPatientFromFirestore(){ 
+        const refPatient = doc(db,"patients",PATIENT_ID);
+        const snap=await getDoc(refPatient); 
+        if(snap.exists()) Object.assign(patientData,snap.data()); 
+        else await setDoc(refPatient, patientData);
+        updatePatientDisplay(); 
+        renderPatientDetails(); 
+    }
+    
+    
+    
+    function updatePatientDisplay(){ 
+        document.getElementById('patientFirstName').innerText=patientData.fullName.split(' ')[0]; 
+        document.getElementById('patientIdSmall').innerHTML=`ID: ${patientData.patientId} · ${patientData.age}y`; 
+        document.getElementById('profileImage').src=patientData.photo; 
+    }
+    
+    function renderPatientDetails(){ 
+        const grid=document.getElementById('patientDetailsGrid'); grid.innerHTML=''; 
+        [['Full Name',patientData.fullName],['Patient ID',patientData.patientId],['Age',patientData.age+' years'],['Blood Group',patientData.bloodGroup],['Doctor',patientData.doctor],['Contact',patientData.contactNo]].forEach(([l,v])=>{ const div=document.createElement('div'); div.className='detail-item'; div.innerHTML=`<span class="detail-label">${l}</span><div class="detail-value">${v}</div>`; grid.appendChild(div); }); 
+    }
+    
+    function updateHealthMetrics(){ 
+        let hr=parseInt(document.getElementById('healthHeartRateSlide')?.innerText)||84;
+        hr=Math.min(110,Math.max(65,hr+(Math.random()>0.5?1:-1))); 
+        let temp=36.8+(Math.random()-0.5)*0.2; 
+        let o2=Math.min(100,Math.max(92,98+(Math.random()>0.8?-1:0))); 
+        let sys=130+(Math.random()>0.7?(Math.random()>0.5?5:-5):0); 
+        let dia=80+(sys-130)*0.6; 
+        if(document.getElementById('healthHeartRateSlide')){ 
+            document.getElementById('healthHeartRateSlide').innerText=hr; 
+            document.getElementById('healthTempSlide').innerText=temp.toFixed(1); 
+            document.getElementById('healthO2Slide').innerText=o2; 
+            document.getElementById('healthBPSlide').innerText=`${Math.min(160,Math.max(85,sys))}/${Math.min(100,Math.max(55,dia))}`; 
         }
-    });
+        const abnormal=(hr<60||hr>100||temp<36.1||temp>37.2||o2<95); 
+        if(abnormal && !isVitalsAbnormal){ 
+            isVitalsAbnormal=true; 
+            if(autoSlideInterval)clearInterval(autoSlideInterval); 
+            if(carouselIndex!==0){carouselIndex=0;updateCarouselPosition();} 
+            addToNotificationLog('⚠️ Health Alert','Abnormal vitals detected',new Date().toLocaleString(),true); 
+        } else if(!abnormal && isVitalsAbnormal){ 
+            isVitalsAbnormal=false; 
+            resetAutoSlideTimer(); 
+        }
+    }
+    
+    function updateDateTime(){ const now=new Date(); document.getElementById('dateText').innerText=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); document.getElementById('timeText').innerText=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+    
+    function updateModeUI(mode){
+        document.querySelectorAll('.mode-btn').forEach(btn=>{
+            if(btn.dataset.mode === mode) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+    
+    async function setMode(mode){
+        currentMode = mode;
+        updateModeUI(mode);
+        await setDoc(doc(db, "settings", "drive_mode"), { mode: mode, timestamp: new Date().toISOString() });
+        addToNotificationLog('Drive Mode', `Switched to ${mode}`, new Date().toLocaleString(), false);
+    }
+    
+    const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([12.9716,77.5946],15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const wheelchairMarker = L.marker([12.9716,77.5946], { icon: getWheelchairIcon() }).addTo(map);
+    let deviceMarker;
 
-    await loadPatientFromFirestore();
-    await loadCaretakerFromFirestore();
-    await loadEmergencyContacts();
+    function updateWheelchairLocation(lat, lng) {
+        const coords = [lat, lng];
+        wheelchairMarker.setLatLng(coords);
+        map.panTo(coords);
+        bindLocationInfo(wheelchairMarker, lat, lng).catch(() => {});
+    }
 
-    listenDriveMode();
-    listenCaretakerProfile();
-    listenEmergencyFromPatient();
-    listenEmergencyContacts();
-    listenPatientLocation();
+    function getDeviceIcon() {
+        const imageUrl = patientData.photo || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+        const name = patientData.fullName || 'User';
+        return L.divIcon({
+            className: 'device-marker-icon',
+            html: `<div class="device-marker-wrap"><img src="${imageUrl}" alt="${name}" /></div>`,
+            iconSize: [42, 42],
+            iconAnchor: [21, 42],
+            popupAnchor: [0, -42]
+        });
+    }
 
-    setInterval(simulateHealthMonitoring, 8000);
+    function getWheelchairIcon() {
+        return L.divIcon({
+            className: 'device-marker-icon',
+            html: `<div class="location-marker-wrap"><div class="location-marker-dot"></div></div>`,
+            iconSize: [42, 42],
+            iconAnchor: [21, 42],
+            popupAnchor: [0, -42]
+        });
+    }
 
-    document.getElementById('controlPad').style.display = 'none';
-    updateAngleDisplay(0);
-    updateConnectionStatus(false);
+    function updateDeviceLocation(lat, lng) {
+        const coords = [lat, lng];
+        if (!deviceMarker) {
+            deviceMarker = L.marker(coords, { icon: getDeviceIcon() }).addTo(map);
+        } else {
+            deviceMarker.setLatLng(coords);
+            deviceMarker.setIcon(getDeviceIcon());
+        }
+        map.panTo(coords);
+        bindLocationInfo(deviceMarker, lat, lng).catch(() => {});
+    }
+
+    async function resolveLocationName(lat, lng) {
+        const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+        if (locationNameCache.has(key)) return locationNameCache.get(key);
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+        try {
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (response.ok) {
+                const data = await response.json();
+                let placeName = data.name || data.display_name || '';
+                if (!placeName && data.address) {
+                    const address = data.address;
+                    placeName = [address.road, address.suburb, address.city, address.state, address.country].filter(Boolean).join(', ');
+                }
+                if (!placeName) placeName = 'Current location';
+                locationNameCache.set(key, placeName);
+                return placeName;
+            }
+        } catch (error) {
+            console.warn('Reverse geocoding failed', error);
+        }
+        const fallback = `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+        locationNameCache.set(key, fallback);
+        return fallback;
+    }
+
+    async function bindLocationInfo(marker, lat, lng) {
+        const locationName = await resolveLocationName(lat, lng);
+        marker.unbindTooltip();
+        marker.unbindPopup();
+        marker.bindTooltip(locationName, { permanent: false, direction: 'top', offset: [0, -10], className: 'location-tooltip' });
+        marker.bindPopup(`Latitude: ${lat.toFixed(5)}<br>Longitude: ${lng.toFixed(5)}`);
+    }
+
+    window.closePatientDetails=()=>document.getElementById('patientDetailsSection').style.display='none';
+    window.closePopup=(type)=>{ if(type==='call') document.getElementById('callPopup').style.display='none'; };
+    window.closeLogPopup=()=>document.getElementById('logPopup').style.display='none';
+    window.closeShutdown=closeShutdown;
+    
+    
+    
+    function init(){
+        updateDateTime(); 
+        setInterval(updateDateTime,1000);
+        loadPatientFromFirestore();
+        listenPatientProfileUpdates();
+        listenESP32Status();
+        listenEmergency();
+        listenEmergencyContacts();
+        listenEmergencyStatus();
+        listenDriveMode();
+        listenCaretakerActions();
+        startGPSSharing();
+        rebuildCarousel(); 
+        initTouchEvents(); 
+        resetAutoSlideTimer();
+        setInterval(updateHealthMetrics,8000);
+        
+        document.getElementById('profileIconBtn').onclick=()=>{ const sec=document.getElementById('patientDetailsSection'); sec.style.display=(sec.style.display==='none'||sec.style.display==='')?'block':'none'; };
+        document.getElementById('welcomeNotifBtn').onclick=()=>document.getElementById('logPopup').style.display='block';
+        document.getElementById('welcomeLogBtn').onclick=()=>document.getElementById('logPopup').style.display='block';
+        document.getElementById('welcomeCallBtn').onclick=()=>{ renderEmergencyContacts(); document.getElementById('callPopup').style.display='block'; };
+        document.getElementById('emergencyStopBtn').onclick=triggerEmergency;
+        document.getElementById('clearAllNotificationsBtn').onclick=clearAllNotifications;
+        
+        document.querySelectorAll('.mode-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>setMode(btn.dataset.mode));
+        });
+        
+        updateModeUI(currentMode);
+        renderEmergencyContacts();
+        
+    }
+    init();
 </script>
-
 </body>
 </html>
