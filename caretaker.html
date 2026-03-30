@@ -91,6 +91,39 @@ window.doc = doc;
             z-index: -1;
         }
 
+        /* Hide on desktop */
+.connect-btn,
+.connection-status {
+    display: none;
+}
+
+/* Show only on mobile screens */
+@media (max-width: 768px) {
+
+    .connect-btn {
+        display: flex;
+        position: fixed;
+        bottom: 12px;
+        left: 12px;
+
+        padding: 5px 12px;
+        font-size: 10px;
+        border-radius: 18px;
+    }
+
+    .connection-status {
+        display: flex;
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+
+        padding: 5px 10px;
+        font-size: 10px;
+        border-radius: 18px;
+    }
+
+}
+
     .connection-status {
     position: fixed;
     bottom: 15px;
