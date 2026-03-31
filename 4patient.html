@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>My Companion · Health + Wheelchair Dashboard</title>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- DM Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, onValue, set, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBo-Vrg86Q5tvVKv5Jiymhuajcb2GZa1NU",
+            authDomain: "nexus-org-6e7e9.firebaseapp.com",
+            databaseURL: "https://nexus-org-6e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "nexus-org-6e7e9",
+            storageBucket: "nexus-org-6e7e9.firebasestorage.app",
+            messagingSenderId: "989376914258",
+            appId: "1:989376914258:web:5b1b9ede894ad2600e108b",
+            measurementId: "G-TP1CVNYHNE"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const dbRealtime = getDatabase(app);
+        
+        window.db = db;
+        window.dbRealtime = dbRealtime;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.getDoc = getDoc;
+        window.updateDoc = updateDoc;
+        window.collection = collection;
+        window.ref = ref;
+        window.onValue = onValue;
+        window.set = set;
+        window.push = push;
+        window.onDisconnect = onDisconnect;
+        
+        console.log("Patient page Firebase initialized");
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'DM Sans', sans-serif;
+        }
+        :root {
+            --bg: #f4f7fd;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #5b687c;
+            --blue: #1d4ed8;
+            --soft-blue: #e5edff;
+            --danger: #dc2626;
+            --amber: #f59e0b;
+            --green: #10b981;
+            --radius: 24px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+            --outline: 1px solid rgba(29,78,216,0.1);
+        }
+        body {
+            background: var(--bg);
+            padding: 12px;
+            color: var(--text);
+            font-size: 14px;
+        }
+        body.emergency-shutdown .shutdown-overlay { display: flex; }
+        .telemetry-card:hover,
+        .angle-card:hover,
+        .direction-container:hover,
+        .carousel-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #dc2626;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            border: 2px solid white;
+            backdrop-filter: blur(2px);
+        }
+
+        .connection-status.connected {
+            background: #10b981;
+            border-color: white;
+        }
+
+        .connection-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .top-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        .welcome-card {
+            background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 28px;
+            padding: 16px;
+            color: white;
+            box-shadow: 0 10px 24px rgba(29,78,216,0.3);
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .welcome-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .profile-image {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #cbd5e1;
+        }
+        
+        .greeting-text {
+            flex: 1;
+        }
+        
+        .greeting-text .hello {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.9;
+            display: block;
+        }
+        
+        .greeting-text .name-large {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.2;
+            display: block;
+            margin-top: 2px;
+        }
+        
+        .patient-id-small {
+            font-size: 11px;
+            font-weight: 500;
+            opacity: 0.85;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 4px;
+        }
+        
+        .datetime-display {
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.15);
+            padding: 5px 12px;
+            border-radius: 30px;
+            width: fit-content;
+            margin-top: 8px;
+        }
+        
+        .datetime-display .time {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .welcome-icons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        
+        .icon-small, .profile-icon-btn {
+            background: rgba(255,255,255,0.18);
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 19px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        
+        .map-card {
+            background: white;
+            border-radius: 28px;
+            padding: 0;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        #map {
+            height: 100%;
+            min-height: 148px;
+            width: 100%;
+            border-radius: 28px;
+            background: #e2e8f0;
+        }
+        
+        .leaflet-control-zoom, .leaflet-control-attribution {
+            display: none !important;
+        }
+        .device-marker-icon {
+            background: transparent;
+        }
+        .device-marker-wrap,
+        .location-marker-wrap {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid rgba(59,130,246,0.95);
+            box-shadow: 0 3px 10px rgba(30,64,175,0.18);
+            overflow: hidden;
+        }
+        .device-marker-wrap img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        .location-marker-wrap {
+            background: rgba(59,130,246,0.95);
+            border: 2px solid rgba(59,130,246,0.95);
+            box-shadow: 0 0 0 4px rgba(255,255,255,1), 0 0 0 8px rgba(59,130,246,0.2), 0 3px 10px rgba(30,64,175,0.18);
+            position: relative;
+        }
+        .location-marker-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: white;
+        }
+        
+        .patient-details-section {
+            background: white;
+            border-radius: 28px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+            background: #f8fafd;
+            padding: 16px;
+            border-radius: 22px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 3px;
+            color: var(--text);
+        }
+
+        .metrics-two-column {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        .telemetry-card {
+            background: white;
+            padding: 16px 12px;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 12px;
+        }
+        
+        .telemetry-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .tele-icon {
+            width: 52px;
+            height: 52px;
+            background: #f0f5ff;
+            border: 2px solid rgba(29,78,216,0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        
+        .tele-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        
+        .tele-value {
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 3px;
+            color: var(--text);
+        }
+        
+        .obstacle-clear { color: var(--green); }
+        .obstacle-warn { color: var(--amber); }
+        .obstacle-block { color: var(--danger); }
+        
+        .angle-card {
+            background: white;
+            border-radius: 28px;
+            padding: 12px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            transition: all 0.3s ease;
+        }
+        .angle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .angle-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .angle-value {
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--blue);
+            font-family: monospace;
+        }
+        .angle-bar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 6px;
+            position: relative;
+            margin: 10px 0;
+        }
+        .angle-center-marker {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            width: 3px;
+            height: 28px;
+            background: #dc2626;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        .angle-bar-fill-left {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #f59e0b, #3b82f6);
+            border-radius: 20px 0 0 20px;
+            right: 50%;
+            transition: width 0.05s linear;
+        }
+        .angle-bar-fill-right {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #f59e0b, #dc2626);
+            border-radius: 0 20px 20px 0;
+            left: 50%;
+            transition: width 0.05s linear;
+        }
+        .angle-indicator-dot {
+            position: absolute;
+            top: -6px;
+            width: 18px;
+            height: 18px;
+            background: #1d4ed8;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.05s linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid white;
+            z-index: 3;
+        }
+        .angle-direction {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 6px;
+            padding: 6px;
+            border-radius: 40px;
+            background: #f1f5f9;
+        }
+        .angle-direction.left { background: #dbeafe; color: #1e3a8a; }
+        .angle-direction.right { background: #fee2e2; color: #991b1b; }
+        .angle-direction.straight { background: #dcfce7; color: #166534; }
+        .angle-status {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 6px;
+            padding: 6px;
+            border-radius: 20px;
+        }
+        
+        .carousel-container {
+            background: white;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+        }
+        
+        .carousel-slides {
+            display: flex;
+            transition: transform 0.4s ease-in-out;
+            touch-action: pan-y pinch-zoom;
+        }
+        
+        .carousel-slide {
+            flex: 0 0 100%;
+            padding: 16px 12px;
+            min-height: 180px;
+        }
+        
+        .vital-signs-slide {
+            height: 100%;
+        }
+        
+        .health-header-compact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .health-header-compact h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .health-metrics-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .health-metric-compact {
+            text-align: center;
+            background: white;
+            padding: 10px 6px;
+            border-radius: 18px;
+            transition: all 0.2s;
+            border: 2px solid var(--green);
+        }
+        
+        .health-metric-compact.unstable {
+            border: 2px solid var(--danger);
+            background: #fff5f5;
+        }
+        
+        .health-metric-compact .metric-value-compact {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+        
+        .health-metric-compact.unstable .metric-value-compact {
+            color: var(--danger);
+        }
+        
+        .health-metric-compact .metric-label-compact {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+        
+        .content-slide {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content-slide-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .content-slide-header span {
+            font-size: 24px;
+        }
+        
+        .content-slide-header h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .content-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 130px;
+        }
+        
+        .content-item {
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .content-item:hover {
+            background: #eef2ff;
+            transform: translateX(4px);
+        }
+        
+        .content-item .title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .content-item .detail {
+            color: var(--muted);
+            font-size: 11px;
+        }
+        
+        .empty-message {
+            text-align: center;
+            color: var(--muted);
+            padding: 20px;
+            font-size: 13px;
+        }
+        
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 0 12px;
+            background: white;
+            border-top: 1px solid #eef2ff;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .dot.active {
+            background: var(--blue);
+            width: 20px;
+            border-radius: 4px;
+        }
+        
+        .drive-mode-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 8px 6px;
+            border-radius: 40px;
+            min-height: auto;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, var(--blue) 0%, #3b82f6 100%);
+            border-color: var(--blue);
+            transform: scale(1.02);
+        }
+        
+        .mode-btn.active .mode-name {
+            color: white;
+        }
+        
+        .mode-emoji {
+            font-size: 20px;
+        }
+        
+        .mode-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .direction-container {
+            background: white;
+            border-radius: 28px;
+            padding: 14px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            border: var(--outline);
+            transition: all 0.3s ease;
+        }
+        
+        .direction-header h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        
+        .direction-status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 36px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        }
+        
+        .direction-status-badge.forward { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+        .direction-status-badge.backward { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+        .direction-status-badge.left { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+        .direction-status-badge.right { background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); }
+        .direction-status-badge.stop {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.01); opacity: 0.95; }
+        }
+        
+        .direction-icon-large { font-size: 30px; }
+        .direction-text-large { font-size: 16px; font-weight: 800; color: white; }
+   
+        
+        .popup-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 28px;
+            padding: 28px 24px;
+            width: calc(100% - 48px);
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+        
+        .popup-panel.square {
+            border-radius: 28px;
+        }
+        
+        .popup-header {
+            margin-bottom: 16px;
+        }
+        
+        .popup-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+        
+        .popup-message {
+            font-size: 16px;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 24px;
+            padding: 0 8px;
+        }
+        
+        .popup-close-btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        
+        .popup-close-btn.secondary {
+            background: #eef2ff;
+            color: var(--text);
+            margin-top: 10px;
+        }
+        
+        .contact-item {
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .contact-item:hover {
+            background: #e5edff;
+            transform: translateX(4px);
+        }
+        
+        .shutdown-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .shutdown-card {
+            background: #0f172a;
+            padding: 24px;
+            border-radius: 48px;
+            color: white;
+            text-align: center;
+            width: 280px;
+        }
+        
+        .alert-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            border-radius: 32px;
+            padding: 28px 24px;
+            min-width: 280px;
+            max-width: 340px;
+            text-align: center;
+            z-index: 3000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .alert-popup .alert-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .alert-popup .alert-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+        }
+        .alert-popup .alert-message {
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
+        }
+        .alert-popup button {
+            background: white;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .notification-badge {
+            position: relative;
+        }
+        .notification-badge .badge-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notification-log-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--blue);
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+        .notification-log-item:hover {
+            background: #eef2ff;
+            transform: translateX(4px);
+        }
+        .notification-log-item.warning {
+            border-left-color: var(--danger);
+            background: #fff5f5;
+        }
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            text-align: center;
+            z-index: 3000;
+            animation: slideUp 0.3s ease;
+            max-width: 320px;
+            margin: 0 auto;
+            pointer-events: none;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .emergency-stop-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(220,38,38,0.3);
+        }
+        
+        .emergency-stop-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(220,38,38,0.4);
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-row">
+    <div class="welcome-card">
+        <div>
+            <div class="welcome-top">
+                <img class="profile-image" id="profileImage" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile">
+                <div class="greeting-text">
+                    <span class="hello">Welcome back,</span>
+                    <span class="name-large" id="patientFirstName">Loading...</span>
+                    <span class="patient-id-small" id="patientIdSmall"></span>
+                </div>
+            </div>
+            <div class="datetime-display" id="datetimeDisplay">
+                <span>📅</span>
+                <span id="dateText"></span>
+                <span>⏰</span>
+                <span class="time" id="timeText">--:-- --</span>
+            </div>
+        </div>
+        <div class="welcome-icons">
+            <button class="icon-small notification-badge" id="welcomeNotifBtn">🔔<span id="notificationBadge" class="badge-count" style="display: none;">0</span></button>
+            <button class="icon-small" id="welcomeLogBtn">📋</button>
+            <button class="icon-small" id="welcomeCallBtn">📞</button>
+            <button class="profile-icon-btn" id="profileIconBtn">👤</button>
+        </div>
+    </div>
+    <div class="map-card">
+        <div id="map"></div>
+    </div>
+</div>
+
+<div id="patientDetailsSection" class="patient-details-section" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="font-size: 18px;">📋 Patient Information</h3>
+        <button class="close-popup" onclick="closePatientDetails()" style="font-size: 28px; background: none; border: none; cursor: pointer;">×</button>
+    </div>
+    <div class="details-grid" id="patientDetailsGrid"></div>
+</div>
+
+<div class="metrics-two-column">
+    <div class="telemetry-card">
+        <div class="telemetry-grid">
+            <div class="telemetry-item"><div class="tele-icon">⚡</div><span class="tele-label">SPEED</span><span class="tele-value" id="speedValue">0.0 m/s</span></div>
+            <div class="telemetry-item"><div class="tele-icon">🔋</div><span class="tele-label">BATTERY</span><span class="tele-value" id="batteryValue">--%</span></div>
+            <div class="telemetry-item"><div class="tele-icon">🚧</div><span class="tele-label">OBSTACLE</span><span class="tele-value" id="obstacleValue">--</span></div>
+            <div class="telemetry-item"><div class="tele-icon">📍</div><span class="tele-label">RANGE</span><span class="tele-value" id="rangeValue">-- km</span></div>
+        </div>
+    </div>
+    <div class="carousel-container">
+        <div class="carousel-wrapper"><div class="carousel-slides" id="carouselSlides"></div></div>
+        <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+</div>
+
+<div class="angle-card" id="angleCard">
+    <div class="angle-header"><h4>📐 Tilt Angle (Stability)</h4></div>
+    <div class="angle-value" id="angleValue">0.0<span>°</span></div>
+    <div class="angle-bar-track" id="angleBarTrack">
+        <div class="angle-bar-fill-left" id="angleFillLeft"></div>
+        <div class="angle-bar-fill-right" id="angleFillRight"></div>
+        <div class="angle-center-marker"></div>
+        <div class="angle-indicator-dot" id="angleIndicatorDot"></div>
+    </div>
+    <div class="angle-direction" id="angleDirection">✓ STRAIGHT</div>
+    <div class="angle-status" id="angleStatus">Waiting for data...</div>
+</div>
+
+<div class="drive-mode-row">
+    <div class="mode-btn" data-mode="Line Following"><span class="mode-emoji">➖</span><span class="mode-name">Line Following</span></div>
+    <div class="mode-btn" data-mode="Control"><span class="mode-emoji">🎮</span><span class="mode-name">Control</span></div>
+    <div class="mode-btn" data-mode="Self Drive"><span class="mode-emoji">🤖</span><span class="mode-name">Self Drive</span></div>
+</div>
+
+<div class="direction-container">
+    <div class="direction-header"><h4>🔄 CURRENT MOVEMENT</h4></div>
+    <div class="direction-status-badge stop" id="directionBadge"><span class="direction-icon-large" id="dirIconLarge">⏹️</span><span class="direction-text-large" id="dirTextLarge">Stopped</span></div>
+</div>
+
+<button class="emergency-stop-btn" id="emergencyStopBtn">⛔ EMERGENCY STOP</button>
+
+<div id="callPopup" class="popup-panel square">
+    <div class="popup-header"><h3>📞 Emergency Call</h3></div>
+    <div class="popup-message">Tap contact to dial</div>
+    <div id="emergencyContactsList" style="margin-bottom: 16px;"></div>
+    <button class="popup-close-btn" onclick="closePopup('call')">Close</button>
+</div>
+
+<div id="logPopup" class="popup-panel square">
+    <div class="popup-header"><h3>📋 Notifications Log</h3></div>
+    <div id="notificationLog" style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;"></div>
+    <button class="popup-close-btn" id="clearAllNotificationsBtn">🗑️ Clear All</button>
+    <button class="popup-close-btn secondary" onclick="closeLogPopup()" style="margin-top: 10px;">Close</button>
+</div>
+</div>
+
+<div class="connection-status disconnected" id="connectionStatus"><span class="status-dot"></span><span id="connectionText">Disconnected</span></div>
+
+<script type="module">
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getDatabase, ref, onValue, set, push, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    
+    const db = window.db;
+    const dbRealtime = window.dbRealtime;
+    const PATIENT_ID = "patient_main";
+        let esp32IP = "10.179.0.126";
+    let patientData = { fullName: 'Rebecca Rowe', patientId: 'PT-10234', age: '67', bloodGroup: 'A+', doctor: 'Dr. Sarah Adams', contactNo: '+1 555 0199', photo: 'https://cdn-icons-png.flaticon.com/512/847/847969.png' };
+    let currentMode = 'Line Following', currentDirection = 'stop', emergencyActive = false;
+    let notifications = [], notificationCount = 0;
+    let processedItems = { messages: new Set(), alarms: new Set(), appointments: new Set(), media: new Set(), calendar: new Set(), healthAlerts: new Set() };
+    let dataStore = { messages: [], alarms: [], appointments: [], media: [], calendar: [] };
+    let carouselIndex = 0, slides = [], autoSlideInterval = null, isVitalsAbnormal = false;
+    let touchStartX = 0, touchEndX = 0;
+    let lastHealthState = { hr: 84, temp: 36.8, o2: 98, humidity: 60, airQuality: 50 };
+    const locationNameCache = new Map();
+    let currentLocation = { lat: 12.9716, lng: 77.5946 };
+    let gpsWatchId = null;
+    let emergencyContacts = [];
+    
+    function renderEmergencyContacts() {
+        const container = document.getElementById('emergencyContactsList');
+        if(!container) return;
+        container.innerHTML = emergencyContacts.map(cont => `<div class="contact-item" data-number="${cont.number}">${cont.label}<span>${cont.number}</span></div>`).join('');
+        document.querySelectorAll('#emergencyContactsList .contact-item').forEach(el => {
+            el.addEventListener('click', () => { window.location.href = `tel:${el.dataset.number}`; });
+        });
+    }
+    
+    function showToast(msg) { const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+    function showAlertPopup(title, msg) { const pop=document.createElement('div'); pop.className='alert-popup'; pop.innerHTML=`<div class="alert-icon">⚠️</div><div class="alert-title">${escapeHtml(title)}</div><div class="alert-message">${escapeHtml(msg)}</div><button onclick="this.parentElement.remove()">Dismiss</button>`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),8000); }
+    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>]/g,function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
+    
+    function updateConnectionStatus(connected) {
+        const statusDiv = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionText');
+        
+        if (connected) {
+            statusDiv.className = 'connection-status connected';
+            statusText.innerText = 'ESP32 Connected';
+        } else {
+            statusDiv.className = 'connection-status disconnected';
+            statusText.innerText = 'ESP32 Disconnected';
+        }
+    }    
+    
+    async function setEmergencyState(active, source='remote') {
+        const overlay = document.getElementById('shutdownOverlay');
+        if (active && !emergencyActive) {
+            emergencyActive = true;
+            document.body.classList.add('emergency-shutdown');
+            if (overlay) overlay.style.display = 'flex';
+            await set(ref(dbRealtime, 'emergency_status/active'), true);
+            await setDoc(doc(db,"settings","emergency_status"), { active: true, source: source, timestamp: new Date().toISOString() }, { merge: true });
+        } else if (!active && emergencyActive) {
+            emergencyActive = false;
+            document.body.classList.remove('emergency-shutdown');
+            if (overlay) overlay.style.display = 'none';
+            await set(ref(dbRealtime, 'emergency_status/active'), false);
+            await setDoc(doc(db,"settings","emergency_status"), { active: false, timestamp: new Date().toISOString() }, { merge: true });
+        }
+    }
+    
+    function listenEmergencyContacts() {
+        const refContacts = doc(db, "settings", "emergency_contacts");
+        onSnapshot(refContacts, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.contacts) {
+                    emergencyContacts = data.contacts;
+                    renderEmergencyContacts();
+                }
+            }
+        });
+    }
+    
+    function updateAngleDisplay(angle) {
+        let validAngle = Math.min(45, Math.max(-45, angle));
+        const angleValueElem = document.getElementById('angleValue');
+        if (angleValueElem) {
+            angleValueElem.innerHTML = `${validAngle.toFixed(1)}<span>°</span>`;
+        }
+        
+        const track = document.getElementById('angleBarTrack');
+        if (track) {
+            const trackWidth = track.offsetWidth;
+            const centerX = trackWidth / 2;
+            const maxOffset = (trackWidth / 2) - 9;
+            const dotOffset = (validAngle / 45) * maxOffset;
+            const dotLeft = centerX - dotOffset;
+            const indicatorDot = document.getElementById('angleIndicatorDot');
+            if (indicatorDot) {
+                indicatorDot.style.left = `${dotLeft}px`;
+                if (Math.abs(validAngle) > 25) indicatorDot.style.background = '#dc2626';
+                else if (Math.abs(validAngle) > 18) indicatorDot.style.background = '#f59e0b';
+                else indicatorDot.style.background = '#3b82f6';
+            }
+            const leftFillPercent = validAngle > 0 ? Math.min(100, (validAngle / 45) * 100) : 0;
+            const rightFillPercent = validAngle < 0 ? Math.min(100, (Math.abs(validAngle) / 45) * 100) : 0;
+            const fillLeft = document.getElementById('angleFillLeft');
+            const fillRight = document.getElementById('angleFillRight');
+            if (fillLeft) fillLeft.style.width = `${leftFillPercent}%`;
+            if (fillRight) fillRight.style.width = `${rightFillPercent}%`;
+        }
+        
+        const angleDirectionElem = document.getElementById('angleDirection');
+        let directionText = '', directionClass = '';
+        if (validAngle > 5) { directionText = `⬅️ LEFT (${validAngle.toFixed(1)}°)`; directionClass = 'left'; }
+        else if (validAngle < -5) { directionText = `➡️ RIGHT (${Math.abs(validAngle).toFixed(1)}°)`; directionClass = 'right'; }
+        else { directionText = '✓ STRAIGHT'; directionClass = 'straight'; }
+        if (angleDirectionElem) { angleDirectionElem.className = `angle-direction ${directionClass}`; angleDirectionElem.innerHTML = directionText; }
+        
+        const statusDiv = document.getElementById('angleStatus');
+        if (Math.abs(validAngle) > 25) statusDiv.innerHTML = '⚠️ CRITICAL tilt risk';
+        else if (Math.abs(validAngle) > 18) statusDiv.innerHTML = '⚠️ High tilt';
+        else statusDiv.innerHTML = '✓ Stable';
+    }
+    
+    async function sharePatientLocation(lat, lng) {
+        try {
+            await set(ref(dbRealtime, `patient_location/${PATIENT_ID}`), {
+                lat: lat,
+                lng: lng,
+                timestamp: serverTimestamp(),
+                accuracy: 10,
+                source: 'patient_device'
+            });
+            await setDoc(doc(db, "locations", PATIENT_ID), {
+                lat: lat,
+                lng: lng,
+                timestamp: new Date().toISOString(),
+                source: 'patient_device'
+            }, { merge: true });
+        } catch (error) {
+            console.warn("Failed to share location:", error);
+        }
+    }
+    
+    function startGPSSharing() {
+        if (!navigator.geolocation) {
+            showToast('GPS not supported');
+            return;
+        }
+        
+        if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+        
+        gpsWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude, accuracy } = position.coords;
+                currentLocation = { lat: latitude, lng: longitude };
+                updateWheelchairLocation(latitude, longitude);
+                sharePatientLocation(latitude, longitude);
+            },
+            (error) => {
+                console.warn('GPS error:', error);
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000
+            }
+        );
+    }
+    
+    function listenESP32Status() {
+        console.log("🔍 Listening for ESP32 status...");
+        const connectionRef = ref(dbRealtime, 'esp32/connection');
+        let lastConnected = false;
+        
+        onValue(connectionRef, (snap) => {
+            const connectionStatus = snap.val();
+            const isConnected = connectionStatus && connectionStatus.connected === true;
+            console.log("📡 ESP32 connection status:", isConnected);
+            
+            if (isConnected) {
+                updateConnectionStatus(true);
+                const telemetryRef = ref(dbRealtime, 'esp32/telemetry');
+                onValue(telemetryRef, (teleSnap) => {
+                    const tele = teleSnap.val();
+                    if (tele && isConnected) {
+                        console.log("📊 Telemetry received:", tele);
+                        if (tele.angle !== undefined) updateAngleDisplay(tele.angle);
+                        if (tele.speed !== undefined) document.getElementById('speedValue').innerText = tele.speed.toFixed(1) + ' m/s';
+                      if (tele.battery !== undefined) {
+
+    const batteryVal = 82;   // preset battery %
+
+    document.getElementById('batteryValue').innerText = batteryVal + '%';
+
+    const rangeVal = ((batteryVal / 100) * 8).toFixed(1);
+    document.getElementById('rangeValue').innerText = rangeVal + ' km';
+}
+                        if (tele.obstacle !== undefined) {
+                            const obsSpan = document.getElementById('obstacleValue');
+                            obsSpan.innerText = tele.obstacle;
+                            obsSpan.className = 'tele-value ' + (tele.obstacle === 'Clear' ? 'obstacle-clear' : tele.obstacle === 'Nearby' ? 'obstacle-warn' : 'obstacle-block');
+                        }
+                        if (tele.direction !== undefined) {
+                            currentDirection = tele.direction;
+                            const badge = document.getElementById('directionBadge');
+                            const icon = document.getElementById('dirIconLarge');
+                            const text = document.getElementById('dirTextLarge');
+                            badge.className = 'direction-status-badge ' + tele.direction;
+                            const icons = { forward: '⬆️', backward: '⬇️', left: '⬅️', right: '➡️', stop: '⏹️' };
+                            const texts = { forward: 'Moving forward', backward: 'Moving backward', left: 'Turning left', right: 'Turning right', stop: 'STOPPED' };
+                            icon.innerHTML = icons[tele.direction] || '⏹️';
+                            text.innerHTML = texts[tele.direction] || 'Stopped';
+                        }
+                        if (tele.temp !== undefined) {
+                            const tempSlide = document.getElementById('healthTempSlide');
+                            if (tempSlide) tempSlide.innerText = tele.temp.toFixed(1);
+                        }
+                        if (tele.humidity !== undefined) {
+                            // Could add humidity display if needed
+                        }
+                        if (tele.mq3 !== undefined) {
+                            const airQuality = Math.min(100, Math.max(0, (tele.mq3 / 4095) * 100));
+                            const o2Slide = document.getElementById('healthO2Slide');
+                            if (o2Slide) o2Slide.innerText = Math.round(airQuality);
+                        }
+                    }
+                });
+            } else {
+                updateConnectionStatus(false);
+            }
+            lastConnected = isConnected;
+        }, (error) => {
+            console.error("Error listening to ESP32 status:", error);
+            updateConnectionStatus(false);
+        });
+    }
+    
+function listenDriveMode() {
+
+    const modeRef = doc(db, "settings", "drive_mode");
+
+    onSnapshot(modeRef, (docSnap) => {
+
+        if (!docSnap.exists()) return;
+
+        const data = docSnap.data();
+
+        if (data.mode && data.mode !== currentMode) {
+
+            currentMode = data.mode;
+
+            updateModeUI(currentMode);
+
+            const espMode = convertModeToESP32(currentMode);
+
+            fetch(`http://10.179.0.126/mode?mode=${espMode}`).catch(() => {});
+
+            addToNotificationLog(
+                '🔄 Drive Mode Changed',
+                `Mode changed to: ${currentMode}`,
+                new Date().toLocaleString(),
+                false
+            );
+        }
+
+    });
+
+}    
+    function listenPatientProfileUpdates() {
+        const patientRef = doc(db, "patients", PATIENT_ID);
+        onSnapshot(patientRef, (docSnap) => {
+            if (docSnap.exists()) {
+                Object.assign(patientData, docSnap.data());
+                updatePatientDisplay();
+                renderPatientDetails();
+            }
+        });
+    }
+    
+    function addToNotificationLog(title, msg, time, isWarning=false){
+        const id=Date.now()+Math.random();
+        notifications.unshift({id,title,message:msg,time,isWarning});
+        notificationCount=notifications.length;
+        const badge=document.getElementById('notificationBadge');
+        if(notificationCount>0){ badge.style.display='flex'; badge.innerText=notificationCount>9?'9+':notificationCount; }
+        else badge.style.display='none';
+        updateNotificationLogDisplay();
+    }
+    
+    function updateNotificationLogDisplay(){
+        const container=document.getElementById('notificationLog');
+        if(!container) return;
+        if(notifications.length===0){ container.innerHTML='<div class="empty-message">No notifications</div>'; return; }
+        container.innerHTML=notifications.slice(0,50).map(n=>`<div class="notification-log-item ${n.isWarning?'warning':''}"><div class="log-title">${escapeHtml(n.title)}</div><div class="log-message">${escapeHtml(n.message)}</div><div class="log-time">${n.time}</div></div>`).join('');
+    }
+    
+    function clearAllNotifications(){ notifications=[]; notificationCount=0; updateNotificationLogDisplay(); document.getElementById('notificationBadge').style.display='none'; showToast('All notifications cleared'); }
+    
+    function rebuildCarousel(){
+        const container=document.getElementById('carouselSlides');
+        if(!container)return;
+        container.innerHTML='';
+        slides=[];
+        const vitalsSlide=document.createElement('div');
+        vitalsSlide.className='carousel-slide vital-signs-slide';
+        vitalsSlide.innerHTML=`<div class="health-header-compact"><span>❤️</span><h4>Vital Signs</h4></div><div class="health-metrics-compact"><div class="health-metric-compact" id="hrMetricSlide"><div class="metric-value-compact" id="healthHeartRateSlide">84</div><div class="metric-label-compact">HR</div><small>bpm</small></div><div class="health-metric-compact" id="tempMetricSlide"><div class="metric-value-compact" id="healthTempSlide">36.8</div><div class="metric-label-compact">TEMP</div><small>°C</small></div><div class="health-metric-compact" id="humidityMetricSlide"><div class="metric-value-compact" id="healthHumiditySlide">--</div><div class="metric-label-compact">HUMIDITY</div><small>%</small></div><div class="health-metric-compact" id="airQualityMetricSlide"><div class="metric-value-compact" id="healthO2Slide">--</div><div class="metric-label-compact">AIR QUALITY</div><small>AQI</small></div></div>`;
+        container.appendChild(vitalsSlide);
+        slides.push({type:'vitals',element:vitalsSlide});
+        const configs=[{key:'messages',icon:'💬',title:'Messages'},{key:'alarms',icon:'⏰',title:'Alarms'},{key:'appointments',icon:'📋',title:'Appointments'},{key:'media',icon:'🎵',title:'Media'},{key:'calendar',icon:'📅',title:'Calendar'}];
+        configs.forEach(cfg=>{ const items=dataStore[cfg.key]||[]; const slideDiv=document.createElement('div'); slideDiv.className='carousel-slide content-slide'; slideDiv.innerHTML=`<div class="content-slide-header"><span>${cfg.icon}</span><h4>${cfg.title}</h4></div><div class="content-list">${items.length?items.slice().reverse().slice(0,5).map(i=>`<div class="content-item"><div class="title">${escapeHtml(i.title||i.text||'Update')}</div><div class="detail">${escapeHtml(i.detail||'')} ${i.time?'• '+i.time:''}</div></div>`).join(''):'<div class="empty-message">No items</div>'}</div>`; container.appendChild(slideDiv); slides.push({type:cfg.key,element:slideDiv}); });
+        updateCarouselDots(); updateCarouselPosition();
+    }
+    
+    function updateCarouselDots(){ const dots=document.getElementById('carouselDots'); if(!dots)return; dots.innerHTML=''; slides.forEach((_,idx)=>{ const dot=document.createElement('div'); dot.className='dot'+(idx===carouselIndex?' active':''); dot.onclick=()=>goToSlide(idx); dots.appendChild(dot); }); }
+    function updateCarouselPosition(){ document.querySelector('.carousel-slides').style.transform=`translateX(-${carouselIndex*100}%)`; updateCarouselDots(); }
+    function goToSlide(idx){ carouselIndex=Math.min(Math.max(idx,0),slides.length-1); updateCarouselPosition(); resetAutoSlideTimer(); }
+    function nextSlide(){ if(isVitalsAbnormal)return; carouselIndex=(carouselIndex+1)%slides.length; updateCarouselPosition(); }
+    function resetAutoSlideTimer(){ if(autoSlideInterval)clearInterval(autoSlideInterval); if(!isVitalsAbnormal) autoSlideInterval=setInterval(nextSlide,10000); }
+    function initTouchEvents(){ const wrap=document.querySelector('.carousel-wrapper'); wrap?.addEventListener('touchstart',e=>touchStartX=e.changedTouches[0].screenX); wrap?.addEventListener('touchend',e=>{ touchEndX=e.changedTouches[0].screenX; if(touchEndX<touchStartX-50 && carouselIndex<slides.length-1){ carouselIndex++; updateCarouselPosition(); resetAutoSlideTimer(); } else if(touchEndX>touchStartX+50 && carouselIndex>0){ carouselIndex--; updateCarouselPosition(); resetAutoSlideTimer(); } }); }
+    
+    function listenCaretakerActions(){
+        const actionsRef=doc(db,"patientActions","feed");
+        onSnapshot(actionsRef,(docSnap)=>{
+            if(docSnap.exists()){ const data=docSnap.data(); ['messages','alarms','appointments','media','calendar'].forEach(type=>{ if(data[type] && Array.isArray(data[type])){ data[type].forEach(item=>{ const id=`${type}_${item.timestamp||item.time||Date.now()}_${item.title||item.text||''}`; if(!processedItems[type].has(id)){ processedItems[type].add(id); dataStore[type].push({...item}); addToNotificationLog(`📢 New ${type}`, item.title||item.text||'Update', item.time||new Date().toLocaleString(), false); } }); } }); rebuildCarousel(); }
+        });
+    }
+    
+    async function loadPatientFromFirestore(){ 
+        const refPatient = doc(db,"patients",PATIENT_ID);
+        const snap=await getDoc(refPatient); 
+        if(snap.exists()) Object.assign(patientData,snap.data()); 
+        else await setDoc(refPatient, patientData);
+        updatePatientDisplay(); 
+        renderPatientDetails(); 
+    }
+    
+    function updatePatientDisplay(){ 
+        document.getElementById('patientFirstName').innerText = patientData.fullName;
+        document.getElementById('patientIdSmall').innerHTML=`ID: ${patientData.patientId} · ${patientData.age}y`; 
+        document.getElementById('profileImage').src=patientData.photo; 
+    }
+    
+    function renderPatientDetails(){ 
+        const grid=document.getElementById('patientDetailsGrid'); grid.innerHTML=''; 
+        [['Full Name',patientData.fullName],['Patient ID',patientData.patientId],['Age',patientData.age+' years'],['Blood Group',patientData.bloodGroup],['Doctor',patientData.doctor],['Contact',patientData.contactNo]].forEach(([l,v])=>{ const div=document.createElement('div'); div.className='detail-item'; div.innerHTML=`<span class="detail-label">${l}</span><div class="detail-value">${v}</div>`; grid.appendChild(div); }); 
+    }
+    
+    function updateHealthMetrics(){ 
+        let hr=parseInt(document.getElementById('healthHeartRateSlide')?.innerText)||84;
+        hr=Math.min(110,Math.max(65,hr+(Math.random()>0.5?1:-1))); 
+        let temp=36.8+(Math.random()-0.5)*0.2; 
+        let humidity=55+(Math.random()-0.5)*10;
+        let airQuality=45+(Math.random()-0.5)*20;
+        if(document.getElementById('healthHeartRateSlide')){ 
+            document.getElementById('healthHeartRateSlide').innerText=hr; 
+            document.getElementById('healthTempSlide').innerText=temp.toFixed(1); 
+            document.getElementById('healthHumiditySlide').innerText=Math.round(humidity);
+            document.getElementById('healthO2Slide').innerText=Math.round(airQuality);
+        }
+        const abnormal=(hr<60||hr>100||temp<36.1||temp>37.2||airQuality>70); 
+        if(abnormal && !isVitalsAbnormal){ 
+            isVitalsAbnormal=true; 
+            if(autoSlideInterval)clearInterval(autoSlideInterval); 
+            if(carouselIndex!==0){carouselIndex=0;updateCarouselPosition();} 
+            addToNotificationLog('⚠️ Health Alert','Abnormal vitals detected',new Date().toLocaleString(),true); 
+        } else if(!abnormal && isVitalsAbnormal){ 
+            isVitalsAbnormal=false; 
+            resetAutoSlideTimer(); 
+        }
+    }
+    
+    function updateDateTime(){ const now=new Date(); document.getElementById('dateText').innerText=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); document.getElementById('timeText').innerText=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+    
+    function updateModeUI(mode){
+        document.querySelectorAll('.mode-btn').forEach(btn=>{
+            if(btn.dataset.mode === mode) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+    
+    function convertModeToESP32(mode){
+
+if(mode === "Control") return "control";
+
+if(mode === "Line Following") return "line_follow";
+
+if(mode === "Self Drive") return "self_drive";
+
+return "control";
+
+}
+    
+async function setMode(mode){
+
+currentMode = mode;
+
+updateModeUI(mode);
+
+await setDoc(doc(db, "settings", "drive_mode"), {
+    mode: mode,
+    timestamp: new Date().toISOString()
+});
+
+const espMode = convertModeToESP32(mode);
+
+fetch(`http://ESP32_IP/mode?mode=${espMode}`).catch(()=>{});
+
+addToNotificationLog(
+    'Drive Mode',
+    `Switched to ${mode}`,
+    new Date().toLocaleString(),
+    false
+);
+
+showToast(`Mode changed to ${mode}`);
+
+}
+
+    async function triggerEmergency(){
+        if(emergencyActive) return;
+        await setEmergencyState(true, 'patient');
+        addToNotificationLog('🚨 EMERGENCY','You activated emergency stop!',new Date().toLocaleString(),true);
+    }
+    
+    async function closeShutdown(){ await setEmergencyState(false, 'patient'); }
+    
+    function listenEmergency(){
+        onValue(ref(dbRealtime,'emergency_status/active'),(snap)=>{
+            const active = snap.val()===true;
+            if(active !== emergencyActive) setEmergencyState(active, 'remote');
+        });
+    }
+    
+    function listenEmergencyStatus() {
+        const emergencyRef = doc(db, "settings", "emergency_status");
+        onSnapshot(emergencyRef, (docSnap) => {
+            if (!docSnap.exists()) return;
+            const data = docSnap.data();
+            if(data.active === true && !emergencyActive) setEmergencyState(true, 'caretaker');
+            else if(data.active === false && emergencyActive) setEmergencyState(false, 'caretaker');
+        });
+    }
+    
+    const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([12.9716,77.5946],15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const wheelchairMarker = L.marker([12.9716,77.5946], { icon: getWheelchairIcon() }).addTo(map);
+    let deviceMarker;
+    
+    function updateWheelchairLocation(lat, lng) {
+        const coords = [lat, lng];
+        wheelchairMarker.setLatLng(coords);
+        map.panTo(coords);
+        bindLocationInfo(wheelchairMarker, lat, lng).catch(() => {});
+    }
+    
+    function getDeviceIcon() {
+        const imageUrl = patientData.photo || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+        const name = patientData.fullName || 'User';
+        return L.divIcon({
+            className: 'device-marker-icon',
+            html: `<div class="device-marker-wrap"><img src="${imageUrl}" alt="${name}" /></div>`,
+            iconSize: [42, 42],
+            iconAnchor: [21, 42],
+            popupAnchor: [0, -42]
+        });
+    }
+    
+    function getWheelchairIcon() {
+        return L.divIcon({
+            className: 'device-marker-icon',
+            html: `<div class="location-marker-wrap"><div class="location-marker-dot"></div></div>`,
+            iconSize: [42, 42],
+            iconAnchor: [21, 42],
+            popupAnchor: [0, -42]
+        });
+    }
+    
+    function updateDeviceLocation(lat, lng) {
+        const coords = [lat, lng];
+        if (!deviceMarker) {
+            deviceMarker = L.marker(coords, { icon: getDeviceIcon() }).addTo(map);
+        } else {
+            deviceMarker.setLatLng(coords);
+            deviceMarker.setIcon(getDeviceIcon());
+        }
+        map.panTo(coords);
+        bindLocationInfo(deviceMarker, lat, lng).catch(() => {});
+    }
+    
+    async function resolveLocationName(lat, lng) {
+        const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+        if (locationNameCache.has(key)) return locationNameCache.get(key);
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+        try {
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (response.ok) {
+                const data = await response.json();
+                let placeName = data.name || data.display_name || '';
+                if (!placeName && data.address) {
+                    const address = data.address;
+                    placeName = [address.road, address.suburb, address.city, address.state, address.country].filter(Boolean).join(', ');
+                }
+                if (!placeName) placeName = 'Current location';
+                locationNameCache.set(key, placeName);
+                return placeName;
+            }
+        } catch (error) {
+            console.warn('Reverse geocoding failed', error);
+        }
+        const fallback = `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+        locationNameCache.set(key, fallback);
+        return fallback;
+    }
+    
+    async function bindLocationInfo(marker, lat, lng) {
+        const locationName = await resolveLocationName(lat, lng);
+        marker.unbindTooltip();
+        marker.unbindPopup();
+        marker.bindTooltip(locationName, { permanent: false, direction: 'top', offset: [0, -10], className: 'location-tooltip' });
+        marker.bindPopup(`Latitude: ${lat.toFixed(5)}<br>Longitude: ${lng.toFixed(5)}`);
+    }
+    
+    window.closePatientDetails=()=>document.getElementById('patientDetailsSection').style.display='none';
+    window.closePopup=(type)=>{ if(type==='call') document.getElementById('callPopup').style.display='none'; };
+    window.closeLogPopup=()=>document.getElementById('logPopup').style.display='none';
+    window.closeShutdown=closeShutdown;
+    
+    function init(){
+        updateDateTime(); 
+        setInterval(updateDateTime,1000);
+        loadPatientFromFirestore();
+        listenPatientProfileUpdates();
+        listenESP32Status();
+        listenEmergency();
+        listenEmergencyContacts();
+        listenEmergencyStatus();
+        listenDriveMode();
+        listenCaretakerActions();
+        startGPSSharing();
+        rebuildCarousel(); 
+        initTouchEvents(); 
+        resetAutoSlideTimer();
+        setInterval(updateHealthMetrics,8000);
+        
+        document.getElementById('profileIconBtn').onclick=()=>{ const sec=document.getElementById('patientDetailsSection'); sec.style.display=(sec.style.display==='none'||sec.style.display==='')?'block':'none'; };
+        document.getElementById('welcomeNotifBtn').onclick=()=>document.getElementById('logPopup').style.display='block';
+        document.getElementById('welcomeLogBtn').onclick=()=>document.getElementById('logPopup').style.display='block';
+        document.getElementById('welcomeCallBtn').onclick=()=>{ renderEmergencyContacts(); document.getElementById('callPopup').style.display='block'; };
+        document.getElementById('emergencyStopBtn').onclick=triggerEmergency;
+        document.getElementById('clearAllNotificationsBtn').onclick=clearAllNotifications;
+        
+        document.querySelectorAll('.mode-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>setMode(btn.dataset.mode));
+        });
+        
+        updateModeUI(currentMode);
+        renderEmergencyContacts();
+    }
+    init();
+</script>
+</body>
+</html>
