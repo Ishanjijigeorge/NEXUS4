@@ -2100,13 +2100,18 @@ window.doc = doc;
                         if (speedElem) speedElem.innerText = data.speed.toFixed(1) + ' m/s';
                     }
                     
-                    if (data.battery !== undefined) {
-                        const batteryElem = document.getElementById('batteryValue');
-                        if (batteryElem) {
-                            const batteryVal = Math.round(data.battery);
-                            batteryElem.innerText = batteryVal + '%';
-                        }
-                    }
+                  const batteryElem = document.getElementById('batteryValue');
+
+if (batteryElem) {
+
+    let batteryVal = 82;   // default value
+
+    if (data.battery !== undefined) {
+        batteryVal = Math.round(data.battery);
+    }
+
+    batteryElem.innerText = batteryVal + '%';
+}
                     
                     if (data.obstacle !== undefined) {
                         const obstacleElem = document.getElementById('obstacleValue');
