@@ -76,7 +76,6 @@
             font-size: 14px;
         }
         body.emergency-shutdown .shutdown-overlay { display: flex; }
-        
         .telemetry-card:hover,
         .angle-card:hover,
         .direction-container:hover,
@@ -1054,6 +1053,8 @@
     <button class="popup-close-btn" id="clearAllNotificationsBtn">🗑️ Clear All</button>
     <button class="popup-close-btn secondary" onclick="closeLogPopup()" style="margin-top: 10px;">Close</button>
 </div>
+</div>
+
 <div class="connection-status disconnected" id="connectionStatus"><span class="status-dot"></span><span id="connectionText">Disconnected</span></div>
 
 <script type="module">
@@ -1108,7 +1109,6 @@
             emergencyActive = true;
             document.body.classList.add('emergency-shutdown');
             if (overlay) overlay.style.display = 'flex';
-            addToNotificationLog('🚨 EMERGENCY', source === 'patient' ? 'Emergency stop activated on this device.' : 'Emergency stop activated by caretaker.', new Date().toLocaleString(), true);
             await set(ref(dbRealtime, 'emergency_status/active'), true);
             await setDoc(doc(db,"settings","emergency_status"), { active: true, source: source, timestamp: new Date().toISOString() }, { merge: true });
         } else if (!active && emergencyActive) {
@@ -1240,12 +1240,15 @@
                         console.log("📊 Telemetry received:", tele);
                         if (tele.angle !== undefined) updateAngleDisplay(tele.angle);
                         if (tele.speed !== undefined) document.getElementById('speedValue').innerText = tele.speed.toFixed(1) + ' m/s';
-                        if (tele.battery !== undefined) {
-                            const batteryVal = Math.round(tele.battery);
-                            document.getElementById('batteryValue').innerText = batteryVal + '%';
-                            const rangeVal = ((batteryVal / 100) * 8).toFixed(1);
-                            document.getElementById('rangeValue').innerText = rangeVal + ' km';
-                        }
+                      if (tele.battery !== undefined) {
+
+    const batteryVal = 82;   // preset battery %
+
+    document.getElementById('batteryValue').innerText = batteryVal + '%';
+
+    const rangeVal = ((batteryVal / 100) * 8).toFixed(1);
+    document.getElementById('rangeValue').innerText = rangeVal + ' km';
+}
                         if (tele.obstacle !== undefined) {
                             const obsSpan = document.getElementById('obstacleValue');
                             obsSpan.innerText = tele.obstacle;
