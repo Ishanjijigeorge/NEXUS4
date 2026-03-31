@@ -1,11 +1,13 @@
 // ==================================================
 // ESP32 WIFI BRIDGE – FINAL (ANGLE + SPEED + SAFETY)
+// + DHT11 + MQ3 SENSOR SUPPORT
 // ==================================================
 
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HardwareSerial.h>
 #include <ArduinoJson.h>
+#include <DHT.h>
 
 // WIFI
 const char* ssid = "IQOO";
@@ -13,6 +15,17 @@ const char* password = "123456789";
 
 WebServer server(80);
 HardwareSerial& arduinoSerial = Serial2;
+
+// ================= DHT11 + MQ3 =================
+#define DHT_PIN 4
+#define DHT_TYPE DHT11
+#define MQ3_PIN 34
+
+DHT dht(DHT_PIN, DHT_TYPE);
+
+float temperatureC = 0;
+float humidity = 0;
+int mq3Value = 0;
 
 // ULTRASONIC PINS
 #define TRIG_FL 12
@@ -62,7 +75,6 @@ void sendToArduino(String cmd) {
   Serial.print("→ ");
   Serial.println(cmd);
 
-  // update movement state
   if (cmd == "CMD:forward") movementDirection = "forward";
   else if (cmd == "CMD:back") movementDirection = "back";
   else if (cmd == "CMD:left") movementDirection = "left";
@@ -135,6 +147,18 @@ void readSensors(){
   distBackRight  = readUltrasonic(TRIG_BR,ECHO_BR);
 
   checkObstacle();
+}
+
+// ================= DHT11 + MQ3 =================
+void readEnvSensors(){
+
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+
+  if(!isnan(t)) temperatureC = t;
+  if(!isnan(h)) humidity = h;
+
+  mq3Value = analogRead(MQ3_PIN);
 }
 
 // ================= PARSE SERIAL =================
@@ -224,6 +248,11 @@ void handleTelemetry(){
   doc["BL"]=distBackLeft;
   doc["BR"]=distBackRight;
 
+  // Added sensors
+  doc["temp"]=temperatureC;
+  doc["humidity"]=humidity;
+  doc["mq3"]=mq3Value;
+
   doc["obstacle"]=obstacleActive;
   doc["direction"]=movementDirection;
 
@@ -267,6 +296,10 @@ void setup(){
 
   Serial.begin(115200);
   arduinoSerial.begin(115200,SERIAL_8N1,16,17);
+
+  // Initialize sensors
+  dht.begin();
+  pinMode(MQ3_PIN,INPUT);
 
   pinMode(TRIG_FL,OUTPUT);
   pinMode(ECHO_FL,INPUT);
@@ -317,6 +350,7 @@ void loop(){
   if(millis()-lastSensorRead>80){
     lastSensorRead=millis();
     readSensors();
+    readEnvSensors();
   }
 
   static unsigned long lastCheck=0;
