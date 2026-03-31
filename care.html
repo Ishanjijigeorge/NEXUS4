@@ -2556,9 +2556,6 @@ if (batteryElem) {
         }
     }
 
-       function triggerPhotoUpload() {
-    document.getElementById("patientPhotoInput").click();
-}
     function updateNotificationList() {
         const container = document.getElementById('notificationList');
         if (!container) return;
@@ -2687,7 +2684,6 @@ await saveModeToFirestore(currentMode);
 addNotification('🔄 Mode Changed', `Mode switched to: ${mode}`, false);
             }
         };
-    }
 
     async function saveModeToFirestore(mode) {
         const modeRef = doc(db, "settings", MODE_ID);
