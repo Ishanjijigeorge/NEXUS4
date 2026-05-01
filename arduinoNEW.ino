@@ -1,5 +1,6 @@
 // ==================================================
 // SMART WHEELCHAIR – FINAL (BRAKE + SPEED + OLED FIX)
+// + EEG BLINK CONTROL FOR SELF DRIVE / LINE FOLLOWING
 // ==================================================
 
 #include <Wire.h>
@@ -48,6 +49,22 @@ bool motorA_backward = false;
 bool motorB_forward = false;
 bool motorB_backward = false;
 
+// ================= EEG BLINK CONTROL =================
+const int eegPin = A0;
+int threshold = 460;
+
+const unsigned long refractoryPeriod = 150;
+const unsigned long waitNextBlink = 450;
+
+unsigned long lastBlinkTime = 0;
+unsigned long lastDetectedBlink = 0;
+
+int blinkCount = 0;
+
+bool eyeClosed = false;
+bool readyPrinted = false;
+bool eegControlEnabled = false;
+String currentDriveMode = "Line Following";
 
 // ================= BRAKING =================
 
@@ -118,7 +135,7 @@ void stopMotors() {
   targetSpeed = 0;
 
   Serial.println("STOP");
-  Serial.println("DIR:stop");   // ← added
+  Serial.println("DIR:stop");
 }
 
 void safeTransition() {
@@ -129,7 +146,6 @@ void safeTransition() {
     delay(50);
   }
 }
-
 
 // ================= MOVEMENT =================
 
@@ -149,7 +165,7 @@ void moveForward() {
   motorB_forward = true;
   motorRunning = true;
 
-  Serial.println("DIR:forward");   // ← added
+  Serial.println("DIR:forward");
 }
 
 void moveBackward() {
@@ -166,7 +182,7 @@ void moveBackward() {
   motorB_backward = true;
   motorRunning = true;
 
-  Serial.println("DIR:back");   // ← added
+  Serial.println("DIR:back");
 }
 
 void turnLeft() {
@@ -182,7 +198,7 @@ void turnLeft() {
   motorA_forward = true;
   motorRunning = true;
 
-  Serial.println("DIR:left");   // ← added
+  Serial.println("DIR:left");
 }
 
 void turnRight() {
@@ -198,9 +214,8 @@ void turnRight() {
   motorB_forward = true;
   motorRunning = true;
 
-  Serial.println("DIR:right");   // ← added
+  Serial.println("DIR:right");
 }
-
 
 // ================= SPEED =================
 
@@ -217,6 +232,47 @@ void updateSpeed() {
     currentSpeed = 0;
 }
 
+// ================= EEG CONTROL =================
+
+void handleEEGControl() {
+
+  if (!eegControlEnabled) return;
+
+  if (!readyPrinted) {
+    Serial.println("READY");
+    readyPrinted = true;
+  }
+
+  int signal = analogRead(eegPin);
+  unsigned long now = millis();
+
+  if (signal > threshold && !eyeClosed) {
+    eyeClosed = true;
+  }
+
+  if (signal < threshold && eyeClosed && (now - lastBlinkTime > refractoryPeriod)) {
+
+    eyeClosed = false;
+    lastBlinkTime = now;
+    lastDetectedBlink = now;
+
+    blinkCount++;
+
+    Serial.print("Blink Count: ");
+    Serial.println(blinkCount);
+  }
+
+  if (blinkCount > 0 && (now - lastDetectedBlink > waitNextBlink)) {
+
+    if (blinkCount == 1) stopMotors();
+    else if (blinkCount == 2) moveForward();
+    else if (blinkCount == 3) turnLeft();
+    else if (blinkCount == 4) turnRight();
+    else if (blinkCount > 4) stopMotors();
+
+    blinkCount = 0;
+  }
+}
 
 // ================= SERIAL =================
 
@@ -227,23 +283,41 @@ void handleWebSerial() {
   String input = Serial.readStringUntil('\n');
   input.trim();
 
-  if (!input.startsWith("CMD:")) return;
+  if (input.startsWith("CMD:")) {
 
-  String cmd = input.substring(4);
+    String cmd = input.substring(4);
 
-  if (cmd == "forward") moveForward();
-  else if (cmd == "back") moveBackward();
-  else if (cmd == "left") turnLeft();
-  else if (cmd == "right") turnRight();
-  else if (cmd == "stop") stopMotors();
+    if (cmd == "forward") moveForward();
+    else if (cmd == "back") moveBackward();
+    else if (cmd == "left") turnLeft();
+    else if (cmd == "right") turnRight();
+    else if (cmd == "stop") stopMotors();
+    else if (cmd.startsWith("SPEED:")) {
 
-  else if (cmd.startsWith("SPEED:")) {
+      int percent = cmd.substring(6).toInt();
+      MOTOR_SPEED = map(percent, 0, 100, 0, 255);
+    }
 
-    int percent = cmd.substring(6).toInt();
-    MOTOR_SPEED = map(percent, 0, 100, 0, 255);
+    return;
+  }
+
+  if (input.startsWith("MODE:")) {
+
+    currentDriveMode = input.substring(5);
+
+    if (currentDriveMode == "Self Drive" || currentDriveMode == "Line Following") {
+      eegControlEnabled = true;
+      readyPrinted = false;
+    } else {
+      eegControlEnabled = false;
+      blinkCount = 0;
+      eyeClosed = false;
+    }
+
+    Serial.print("MODE:");
+    Serial.println(currentDriveMode);
   }
 }
-
 
 // ================= GYRO =================
 
@@ -262,7 +336,6 @@ float readGyro() {
 
   return 0;
 }
-
 
 // ================= OLED =================
 
@@ -290,7 +363,6 @@ void updateOLED() {
 
   display.display();
 }
-
 
 // ================= SETUP =================
 
@@ -330,7 +402,6 @@ void setup() {
   Serial.println("SYSTEM_READY");
 }
 
-
 // ================= LOOP =================
 
 void loop() {
@@ -339,6 +410,7 @@ void loop() {
   unsigned long now_m = millis();
 
   handleWebSerial();
+  handleEEGControl();
 
   dt = (now_u - lastTime) / 1000000.0;
   if (dt > 0.02) dt = 0.01;
@@ -387,4 +459,4 @@ void loop() {
   }
 
   delay(1);
-}
+} 
