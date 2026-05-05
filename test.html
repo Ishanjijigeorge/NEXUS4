@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -28,7 +28,7 @@
             measurementId: "G-TP1CVNYHNE"
         };
 
-        const app = initializeApp(firebaseConfig);
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
         window.firebaseApp = app;
 
         const db = getFirestore(app);
@@ -1785,10 +1785,6 @@
             <strong id="obstacleValue">Clear</strong>
         </div>
         <div class="wheel-detail">
-            <span>📍 Range</span>
-            <strong id="rangeValue">5.2 km</strong>
-        </div>
-        <div class="wheel-detail">
             <span>📐 Tilt Angle</span>
             <strong id="tiltValue">0.0°</strong>
         </div>
@@ -1871,7 +1867,7 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -1886,7 +1882,7 @@
             measurementId: "G-TP1CVNYHNE"
         };
 
-        const app = initializeApp(firebaseConfig);
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const dbRealtime = getDatabase(app);
 
@@ -2017,11 +2013,14 @@
             lastWheelState.driverConnected = isConnected;
         }
 
-        function updateObstacleUI(obstacleDetected, depthStopActive) {
+        function updateObstacleUI(obstacleDetected, depthStopActive, frontObstacleDetected = false, rearObstacleDetected = false) {
             const obstacleElem = document.getElementById('obstacleValue');
             if (!obstacleElem) return;
 
             if (depthStopActive) obstacleElem.innerText = 'Depth Stop';
+            else if (frontObstacleDetected && rearObstacleDetected) obstacleElem.innerText = 'Front + Rear';
+            else if (frontObstacleDetected) obstacleElem.innerText = 'Front Detected';
+            else if (rearObstacleDetected) obstacleElem.innerText = 'Rear Detected';
             else if (obstacleDetected) obstacleElem.innerText = 'Detected';
             else obstacleElem.innerText = 'Clear';
         }
@@ -2089,7 +2088,12 @@
                         updateDriverConnectionUI(driverConnected);
 
                         if (data.obstacle !== undefined) {
-                            updateObstacleUI(!!data.obstacle, !!data.depth_stop);
+                            updateObstacleUI(
+                                !!data.obstacle,
+                                !!data.depth_stop,
+                                !!data.front_obstacle_detected,
+                                !!data.rear_obstacle_detected
+                            );
                         }
 
                         if (data.drive_mode) {
@@ -2388,7 +2392,12 @@
                     if (speedElem) speedElem.innerText = `${speed.toFixed(1)} m/s`;
 
                     updateDriverConnectionUI(driverConnected);
-                    updateObstacleUI(obstacle, depthStop);
+                    updateObstacleUI(
+                        obstacle,
+                        depthStop,
+                        !!data.front_obstacle_detected,
+                        !!data.rear_obstacle_detected
+                    );
 
                     if (driveMode !== lastTelemetryDriveMode) {
                         let reason = `Mode changed to: ${driveMode}`;
@@ -3888,7 +3897,6 @@
             updateEmergencyButton(false);
             updateDriverConnectionUI(false);
             updateObstacleUI(false, false);
-            document.getElementById('rangeValue')?.closest('.wheel-detail')?.remove();
 
             setTimeout(() => {
                 testESP32Connection();
