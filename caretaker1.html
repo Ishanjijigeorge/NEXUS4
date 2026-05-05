@@ -1916,12 +1916,12 @@
         let esp32Connected = false;
         let lastPing = 0;
         let lastCommandTime = 0;
-        let lastCommittedSpeedPercent = 20;
         let lastAngleValue = 0;
         let angleUpdateCount = 0;
         let lastFirebasePush = 0;
-        let telemetryFailureCount = 0;
-        let emergencyListenerInitialized = false;
+        let telemetryPollInFlight = false;
+        let pingRequestInFlight = false;
+        let connectionFailureCount = 0;
 
         let fakeSystolic = 120;
         let fakeDiastolic = 80;
@@ -2135,10 +2135,31 @@
             }
         }
 
-        async function testESP32Connection() {
+        function applyEmergencyUIState(active) {
+            emergencyActive = active;
+            updateEmergencyButton(active);
+
+            let shutdownOverlay = document.getElementById('shutdownOverlay');
+
+            if (active) {
+                document.body.classList.add('emergency-shutdown');
+                if (!shutdownOverlay) {
+                    shutdownOverlay = buildShutdownOverlay();
+                    document.body.appendChild(shutdownOverlay);
+                }
+                shutdownOverlay.style.display = 'flex';
+            } else {
+                closeShutdown();
+            }
+        }
+
+        async function testESP32Connection(markDisconnected = true) {
+            if (pingRequestInFlight) return esp32Connected;
+            pingRequestInFlight = true;
+
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const timeoutId = setTimeout(() => controller.abort(), 3500);
 
                 const response = await fetch(`http://${esp32IP}/ping`, {
                     method: 'GET',
@@ -2155,27 +2176,36 @@
                         esp32Connected = true;
                         updateConnectionStatus(true);
                         lastPing = Date.now();
-                        telemetryFailureCount = 0;
+                        connectionFailureCount = 0;
                         return true;
                     }
                 }
             } catch (error) {
                 console.log("ESP32 not responding:", error);
+            } finally {
+                pingRequestInFlight = false;
             }
 
-            esp32Connected = false;
-            updateConnectionStatus(false);
+            if (markDisconnected) {
+                esp32Connected = false;
+                updateConnectionStatus(false);
+            }
             return false;
         }
 
         async function fetchAngleData() {
-            if (!esp32Connected) return;
+            if (!esp32Connected || telemetryPollInFlight) return;
+
+            telemetryPollInFlight = true;
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 1000);
+                const timeout = setTimeout(() => controller.abort(), 2500);
 
                 const res = await fetch(`http://${esp32IP}/telemetry`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
                     signal: controller.signal
                 });
 
@@ -2193,21 +2223,7 @@
                     updateAngleDisplay(angle);
 
                     if (typeof data.emergency === 'boolean') {
-                        const wasEmergency = emergencyActive;
-                        emergencyActive = data.emergency;
-                        updateEmergencyButton(emergencyActive);
-
-                        if (emergencyActive) {
-                            document.body.classList.add('emergency-shutdown');
-                            let shutdownOverlay = document.getElementById('shutdownOverlay');
-                            if (!shutdownOverlay) {
-                                shutdownOverlay = buildShutdownOverlay();
-                                document.body.appendChild(shutdownOverlay);
-                            }
-                            shutdownOverlay.style.display = 'flex';
-                        } else if (wasEmergency) {
-                            closeShutdown();
-                        }
+                        applyEmergencyUIState(!!data.emergency);
                     }
 
                     if (data.temp !== undefined) {
@@ -2264,7 +2280,7 @@
                     const obstacleElem = document.getElementById('obstacleValue');
                     if (obstacleElem) obstacleElem.innerText = obstacle ? 'Detected' : 'Clear';
 
-                    telemetryFailureCount = 0;
+                    connectionFailureCount = 0;
                     lastPing = Date.now();
 
                     const telemetryData = {
@@ -2283,13 +2299,18 @@
                     lastFirebasePush = Date.now();
                 }
             } catch (e) {
-                telemetryFailureCount++;
-                console.log("Telemetry fetch error", telemetryFailureCount, e);
+                connectionFailureCount++;
+                console.log("Telemetry fetch error", connectionFailureCount, e);
 
-                if (telemetryFailureCount >= 3) {
-                    esp32Connected = false;
-                    updateConnectionStatus(false);
+                if (connectionFailureCount >= 5) {
+                    const alive = await testESP32Connection(false);
+                    if (!alive) {
+                        esp32Connected = false;
+                        updateConnectionStatus(false);
+                    }
                 }
+            } finally {
+                telemetryPollInFlight = false;
             }
         }
 
@@ -2312,7 +2333,7 @@
 
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                const timeoutId = setTimeout(() => controller.abort(), 2500);
 
                 const response = await fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent(normalizedCommand)}`, {
                     method: 'GET',
@@ -2337,8 +2358,12 @@
             } catch (error) {
                 console.error("Send error:", error);
                 showToast("❌ Failed to send command");
-                esp32Connected = false;
-                updateConnectionStatus(false);
+                connectionFailureCount++;
+                const alive = await testESP32Connection(false);
+                if (!alive && connectionFailureCount >= 2) {
+                    esp32Connected = false;
+                    updateConnectionStatus(false);
+                }
                 return false;
             }
         }
@@ -2350,8 +2375,10 @@
             }
 
             try {
+                await sendCommand("CMD:stop");
+
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                const timeoutId = setTimeout(() => controller.abort(), 2500);
 
                 const response = await fetch(`http://${esp32IP}/emergency`, {
                     method: 'GET',
@@ -2380,7 +2407,7 @@
 
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
+                const timeoutId = setTimeout(() => controller.abort(), 2500);
 
                 const response = await fetch(`http://${esp32IP}/reset`, {
                     method: 'GET',
@@ -2438,11 +2465,14 @@
 
         async function connectToESP32() {
             if (esp32Connected) {
+                await sendCommand("CMD:stop");
+                if (window.angleFetchInterval) clearInterval(window.angleFetchInterval);
+                if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
+                telemetryPollInFlight = false;
+                pingRequestInFlight = false;
                 esp32Connected = false;
                 updateConnectionStatus(false);
                 showToast("Disconnected from ESP32");
-                if (window.angleFetchInterval) clearInterval(window.angleFetchInterval);
-                if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
                 return;
             }
 
@@ -2456,14 +2486,14 @@
                 if (window.angleFetchInterval) clearInterval(window.angleFetchInterval);
                 window.angleFetchInterval = setInterval(() => {
                     fetchAngleData();
-                }, 400);
+                }, 650);
 
                 if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
                 window.heartbeatInterval = setInterval(async () => {
-                    if (Date.now() - lastPing > 5000) {
-                        await testESP32Connection();
+                    if (!telemetryPollInFlight && Date.now() - lastPing > 7000) {
+                        await testESP32Connection(false);
                     }
-                }, 5000);
+                }, 7000);
             } else {
                 showToast("❌ Cannot reach ESP32. Check IP and WiFi.");
                 addNotification("⚠️ Connection Failed", "Cannot reach ESP32 bridge", true);
@@ -2683,7 +2713,6 @@
 
             try {
                 if (shouldActivate) {
-                    await sendCommand("CMD:stop");
                     const ok = await sendEmergency();
                     if (!ok) return;
 
@@ -2697,7 +2726,6 @@
                     });
 
                     document.body.classList.add('emergency-shutdown');
-
                     let shutdownOverlay = document.getElementById('shutdownOverlay');
                     if (!shutdownOverlay) {
                         shutdownOverlay = buildShutdownOverlay();
@@ -2706,7 +2734,7 @@
                     shutdownOverlay.style.display = 'flex';
 
                     updateEmergencyButton(true);
-                    addNotification('🚨 EMERGENCY STOP', 'Software emergency lock activated', true);
+                    addNotification('?? EMERGENCY STOP', 'Software emergency lock activated', true);
                 } else {
                     const ok = await releaseEmergency();
                     if (!ok) throw new Error("Failed to release emergency");
@@ -2722,12 +2750,12 @@
 
                     closeShutdown();
                     updateEmergencyButton(false);
-                    addNotification('✅ EMERGENCY RELEASED', 'Software emergency lock released', false);
+                    addNotification('? EMERGENCY RELEASED', 'Software emergency lock released', false);
                     showToast("Emergency released");
                 }
             } catch (error) {
                 console.error("Emergency toggle error:", error);
-                showToast("❌ Emergency action failed");
+                showToast("? Emergency action failed");
             }
         }
 
@@ -3188,29 +3216,8 @@
 
                 const active = docSnap.data().active === true;
                 const changedByCaretaker = docSnap.data().triggeredBy === 'caretaker' || docSnap.data().releasedBy === 'caretaker';
-                const rawTimestamp = docSnap.data().timestamp;
-                const snapshotTime = rawTimestamp ? new Date(rawTimestamp).getTime() : 0;
-                const isRecentEmergencyEvent = snapshotTime && (Date.now() - snapshotTime < 30000);
-
-                if (!emergencyListenerInitialized) {
-                    emergencyListenerInitialized = true;
-
-                    if (active) {
-                        updateEmergencyButton(true);
-                        showToast("Emergency status was already active. Press release if this was old.");
-                    } else {
-                        updateEmergencyButton(false);
-                    }
-                    return;
-                }
 
                 if (active && !emergencyActive) {
-                    if (!isRecentEmergencyEvent) {
-                        console.log("Ignoring stale emergency snapshot");
-                        updateEmergencyButton(true);
-                        return;
-                    }
-
                     emergencyActive = true;
                     updateEmergencyButton(true);
 
@@ -3225,7 +3232,7 @@
                         document.body.appendChild(shutdownOverlay);
                     }
                     shutdownOverlay.style.display = 'flex';
-                    addNotification('🚨 EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
+                    addNotification('?? EMERGENCY FROM PATIENT', 'Patient has activated emergency stop!', true);
                 } else if (!active && emergencyActive) {
                     emergencyActive = false;
                     updateEmergencyButton(false);
@@ -3652,13 +3659,6 @@
             });
 
             speedSlider.addEventListener("change", async () => {
-                if (emergencyActive) {
-                    showToast("⛔ Speed change blocked by emergency lock");
-                    speedSlider.value = String(lastCommittedSpeedPercent);
-                    speedPercent.innerText = `${lastCommittedSpeedPercent}%`;
-                    return;
-                }
-
                 const value = speedSlider.value;
                 try {
                     const response = await fetch(`http://${esp32IP}/speed?speed=${value}`, {
@@ -3667,22 +3667,24 @@
                     });
 
                     if (!response.ok) {
-                        if (response.status === 423) showToast("⛔ Speed blocked by emergency lock");
-                        else showToast("❌ Speed update failed");
-                        speedSlider.value = String(lastCommittedSpeedPercent);
-                        speedPercent.innerText = `${lastCommittedSpeedPercent}%`;
+                        showToast("Speed update failed");
                         return;
                     }
-
-                    lastCommittedSpeedPercent = Number(value);
-                    showToast(`⚡ Speed set to ${value}%`);
+                    showToast(`Speed set to ${value}%`);
                 } catch (err) {
-                    speedSlider.value = String(lastCommittedSpeedPercent);
-                    speedPercent.innerText = `${lastCommittedSpeedPercent}%`;
-                    showToast("❌ Speed update failed");
+                    showToast("Speed update failed");
                 }
             });
         }
+
+        window.addEventListener('beforeunload', () => {
+            if (!esp32Connected) return;
+            fetch(`http://${esp32IP}/cmd?data=${encodeURIComponent('CMD:stop')}`, {
+                method: 'GET',
+                mode: 'no-cors',
+                keepalive: true
+            }).catch(() => { });
+        });
 
         await loadPatientFromFirestore();
         await loadCaretakerFromFirestore();
@@ -3706,3 +3708,4 @@
 </body>
 
 </html>
+
