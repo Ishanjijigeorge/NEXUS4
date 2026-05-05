@@ -2401,23 +2401,11 @@
 
                     if (driveMode !== lastTelemetryDriveMode) {
                         let reason = `Mode changed to: ${driveMode}`;
-                        if (driveModeSource === 'IR_AUTO' && driveMode === 'Line Following' && lineState !== 'NO_LINE') {
-                            reason = `IR detected ${lineLabel} - switched to Line Following`;
-                        } else if (driveModeSource === 'IR_AUTO' && driveMode === 'Self Drive' && lineState === 'NO_LINE') {
-                            reason = 'No line detected for a few seconds - switched to Self Drive';
-                        } else if (driveModeReason) {
+                        if (driveModeReason) {
                             reason = driveModeReason;
                         }
 
                         applyDriveModeUI(driveMode, true, reason);
-                        saveModeToFirestore(driveMode).catch((error) => {
-                            console.error("Mode sync failed:", error);
-                        });
-
-                        if (driveModeSource === 'IR_AUTO' && driveMode === 'Self Drive') {
-                            showAlertPopup('Self Drive Activated', 'No line was detected for a few seconds. Wheelchair switched to Self Drive mode.');
-                        }
-
                         lastTelemetryDriveMode = driveMode;
                     } else {
                         applyDriveModeUI(driveMode, false);
@@ -2489,10 +2477,12 @@
             }
 
             const normalizedCommand = String(command || '').trim();
+            const isModeCommand = normalizedCommand.startsWith("MODE:");
             const emergencyBlocked = emergencyActive &&
                 normalizedCommand !== "CMD:stop" &&
                 normalizedCommand !== "CMD:EMERGENCY:ON" &&
-                normalizedCommand !== "CMD:EMERGENCY:OFF";
+                normalizedCommand !== "CMD:EMERGENCY:OFF" &&
+                !isModeCommand;
 
             if (emergencyBlocked) {
                 showToast("⛔ Emergency lock is active");
@@ -3668,7 +3658,10 @@
 
         window.setMode = function (mode) {
             closeModePopup();
+            const previousEmergencyState = emergencyActive;
+            emergencyActive = false;
             confirmModeSwitch(mode);
+            emergencyActive = previousEmergencyState;
         };
 
         window.closeModePopup = () => document.getElementById('modePopup').style.display = 'none';
