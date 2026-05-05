@@ -2412,10 +2412,10 @@
                     }
 
                     if (rearFloorLost && !lastRearFloorLost) {
-                        addNotification('Rear Depth Detected', 'D33 no longer sees rear floor. Depth detected behind the wheelchair.', true);
-                        showAlertPopup('Rear Depth Detected', 'D33 lost the rear floor surface. Depth was detected behind the wheelchair.');
+                        addNotification('Rear Depth Detected', ' Depth detected behind the wheelchair.', true);
+                        showAlertPopup('Rear Depth Detected', ' Depth was detected behind the wheelchair.');
                     } else if (!rearFloorLost && lastRearFloorLost) {
-                        addNotification('Rear Floor Restored', 'D33 sees rear floor / free space again.', false);
+                        addNotification('Rear Floor Restored', ' sees rear floor / free space again.', false);
                     }
 
                     if (lineState !== lastTelemetryLineState && lineState !== 'NO_LINE' && lineState !== 'DEPTH_STOP') {
@@ -2511,7 +2511,7 @@
                 if (response.status === 423) {
                     const reason = await response.text();
                     showToast(reason === "DEPTH_STOP_ACTIVE"
-                        ? "⛔ D33 floor safety stop is active"
+                        ? "⛔ floor safety stop is active"
                         : "⛔ Command blocked by emergency lock");
                     return false;
                 }
@@ -3853,7 +3853,7 @@
                     if (!response.ok) {
                         const reason = await response.text();
                         showToast(reason === "DEPTH_STOP_ACTIVE"
-                            ? "⛔ D33 floor safety stop is active"
+                            ? "⛔ floor safety stop is active"
                             : "Speed update failed");
                         return;
                     }
