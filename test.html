@@ -1773,8 +1773,8 @@
             <button class="close-popup" onclick="closePopup('wheel')">×</button>
         </div>
         <div class="wheel-detail" id="batteryDetail">
-            <span>🔋 Battery</span>
-            <strong id="batteryValue">82%</strong>
+            <span>🔋 Battery / Driver</span>
+            <strong id="batteryValue">Disconnected</strong>
         </div>
         <div class="wheel-detail" id="speedDetail">
             <span>⚡ Speed</span>
@@ -1911,6 +1911,10 @@
         let notifications = [];
         let notificationCount = 0;
         let emergencyActive = false;
+        let lastTelemetryDriveMode = 'Line Following';
+        let lastTelemetryLineState = 'NO_LINE';
+        let lastRearFloorLost = false;
+        let lastDriveModeSource = 'BOOT';
 
         let esp32IP = "10.29.92.126";
         let esp32Connected = false;
@@ -1955,7 +1959,7 @@
         };
 
         let lastWheelState = {
-            battery: 82,
+            driverConnected: false,
             speed: 1.2,
             angle: 0
         };
@@ -2001,6 +2005,25 @@
             } catch (error) {
                 console.error("Failed to sync telemetry:", error);
             }
+        }
+
+        function updateDriverConnectionUI(isConnected) {
+            const batteryElem = document.getElementById('batteryValue');
+            const batteryDetail = document.getElementById('batteryDetail');
+
+            if (batteryElem) batteryElem.innerText = isConnected ? 'Connected' : 'Disconnected';
+            if (batteryDetail) batteryDetail.classList.toggle('warning', !isConnected);
+
+            lastWheelState.driverConnected = isConnected;
+        }
+
+        function updateObstacleUI(obstacleDetected, depthStopActive) {
+            const obstacleElem = document.getElementById('obstacleValue');
+            if (!obstacleElem) return;
+
+            if (depthStopActive) obstacleElem.innerText = 'Depth Stop';
+            else if (obstacleDetected) obstacleElem.innerText = 'Detected';
+            else obstacleElem.innerText = 'Clear';
         }
 
         function markESP32Alive() {
@@ -2060,18 +2083,17 @@
                             if (speedElem) speedElem.innerText = data.speed.toFixed(1) + ' m/s';
                         }
 
-                        const batteryElem = document.getElementById('batteryValue');
-                        if (batteryElem) {
-                            let batteryVal = 82;
-                            if (data.battery !== undefined) batteryVal = Math.round(data.battery);
-                            batteryElem.innerText = batteryVal + '%';
-                        }
+                        const driverConnected = data.motor_driver_connected !== undefined
+                            ? !!data.motor_driver_connected
+                            : esp32Connected;
+                        updateDriverConnectionUI(driverConnected);
 
                         if (data.obstacle !== undefined) {
-                            const obstacleElem = document.getElementById('obstacleValue');
-                            if (obstacleElem) {
-                                obstacleElem.innerText = data.obstacle ? 'Detected' : 'Clear';
-                            }
+                            updateObstacleUI(!!data.obstacle, !!data.depth_stop);
+                        }
+
+                        if (data.drive_mode) {
+                            applyDriveModeUI(data.drive_mode, false);
                         }
                     }
                 }, (error) => {
@@ -2188,6 +2210,23 @@
             }
         }
 
+        function applyDriveModeUI(mode, notify = false, reason = '') {
+            if (!mode) return;
+
+            const changed = mode !== currentMode;
+            currentMode = mode;
+
+            const modeDisplay = document.getElementById('modeDisplay');
+            if (modeDisplay) modeDisplay.innerText = currentMode;
+
+            const controlPad = document.getElementById('controlPad');
+            if (controlPad) controlPad.style.display = (currentMode === 'Control') ? 'block' : 'none';
+
+            if (changed && notify) {
+                addNotification('Drive Mode Changed', reason || `Mode changed to: ${currentMode}`, false);
+            }
+        }
+
         function applyEmergencyUIState(active) {
             emergencyActive = active;
             updateEmergencyButton(active);
@@ -2204,6 +2243,15 @@
             } else {
                 closeShutdown();
             }
+        }
+
+        function describeLineState(lineState, fallbackLabel = '') {
+            if (fallbackLabel) return fallbackLabel;
+            if (lineState === 'LINE_CENTERED') return 'LINE CENTERED';
+            if (lineState === 'LINE_TOWARDS_LEFT') return 'LINE TOWARDS LEFT';
+            if (lineState === 'LINE_TOWARDS_RIGHT') return 'LINE TOWARDS RIGHT';
+            if (lineState === 'DEPTH_STOP') return 'FORCE STOP: REAR FLOOR LOCK LOST';
+            return 'NO LINE';
         }
 
         async function testESP32Connection(markDisconnected = true) {
@@ -2268,9 +2316,21 @@
 
                     const angle = data.angle || 0;
                     const speed = data.speed || 0;
-                    const battery = data.battery || 0;
                     const obstacle = data.obstacle || false;
                     const direction = data.direction || "stop";
+                    const driveMode = data.drive_mode || currentMode;
+                    const driveModeSource = data.drive_mode_source || 'UNKNOWN';
+                    const driveModeReason = data.drive_mode_reason || '';
+                    const lineState = data.line_state || "NO_LINE";
+                    const lineLabel = describeLineState(lineState, data.line_label || '');
+                    const rearFloorLost = !!data.rear_floor_lost;
+                    const depthStop = !!data.depth_stop;
+                    const driverConnected = data.motor_driver_connected !== undefined
+                        ? !!data.motor_driver_connected
+                        : esp32Connected;
+                    const irLeft = data.ir_left;
+                    const irRight = data.ir_right;
+                    const irRear = data.ir_rear;
 
                     markESP32Alive();
                     updateAngleDisplay(angle);
@@ -2327,18 +2387,64 @@
                     const speedElem = document.getElementById('speedValue');
                     if (speedElem) speedElem.innerText = `${speed.toFixed(1)} m/s`;
 
-                    const batteryElem = document.getElementById('batteryValue');
-                    if (batteryElem) batteryElem.innerText = `${Math.round(battery || 82)}%`;
+                    updateDriverConnectionUI(driverConnected);
+                    updateObstacleUI(obstacle, depthStop);
 
-                    const obstacleElem = document.getElementById('obstacleValue');
-                    if (obstacleElem) obstacleElem.innerText = obstacle ? 'Detected' : 'Clear';
+                    if (driveMode !== lastTelemetryDriveMode) {
+                        let reason = `Mode changed to: ${driveMode}`;
+                        if (driveModeSource === 'IR_AUTO' && driveMode === 'Line Following' && lineState !== 'NO_LINE') {
+                            reason = `IR detected ${lineLabel} - switched to Line Following`;
+                        } else if (driveModeSource === 'IR_AUTO' && driveMode === 'Self Drive' && lineState === 'NO_LINE') {
+                            reason = 'No line detected for a few seconds - switched to Self Drive';
+                        } else if (driveModeReason) {
+                            reason = driveModeReason;
+                        }
+
+                        applyDriveModeUI(driveMode, true, reason);
+                        saveModeToFirestore(driveMode).catch((error) => {
+                            console.error("Mode sync failed:", error);
+                        });
+
+                        if (driveModeSource === 'IR_AUTO' && driveMode === 'Self Drive') {
+                            showAlertPopup('Self Drive Activated', 'No line was detected for a few seconds. Wheelchair switched to Self Drive mode.');
+                        }
+
+                        lastTelemetryDriveMode = driveMode;
+                    } else {
+                        applyDriveModeUI(driveMode, false);
+                    }
+
+                    if (rearFloorLost && !lastRearFloorLost) {
+                        addNotification('Depth Safety Stop', 'D33 floor detection went out of range. Stop command applied.', true);
+                        showAlertPopup('Depth Safety Stop', 'D33 floor detection went out of range. Wheelchair was stopped.');
+                    } else if (!rearFloorLost && lastRearFloorLost) {
+                        addNotification('Depth Sensor Restored', 'D33 floor detection is back in safe range.', false);
+                    }
+
+                    if (lineState !== lastTelemetryLineState && lineState !== 'NO_LINE' && lineState !== 'DEPTH_STOP') {
+                        addNotification('IR Line Detected', `${lineLabel} detected (L:${irLeft} R:${irRight} Rear:${irRear})`, false);
+                    }
+
+                    lastRearFloorLost = rearFloorLost;
+                    lastTelemetryLineState = lineState;
+                    lastDriveModeSource = driveModeSource;
 
                     const telemetryData = {
                         angle: angle,
                         speed: speed,
-                        battery: battery,
                         obstacle: obstacle,
                         direction: direction,
+                        drive_mode: driveMode,
+                        drive_mode_source: driveModeSource,
+                        drive_mode_reason: driveModeReason,
+                        line_state: lineState,
+                        line_label: lineLabel,
+                        rear_floor_lost: rearFloorLost,
+                        depth_stop: depthStop,
+                        motor_driver_connected: driverConnected,
+                        ir_left: irLeft,
+                        ir_right: irRight,
+                        ir_rear: irRear,
                         temp: data.temp || 0,
                         humidity: data.humidity || 0,
                         mq3: data.mq3 || 0,
@@ -2404,7 +2510,10 @@
                 }
 
                 if (response.status === 423) {
-                    showToast("⛔ Command blocked by emergency lock");
+                    const reason = await response.text();
+                    showToast(reason === "DEPTH_STOP_ACTIVE"
+                        ? "⛔ D33 floor safety stop is active"
+                        : "⛔ Command blocked by emergency lock");
                     return false;
                 }
 
@@ -2510,6 +2619,8 @@
                     angleStatus.style.background = '#fee2e2';
                     angleStatus.style.color = '#dc2626';
                 }
+                updateDriverConnectionUI(false);
+                updateObstacleUI(false, false);
                 emergencyActive = false;
                 updateEmergencyButton(false);
                 closeShutdown();
@@ -3262,6 +3373,8 @@
             onSnapshot(modeRef, (docSnap) => {
                 if (docSnap.exists() && docSnap.data().mode) {
                     const newMode = docSnap.data().mode;
+                    applyDriveModeUI(newMode, newMode !== currentMode, `Mode changed to: ${newMode}`);
+                    return;
                     if (newMode !== currentMode) {
                         currentMode = newMode;
                         document.getElementById('modeDisplay').innerText = currentMode;
@@ -3736,7 +3849,10 @@
                     clearTimeout(timeoutId);
 
                     if (!response.ok) {
-                        showToast("Speed update failed");
+                        const reason = await response.text();
+                        showToast(reason === "DEPTH_STOP_ACTIVE"
+                            ? "⛔ D33 floor safety stop is active"
+                            : "Speed update failed");
                         return;
                     }
                     markESP32Alive();
@@ -3770,6 +3886,9 @@
             document.getElementById('controlPad').style.display = 'none';
             updateAngleDisplay(0);
             updateEmergencyButton(false);
+            updateDriverConnectionUI(false);
+            updateObstacleUI(false, false);
+            document.getElementById('rangeValue')?.closest('.wheel-detail')?.remove();
 
             setTimeout(() => {
                 testESP32Connection();
