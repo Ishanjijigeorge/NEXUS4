@@ -2303,8 +2303,7 @@
             const emergencyBlocked = emergencyActive &&
                 normalizedCommand !== "CMD:stop" &&
                 normalizedCommand !== "CMD:EMERGENCY:ON" &&
-                normalizedCommand !== "CMD:EMERGENCY:OFF" &&
-                !normalizedCommand.startsWith("MODE:");
+                normalizedCommand !== "CMD:EMERGENCY:OFF";
 
             if (emergencyBlocked) {
                 showToast("⛔ Emergency lock is active");
@@ -2684,6 +2683,7 @@
 
             try {
                 if (shouldActivate) {
+                    await sendCommand("CMD:stop");
                     const ok = await sendEmergency();
                     if (!ok) return;
 
@@ -3504,6 +3504,11 @@
         window.calibrateAngleSensor = async () => {
             if (!esp32Connected) {
                 showToast("⚠️ ESP32 not connected!");
+                return false;
+            }
+
+            if (emergencyActive) {
+                showToast("⛔ Release emergency before calibration");
                 return false;
             }
 
